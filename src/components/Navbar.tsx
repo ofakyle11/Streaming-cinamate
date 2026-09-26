@@ -11,7 +11,7 @@ export default function Navbar() {
 
   return (
     <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`}>
-      <div className="logo">CINAMATE</div>
+      <div className="logo">LAST FRAME</div>
       <ul className="nav-links">
         <li className="active">Home</li>
         <li>Series</li>

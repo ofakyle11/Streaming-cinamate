@@ -20,7 +20,7 @@ export default function App() {
           <Row key={r.title} title={r.title} items={r.items} onSelect={setSelected} />
         ))}
       </main>
-      <footer className="footer">Cinamate · rough draft</footer>
+      <footer className="footer">Last Frame · lastframe.tv</footer>
       {selected && <DetailModal movie={selected} onClose={() => setSelected(null)} />}
     </>
   );
