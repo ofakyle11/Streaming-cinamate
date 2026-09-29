@@ -1,4 +1,4 @@
-import { Movie } from '../data/movies';
+import type { Movie } from '../services';
 
 interface Props {
   movie: Movie;
