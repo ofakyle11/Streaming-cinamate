@@ -1,4 +1,16 @@
-import type { MediaType, TmdbGenre, TmdbImageSize, TmdbPage, TmdbService, TmdbTitle, TmdbVideo } from '../types';
+import type {
+  MediaType,
+  TmdbCastMember,
+  TmdbGenre,
+  TmdbImageSize,
+  TmdbPage,
+  TmdbService,
+  TmdbTitle,
+  TmdbVideo,
+  TmdbWatchProvider,
+  TmdbWatchProviders,
+  WatchRegion,
+} from '../types';
 
 /** Real TMDB genre ids so the mock is drop-in compatible with live data. */
 export const MOCK_GENRES: TmdbGenre[] = [
@@ -225,5 +237,89 @@ export function createMockTmdb(): TmdbService {
       return exists ? (MOCK_VIDEOS[id] ?? []) : [];
     },
     imageUrl: mockImageUrl,
+    async credits(mediaType, id) {
+      await latency();
+      return findMock(mediaType, id) ? mockCredits(id) : [];
+    },
+    async similar(mediaType, id, page) {
+      await latency();
+      const t = findMock(mediaType, id);
+      return paginate(t ? mockSimilar(t) : [], page);
+    },
+    async watchProviders(mediaType, id, region) {
+      await latency();
+      const t = findMock(mediaType, id);
+      return t ? mockWatchProviders(t, region) : null;
+    },
+  };
+}
+
+/* ------------------------------------------------ Title extras fixtures */
+
+const findMock = (mediaType: MediaType, id: number) =>
+  MOCK_TITLES.find((t) => t.id === id && t.media_type === mediaType);
+
+/** Invented names; combined deterministically per title. */
+const FIRST_NAMES = [
+  'Mara', 'Idris', 'Juno', 'Tobias', 'Selene', 'Rafael', 'Anouk', 'Kenji', 'Priya', 'Otto',
+  'Lena', 'Caspian', 'Noor', 'Declan', 'Ines', 'Wes', 'Yara', 'Felix', 'Hana', 'Rowan',
+];
+const LAST_NAMES = [
+  'Vale', 'Okafor', 'Lindqvist', 'Moreau', 'Achterberg', 'Castillo', 'Hale', 'Nakamura', 'Rao', 'Brandt',
+  'Sørensen', 'Quill', 'Haddad', 'Fairweather', 'Duarte', 'Kowal', 'Ashby', 'Ferreira', 'Mori', 'Byrne',
+];
+const ROLES = [
+  'The Courier', 'Dr. Elin Voss', 'Captain Reyes', 'The Stranger', 'Nell', 'Agent Holloway', 'Theo',
+  'The Archivist', 'Marguerite', 'Sam', 'Old Ferryman', 'Detective Lark', 'Pilot', 'Iris', 'The Voice',
+];
+
+export function mockCredits(titleId: number): TmdbCastMember[] {
+  const seed = titleId - 1000;
+  const count = 8 + (seed % 5);
+  return Array.from({ length: count }, (_, order) => {
+    const f = FIRST_NAMES[(seed * 3 + order * 7) % FIRST_NAMES.length];
+    const l = LAST_NAMES[(seed * 5 + order * 11) % LAST_NAMES.length];
+    return {
+      id: 50_000 + seed * 100 + order,
+      name: `${f} ${l}`,
+      character: ROLES[(seed + order * 4) % ROLES.length],
+      // Every fourth member has no headshot so the monogram fallback is exercised.
+      profile_path: order % 4 === 3 ? null : `/lfcast${seed}-${order}`,
+      order,
+    };
+  });
+}
+
+/** Titles sharing the most genres, best-rated first; excludes the title itself. */
+export function mockSimilar(t: TmdbTitle): TmdbTitle[] {
+  const overlap = (x: TmdbTitle) => x.genre_ids.filter((g) => t.genre_ids.includes(g)).length;
+  return MOCK_TITLES.filter((x) => x.id !== t.id && overlap(x) > 0).sort(
+    (a, b) => overlap(b) - overlap(a) || b.vote_average - a.vote_average || a.id - b.id,
+  );
+}
+
+/** Fictional services; logos intentionally empty so the UI renders monograms. */
+export const MOCK_PROVIDERS: TmdbWatchProvider[] = [
+  { provider_id: 9001, provider_name: 'Lumen+', logo_path: '', display_priority: 1 },
+  { provider_id: 9002, provider_name: 'Reelhouse', logo_path: '', display_priority: 2 },
+  { provider_id: 9003, provider_name: 'Nova Stream', logo_path: '', display_priority: 3 },
+  { provider_id: 9004, provider_name: 'Marquee', logo_path: '', display_priority: 4 },
+  { provider_id: 9005, provider_name: 'Cinevault', logo_path: '', display_priority: 5 },
+  { provider_id: 9006, provider_name: 'Northern Lights TV', logo_path: '', display_priority: 6 },
+];
+
+export function mockWatchProviders(t: TmdbTitle, region: WatchRegion): TmdbWatchProviders {
+  const seed = t.id - 1000;
+  const pick = (...idx: number[]) => idx.map((i) => MOCK_PROVIDERS[i % MOCK_PROVIDERS.length]);
+  const base: TmdbWatchProviders = { region, link: '' };
+  // Every seventh title is unavailable in Canada so the empty state is exercised.
+  if (region === 'CA' && seed % 7 === 6) return base;
+  const offset = region === 'CA' ? 2 : 0;
+  return {
+    ...base,
+    flatrate: pick(seed + offset, seed + offset + 3),
+    ...(seed % 3 === 0 ? { free: pick(5) } : {}),
+    rent: pick(seed + offset + 1),
+    buy: pick(seed + offset + 1, seed + offset + 4),
   };
 }
