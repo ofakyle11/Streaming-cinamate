@@ -186,3 +186,26 @@ describe('useInfiniteSearch auto-fill', () => {
     await waitFor(() => expect(result.current.status).toBe('ready'));
   });
 });
+
+describe('TMDB page limit', () => {
+  it('reports hasMore false on page 500 of 500', async () => {
+    const results = Array.from({ length: 10 }, (_, i) => title(i + 1));
+    const search = vi.fn(async () => pageOf(results, 500, 500));
+    const svc = stubSvc({ search });
+    const { result } = renderHook(() => useInfiniteSearch('x', EMPTY_FILTERS, svc));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.items.length).toBe(10);
+    expect(result.current.hasMore).toBe(false);
+  });
+
+  it('clamps totalPages to 500 for search and the merged empty-query discover', async () => {
+    const search = vi.fn(async () => pageOf([title(1)], 1, 40000));
+    const discover = vi.fn<TmdbService['discover']>(async (o = {}) =>
+      pageOf([title(o.mediaType === 'tv' ? 2 : 1, { media_type: o.mediaType ?? 'movie' })], 1, 9999),
+    );
+    const svc = stubSvc({ search, discover });
+    expect((await fetchSearchPage(svc, 'x', EMPTY_FILTERS, 1)).totalPages).toBe(500);
+    expect((await fetchSearchPage(svc, '', EMPTY_FILTERS, 1)).totalPages).toBe(500);
+    expect((await fetchSearchPage(svc, '', f({ type: 'tv' }), 1)).totalPages).toBe(500);
+  });
+});

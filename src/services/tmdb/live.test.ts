@@ -5,6 +5,9 @@ import {
   DEFAULT_TMDB_PROXY,
   DETAILS_APPEND,
   DISCOVER_MIN_VOTE_COUNT,
+  clampTmdbPage,
+  normalizePage,
+  TMDB_MAX_PAGE,
   TmdbHttpError,
   tmdbImageUrl,
   tmdbSrcSet,
@@ -98,6 +101,63 @@ describe('image helpers', () => {
   it('adapter imageUrl uses the TMDB CDN', () => {
     const tmdb = createLiveTmdb('/p', { fetch: mockFetch(() => ({ body: {} })).fn });
     expect(tmdb.imageUrl('/z.jpg', 'w1280')).toBe('https://image.tmdb.org/t/p/w1280/z.jpg');
+  });
+});
+
+describe('TMDB page limit', () => {
+  it('exports the 500-page limit and clamps pages into 1..500', () => {
+    expect(TMDB_MAX_PAGE).toBe(500);
+    expect(clampTmdbPage(0)).toBe(1);
+    expect(clampTmdbPage(-4)).toBe(1);
+    expect(clampTmdbPage(Number.NaN)).toBe(1);
+    expect(clampTmdbPage(undefined)).toBe(1);
+    expect(clampTmdbPage(3.7)).toBe(3);
+    expect(clampTmdbPage(600)).toBe(500);
+  });
+
+  it('normalizes a raw total_pages of 40000 to 500 and keeps it at least 1', () => {
+    expect(normalizePage({ page: 1, results: [], total_pages: 40000 }, 'movie').total_pages).toBe(500);
+    expect(normalizePage({ page: 1, results: [], total_pages: 0 }, 'movie').total_pages).toBe(1);
+    expect(normalizePage({ page: 1, results: [], total_pages: 12 }, 'movie').total_pages).toBe(12);
+    // total_results is left as reported (display-only count).
+    expect(
+      normalizePage({ page: 1, results: [], total_pages: 40000, total_results: 800000 }, 'movie')
+        .total_results,
+    ).toBe(800000);
+  });
+
+  it('discover({ page: 600 }) requests page=500', async () => {
+    const { fn, calls } = mockFetch(() => ({ body: emptyPage }));
+    await createLiveTmdb('/p', { fetch: fn }).discover({ page: 600 });
+    expect(calls[0].searchParams.get('page')).toBe('500');
+  });
+
+  it('search with page 0 or a negative page requests page=1', async () => {
+    const { fn, calls } = mockFetch(() => ({ body: emptyPage }));
+    const tmdb = createLiveTmdb('/p', { fetch: fn });
+    await tmdb.search('x', 0);
+    await tmdb.search('x', -3);
+    await tmdb.search('x', 9001);
+    expect(calls.map((c) => c.searchParams.get('page'))).toEqual(['1', '1', '500']);
+  });
+
+  it('clamps the page on every list method', async () => {
+    const { fn, calls } = mockFetch(() => ({ body: emptyPage }));
+    const tmdb = createLiveTmdb('/p', { fetch: fn });
+    await tmdb.trending(501);
+    await tmdb.popular('movie', 9999);
+    await tmdb.topRated('tv', 0);
+    await tmdb.nowPlaying(700);
+    await tmdb.upcoming(-1);
+    await tmdb.byGenre(28, { page: 1000 });
+    expect(calls.map((c) => c.searchParams.get('page'))).toEqual([
+      '500',
+      '500',
+      '1',
+      '500',
+      '1',
+      '500',
+    ]);
   });
 });
 

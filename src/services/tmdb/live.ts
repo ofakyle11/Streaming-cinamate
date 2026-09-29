@@ -147,12 +147,32 @@ function normalizeResults(
     .map((r) => normalizeTitle(r, fallbackType));
 }
 
+/**
+ * TMDB rejects `page` above 500 on /discover, /search and the list endpoints
+ * (HTTP 400/422), even though `total_pages` often reports thousands.
+ */
+export const TMDB_MAX_PAGE = 500;
+
+/** Clamp a requested page to TMDB's valid range 1..TMDB_MAX_PAGE (non-finite -> 1). */
+export function clampTmdbPage(page: number | undefined | null): number {
+  const n = Math.floor(Number(page));
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.min(n, TMDB_MAX_PAGE);
+}
+
+/**
+ * Raw page -> TmdbPage. `total_pages` is clamped to 1..TMDB_MAX_PAGE so pagers
+ * (useInfiniteSearch hasMore, GenrePage "Next") never request an unreachable page.
+ * `total_results` is left as TMDB reports it: it is only shown as a count
+ * ("N titles"), the true catalogue size is the more honest number, and no code
+ * derives page numbers from it.
+ */
 export function normalizePage(raw: TmdbRawPage, fallbackType: MediaType): TmdbPage<TmdbTitle> {
   const results = normalizeResults(raw.results, fallbackType);
   return {
     page: raw.page ?? 1,
     results,
-    total_pages: raw.total_pages ?? 1,
+    total_pages: clampTmdbPage(raw.total_pages ?? 1),
     total_results: raw.total_results ?? results.length,
   };
 }
@@ -298,7 +318,7 @@ export function createLiveTmdb(
     minRating,
   } = {}) =>
     list(`/discover/${mediaType}`, mediaType, {
-      page,
+      page: clampTmdbPage(page),
       with_genres: genreId,
       sort_by: sortBy ? toTmdbSortParam(sortBy, mediaType) : 'popularity.desc',
       include_adult: false,
@@ -308,24 +328,24 @@ export function createLiveTmdb(
   return {
     trending(page = 1, { mediaType = 'all', window = 'day' }: TmdbTrendingOptions = {}) {
       return list(`/trending/${mediaType}/${window}`, mediaType === 'tv' ? 'tv' : 'movie', {
-        page,
+        page: clampTmdbPage(page),
       });
     },
     popular(mediaType, page = 1) {
-      return list(`/${mediaType}/popular`, mediaType, { page });
+      return list(`/${mediaType}/popular`, mediaType, { page: clampTmdbPage(page) });
     },
     topRated(mediaType, page = 1) {
-      return list(`/${mediaType}/top_rated`, mediaType, { page });
+      return list(`/${mediaType}/top_rated`, mediaType, { page: clampTmdbPage(page) });
     },
     nowPlaying(page = 1) {
-      return list('/movie/now_playing', 'movie', { page });
+      return list('/movie/now_playing', 'movie', { page: clampTmdbPage(page) });
     },
     upcoming(page = 1) {
-      return list('/movie/upcoming', 'movie', { page });
+      return list('/movie/upcoming', 'movie', { page: clampTmdbPage(page) });
     },
     discover,
     byGenre(genreId, { mediaType = 'movie', page = 1 } = {}) {
-      return discover({ mediaType, genreId, page });
+      return discover({ mediaType, genreId, page: clampTmdbPage(page) });
     },
     async search(query, page = 1, filters: TmdbSearchFilters = {}) {
       const q = query.trim();
@@ -342,7 +362,7 @@ export function createLiveTmdb(
               : {};
       let result = await list(endpoint, mediaType ?? 'movie', {
         query: q,
-        page,
+        page: clampTmdbPage(page),
         include_adult: false,
         ...yearParam,
       });
