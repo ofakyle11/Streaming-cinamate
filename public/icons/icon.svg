@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Last Frame</title>
+  <!-- Maskable: full-bleed background; the LF glyphs stay inside the central
+       80% safe zone (radius 204.8px circle around 256,256). -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#e50914"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.3"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#0b0b12"/>
+  <rect width="512" height="512" fill="url(#tile)" fill-opacity="0.82"/>
+  <rect width="512" height="256" fill="url(#shine)"/>
+  <!-- 64-grid glyphs scaled x6 and centred: glyph box 32x28 -> 192x168 -->
+  <g transform="translate(256 256) scale(6) translate(-32 -32)">
+    <path d="M16 18h6v22h8v6H16z M32 18h16v6H38v5h8v5h-8v12h-6z" fill="#f4f4f8"/>
+  </g>
+</svg>

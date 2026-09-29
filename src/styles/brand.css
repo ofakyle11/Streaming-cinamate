@@ -1,0 +1,41 @@
+/* Brand mark (src/components/brand/LogoMark.tsx) */
+.logo-mark {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+  border-radius: 25%;
+  filter: drop-shadow(0 4px 14px rgba(124, 58, 237, 0.35));
+  transition:
+    transform var(--dur-base, 0.3s) var(--ease-spring, ease),
+    filter var(--dur-base, 0.3s) var(--ease-out, ease);
+}
+
+.logo.logo--with-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo:hover .logo-mark,
+.logo:focus-visible .logo-mark {
+  transform: rotate(-4deg) scale(1.06);
+  filter: drop-shadow(0 6px 18px rgba(229, 9, 20, 0.45));
+}
+
+@media (max-width: 420px) {
+  .logo.logo--with-mark {
+    gap: 8px;
+    font-size: 1.05rem;
+    letter-spacing: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-mark {
+    transition: none;
+  }
+  .logo:hover .logo-mark,
+  .logo:focus-visible .logo-mark {
+    transform: none;
+  }
+}
