@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Movie } from '../data/movies';
+import type { Movie } from '../services';
 
 interface Props {
   featured: Movie[];

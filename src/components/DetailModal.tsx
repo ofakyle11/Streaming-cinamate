@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Movie } from '../data/movies';
+import type { Movie } from '../services';
 
 interface Props {
   movie: Movie;

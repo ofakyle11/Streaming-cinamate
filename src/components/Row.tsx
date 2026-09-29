@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Movie } from '../data/movies';
+import type { Movie } from '../services';
 import MovieCard from './MovieCard';
 
 interface Props {
