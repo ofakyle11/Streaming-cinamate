@@ -22,7 +22,8 @@ export function pickTrailerKey(videos: readonly TmdbVideo[] | null | undefined):
     .filter((v) => v.site === 'YouTube' && v.type in TYPE_RANK && isYouTubeKey(v.key))
     .sort(
       (a, b) =>
-        TYPE_RANK[a.type] - TYPE_RANK[b.type] || Number(Boolean(b.official)) - Number(Boolean(a.official)),
+        TYPE_RANK[a.type] - TYPE_RANK[b.type] ||
+        Number(Boolean(b.official)) - Number(Boolean(a.official)),
     );
   return candidates[0]?.key ?? null;
 }
@@ -53,4 +54,9 @@ export function youTubeEmbedUrl(key: string, origin?: string): string {
 /** YouTube IFrame API command, sent to the embed via postMessage. */
 export function youTubeCommand(func: 'mute' | 'unMute' | 'playVideo' | 'pauseVideo'): string {
   return JSON.stringify({ event: 'command', func, args: [] });
+}
+
+/** Minimal TMDB video for the TrailerModal, built from a resolved YouTube key. */
+export function trailerVideoFromKey(key: string, title: string): TmdbVideo {
+  return { id: key, key, site: 'YouTube', type: 'Trailer', name: `${title} trailer` };
 }

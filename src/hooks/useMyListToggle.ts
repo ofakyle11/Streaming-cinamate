@@ -11,7 +11,7 @@ export interface ListableTitle {
 }
 
 /** Where the toggle was used; sent with the analytics event. */
-export type MyListSource = 'card' | 'title' | 'modal' | 'my-list';
+export type MyListSource = 'card' | 'title' | 'modal' | 'my-list' | 'hero';
 
 export function myListToastMessage(title: string, added: boolean): string {
   return added ? `Added ${title} to My List` : `Removed ${title} from My List`;
@@ -21,7 +21,11 @@ export function myListToastMessage(title: string, added: boolean): string {
  * Add/remove a title from the active profile's My List, with a toast and an
  * analytics event. Shared by poster cards, the title page and the detail modal.
  */
-export function useMyListToggle(item: ListableTitle, source: MyListSource, analytics: AnalyticsService = defaultAnalytics) {
+export function useMyListToggle(
+  item: ListableTitle,
+  source: MyListSource,
+  analytics: AnalyticsService = defaultAnalytics,
+) {
   const inList = useLastFrameStore(selectIsInWatchlist(item.id));
   const toggleWatchlist = useLastFrameStore((s) => s.toggleWatchlist);
   const { toast } = useOptionalToast();
