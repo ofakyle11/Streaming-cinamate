@@ -97,9 +97,6 @@ const SEEDS: Seed[] = [
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-/** Big Buck Bunny (CC-BY Blender Foundation) on YouTube. */
-export const MOCK_TRAILER_KEY = 'aqz-KE-bpKQ';
-
 export const MOCK_TITLES: TmdbTitle[] = SEEDS.map((s, i) => {
   const isTv = s.type === 'tv';
   const year = 2015 + (i % 11);
@@ -118,8 +115,6 @@ export const MOCK_TITLES: TmdbTitle[] = SEEDS.map((s, i) => {
     release_date: `${year}-${pad(month)}-${pad(day)}`,
     runtime: isTv ? 42 + (i % 4) * 6 : 88 + ((i * 13) % 61),
     certification: isTv ? CERTS_TV[i % CERTS_TV.length] : CERTS_MOVIE[i % CERTS_MOVIE.length],
-    // Open-licence Blender film as a stand-in trailer for roughly half the catalogue.
-    ...(i % 2 === 0 ? { trailer_key: MOCK_TRAILER_KEY } : {}),
   };
 });
 
@@ -173,31 +168,16 @@ export function createMockTmdb(): TmdbService {
       const recent = [...byType('movie')].sort((a, b) => b.release_date.localeCompare(a.release_date));
       return paginate(recent, page);
     },
-    async upcoming(page) {
-      await latency();
-      const recent = [...byType('movie')].sort((a, b) => b.release_date.localeCompare(a.release_date));
-      return paginate(recent, page);
-    },
-    async byGenre(mediaType, genreId, page) {
-      await latency();
-      return paginate(byType(mediaType).filter((t) => t.genre_ids.includes(genreId)), page);
-    },
-    async discover({ mediaType, genreId, page, sortBy } = {}) {
+    async discover({ mediaType, genreId, page } = {}) {
       await latency();
       const items = byType(mediaType).filter((t) => genreId == null || t.genre_ids.includes(genreId));
-      if (sortBy === 'rating') items.sort((a, b) => b.vote_average - a.vote_average);
-      else if (sortBy === 'date') items.sort((a, b) => b.release_date.localeCompare(a.release_date));
       return paginate(items, page);
     },
-    async search(query, page, filters = {}) {
+    async search(query, page) {
       await latency();
       const q = query.trim().toLowerCase();
       if (!q) return paginate([], page);
-      const items = byType(filters.mediaType).filter(
-        (t) =>
-          (t.title ?? t.name ?? '').toLowerCase().includes(q) &&
-          (filters.year == null || t.release_date.startsWith(String(filters.year))),
-      );
+      const items = MOCK_TITLES.filter((t) => (t.title ?? t.name ?? '').toLowerCase().includes(q));
       return paginate(items, page);
     },
     async details(mediaType, id) {
