@@ -1,9 +1,10 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Hero, { SLIDE_INTERVAL_MS, TRAILER_DELAY_MS } from './Hero';
 import { trailerVideoFromKey } from '../lib/trailer';
-import { MOCK_GENRES, MOCK_TITLES } from '../services/tmdb/mock';
-import { analytics, toMovie } from '../services';
+import { MOCK_GENRES, MOCK_TITLES, MOCK_VIDEOS } from '../services/tmdb/mock';
+import { analytics, toMovie, type TmdbService, type TmdbVideo } from '../services';
+import { ToastProvider } from './ui';
 import { clearTrailerCache } from '../hooks/useTrailerKey';
 import { selectIsInWatchlist, selectViews, useLastFrameStore } from '../state/store';
 
@@ -262,5 +263,124 @@ describe('Hero slideshow', () => {
     await advance(SLIDE_INTERVAL_MS * 3);
     expect(heading()).toHaveTextContent(slides[0].title);
     expect(screen.queryByRole('button', { name: /slideshow/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('Hero trailer dialog footer', () => {
+  async function openDialog() {
+    render(
+      <ToastProvider>
+        <Hero featured={[WITH_TRAILER]} onMore={() => {}} />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    await advance(500); // mock trailer lookup resolves
+    return screen.getByRole('dialog');
+  }
+
+  it('contains a My List toggle that updates the store', async () => {
+    const dialog = await openDialog();
+    const add = within(dialog).getByRole('button', { name: `Add ${WITH_TRAILER.title} to My List` });
+    fireEvent.click(add);
+    expect(selectIsInWatchlist(WITH_TRAILER.id)(useLastFrameStore.getState())).toBe(true);
+    expect(
+      within(dialog).getByRole('button', { name: `Remove ${WITH_TRAILER.title} from My List` }),
+    ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('thumbs fire hero analytics and the title-page toast copy', async () => {
+    const track = vi.spyOn(analytics, 'track');
+    const dialog = await openDialog();
+    fireEvent.click(within(dialog).getByRole('button', { name: `I like ${WITH_TRAILER.title}` }));
+    expect(track).toHaveBeenCalledWith('thumb_up', {
+      id: WITH_TRAILER.id,
+      mediaType: WITH_TRAILER.mediaType,
+      source: 'hero',
+    });
+    expect(screen.getByText(`Glad you liked ${WITH_TRAILER.title}`)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: `I like ${WITH_TRAILER.title}` }));
+    expect(track).toHaveBeenCalledWith('thumb_clear', expect.objectContaining({ source: 'hero' }));
+  });
+});
+
+describe('Hero carousel semantics', () => {
+  const slides = [WITHOUT_TRAILER, { ...WITHOUT_TRAILER, id: 99_998, title: 'Second Slide' }];
+
+  it('labels the carousel region and each slide "N of M"', async () => {
+    render(<Hero featured={slides} onMore={() => {}} />);
+    const region = screen.getByRole('region', { name: 'Featured titles' });
+    expect(region).toHaveAttribute('aria-roledescription', 'carousel');
+    const slide = screen.getByRole('group', { name: `1 of 2: ${slides[0].title}` });
+    expect(slide).toHaveAttribute('aria-roledescription', 'slide');
+
+    await advance(SLIDE_INTERVAL_MS + 10);
+    expect(screen.getByRole('group', { name: '2 of 2: Second Slide' })).toBeInTheDocument();
+  });
+
+  it('names the active dot "Showing <title>"', () => {
+    render(<Hero featured={slides} onMore={() => {}} />);
+    expect(screen.getByRole('button', { name: `Showing ${slides[0].title}` })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Show Second Slide' }));
+    expect(screen.getByRole('button', { name: 'Showing Second Slide' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: `Show ${slides[0].title}` })).toBeInTheDocument();
+  });
+
+  it('keeps the live region off while auto-advancing and polite after a dot click', async () => {
+    render(<Hero featured={slides} onMore={() => {}} />);
+    const live = screen.getByTestId('hero-live');
+    expect(live).toHaveAttribute('aria-live', 'off');
+    await advance(SLIDE_INTERVAL_MS + 10);
+    expect(live).toHaveAttribute('aria-live', 'off');
+    expect(live).toHaveTextContent('2 of 2: Second Slide');
+
+    fireEvent.click(screen.getByRole('button', { name: `Show ${slides[0].title}` }));
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    expect(live).toHaveTextContent(`1 of 2: ${slides[0].title}`);
+
+    // The next automatic advance silences it again.
+    await advance(SLIDE_INTERVAL_MS + 10);
+    expect(live).toHaveAttribute('aria-live', 'off');
+  });
+
+  it('becomes polite when the user pauses, and off again on resume', () => {
+    render(<Hero featured={slides} onMore={() => {}} />);
+    const live = screen.getByTestId('hero-live');
+    fireEvent.click(screen.getByRole('button', { name: 'Pause slideshow' }));
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    fireEvent.click(screen.getByRole('button', { name: 'Play slideshow' }));
+    expect(live).toHaveAttribute('aria-live', 'off');
+  });
+});
+
+describe('Hero Play pending state', () => {
+  it('ignores repeat clicks and shows a busy state while the lookup is pending', async () => {
+    let resolve: (v: TmdbVideo[]) => void = () => {};
+    const pending = new Promise<TmdbVideo[]>((r) => {
+      resolve = r;
+    });
+    const videos = vi.fn(() => pending);
+    const svc = { videos } as unknown as TmdbService;
+    render(<Hero featured={[WITH_TRAILER]} onMore={() => {}} svc={svc} />);
+    const before = videos.mock.calls.length; // background key lookup from useTrailerKey
+
+    const play = screen.getByRole('button', { name: 'Play' });
+    expect(play).not.toHaveAttribute('aria-busy');
+    fireEvent.click(play);
+    fireEvent.click(play);
+    expect(videos).toHaveBeenCalledTimes(before + 1);
+    expect(play).toHaveAttribute('aria-busy', 'true');
+    expect(play).toHaveAttribute('aria-disabled', 'true');
+
+    await act(async () => {
+      resolve(MOCK_VIDEOS[WITH_TRAILER.id] ?? []);
+      await pending;
+    });
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    expect(play).not.toHaveAttribute('aria-busy');
+    expect(videos).toHaveBeenCalledTimes(before + 1);
   });
 });

@@ -7,13 +7,14 @@ import {
   type TmdbService,
   type TmdbVideo,
 } from '../services';
-import { IconButton } from './ui';
+import { IconButton, useOptionalToast } from './ui';
 import TrailerModal from './title/TrailerModal';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { useInView } from '../hooks/useInView';
 import { useTrailerKey } from '../hooks/useTrailerKey';
 import { useMyListToggle } from '../hooks/useMyListToggle';
 import { useViewActions } from '../hooks/useViewHistory';
+import type { Thumb } from '../state/store';
 import {
   YOUTUBE_EMBED_ORIGIN,
   pickTrailerKey,
@@ -59,6 +60,13 @@ export default function Hero({
   const [userPaused, setUserPaused] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
+  /**
+   * Live-region politeness: 'off' while the carousel auto-advances (so it never
+   * spams screen readers), 'polite' after the user picks a slide or pauses.
+   */
+  const [announce, setAnnounce] = useState(false);
+  /** Id of the slide whose Play is waiting on a trailer lookup. */
+  const [pendingPlayId, setPendingPlayId] = useState<number | null>(null);
 
   const heroRef = useRef<HTMLElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -70,10 +78,13 @@ export default function Hero({
   const movieId = movie?.id;
   const trailerKey = useTrailerKey(movie, { svc });
   const { recordView } = useViewActions();
+  const { toast } = useOptionalToast();
   const trailerOpen = trailer !== null;
   const paused = userPaused || hovering || focusWithin || trailerOpen;
   /** Cancels an in-flight Play lookup on unmount / slide change. */
   const playLookupRef = useRef(0);
+  /** Synchronous guard so repeat Play clicks never start another lookup. */
+  const playPendingRef = useRef(false);
   useEffect(() => () => void (playLookupRef.current += 1), []);
 
   const showTrailer =
@@ -96,6 +107,7 @@ export default function Hero({
   useEffect(() => {
     if (count < 2 || reducedMotion || showTrailer || paused) return;
     const t = setTimeout(() => {
+      setAnnounce(false);
       setDwelledId(null);
       setIndex((i) => (i + 1) % count);
     }, SLIDE_INTERVAL_MS);
@@ -116,22 +128,50 @@ export default function Hero({
     setTrailer({ movie: m, video: trailerVideoFromKey(key, m.title) });
   };
 
+  /** Drops any in-flight Play lookup and its pending state. */
+  const cancelPlayLookup = () => {
+    playLookupRef.current += 1;
+    playPendingRef.current = false;
+    setPendingPlayId(null);
+  };
+
   const play = (m: Movie) => {
     if (trailerKey) {
       openTrailer(m, trailerKey);
       return;
     }
+    // Ignore repeat clicks while a lookup is already in flight.
+    if (playPendingRef.current) return;
     // Key still loading (or none): look it up now, fall back to the title page.
     const token = ++playLookupRef.current;
+    playPendingRef.current = true;
+    setPendingPlayId(m.id);
     svc
       .videos(m.mediaType, m.id)
       .then(pickTrailerKey, () => null)
       .then((key) => {
         if (token !== playLookupRef.current) return;
+        cancelPlayLookup();
         if (key) openTrailer(m, key);
         else onOpenTitle(m);
       });
   };
+
+  const onThumbChange = useCallback(
+    (thumb: Thumb | null) => {
+      const m = trailer?.movie;
+      if (!m) return;
+      analytics.track(thumb ? `thumb_${thumb}` : 'thumb_clear', {
+        id: m.id,
+        mediaType: m.mediaType,
+        source: 'hero',
+      });
+      if (thumb === 'up') toast(`Glad you liked ${m.title}`, { kind: 'success' });
+      else if (thumb === 'down') toast(`Got it — we’ll show fewer titles like ${m.title}`);
+      else toast(`Removed your thumb for ${m.title}`);
+    },
+    [trailer, analytics, toast],
+  );
 
   const closeTrailer = useCallback(() => {
     setTrailer(null);
@@ -156,7 +196,8 @@ export default function Hero({
   };
 
   const goTo = (i: number) => {
-    playLookupRef.current += 1;
+    cancelPlayLookup();
+    setAnnounce(true);
     setIndex(i);
     setDwelledId(null);
     setRequestedId(null);
@@ -167,10 +208,18 @@ export default function Hero({
   const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
 
   const slideshowControls = count > 1 && !reducedMotion;
+  const current = index % count;
+  const slideLabel = `${current + 1} of ${count}: ${movie.title}`;
+  const playPending = pendingPlayId === movie.id;
 
   return (
     <>
-      <header className={`hero${trailerReady ? ' has-trailer' : ''}`} ref={heroRef}>
+      <section
+        className={`hero${trailerReady ? ' has-trailer' : ''}`}
+        ref={heroRef}
+        aria-roledescription="carousel"
+        aria-label="Featured titles"
+      >
         {featured.map((m, i) => (
           <div
             key={m.id}
@@ -197,6 +246,9 @@ export default function Hero({
         <div
           className="hero-card glass"
           key={movie.id}
+          role="group"
+          aria-roledescription="slide"
+          aria-label={slideLabel}
           onPointerEnter={() => setHovering(true)}
           onPointerLeave={() => setHovering(false)}
           onFocus={() => setFocusWithin(true)}
@@ -211,8 +263,19 @@ export default function Hero({
           </div>
           <p>{movie.description}</p>
           <div className="actions">
-            <button type="button" className="btn primary" onClick={() => play(movie)}>
-              <span aria-hidden>▶</span> Play
+            <button
+              type="button"
+              className={`btn primary hero-play${playPending ? ' is-pending' : ''}`}
+              onClick={() => play(movie)}
+              aria-busy={playPending || undefined}
+              aria-disabled={playPending || undefined}
+            >
+              {playPending ? (
+                <span className="hero-play-spinner" aria-hidden />
+              ) : (
+                <span aria-hidden>▶</span>
+              )}{' '}
+              Play
             </button>
             <HeroListButton movie={movie} />
             <button type="button" className="btn glass" onClick={() => onMore(movie)}>
@@ -248,10 +311,10 @@ export default function Hero({
               <button
                 key={m.id}
                 type="button"
-                className={i === index % count ? 'active' : ''}
+                className={i === current ? 'active' : ''}
                 onClick={() => goTo(i)}
-                aria-label={`Show ${m.title}`}
-                aria-current={i === index % count ? 'true' : undefined}
+                aria-label={i === current ? `Showing ${m.title}` : `Show ${m.title}`}
+                aria-current={i === current ? 'true' : undefined}
               />
             ))}
           </div>
@@ -261,19 +324,33 @@ export default function Hero({
               size="sm"
               label={userPaused ? 'Play slideshow' : 'Pause slideshow'}
               aria-pressed={userPaused}
-              onClick={() => setUserPaused((p) => !p)}
+              onClick={() => {
+                // Announce slides only once the user has taken control of the carousel.
+                setAnnounce(!userPaused);
+                setUserPaused((p) => !p);
+              }}
             >
               <span aria-hidden>{userPaused ? '▶' : '❚❚'}</span>
             </IconButton>
           )}
         </div>
-      </header>
+        <div
+          className="hero-sr-only"
+          data-testid="hero-live"
+          aria-live={announce ? 'polite' : 'off'}
+          aria-atomic="true"
+        >
+          {slideLabel}
+        </div>
+      </section>
       {trailer && (
         <TrailerModal
           video={trailer.video}
           title={trailer.movie.title}
           poster={trailer.movie.backdrop}
           onClose={closeTrailer}
+          movie={trailer.movie}
+          onThumbChange={onThumbChange}
         />
       )}
     </>
