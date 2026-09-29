@@ -8,10 +8,15 @@ import {
   pwaWorkbox,
 } from './config';
 
-const ctx = (destination: string, pathname: string) => ({
-  request: { destination } as Pick<Request, 'destination'>,
-  url: { pathname },
-});
+const ctx = (destination: string, pathname: string, origin = 'self') => {
+  const sameOrigin = origin === 'self';
+  const parsed = new URL(pathname, sameOrigin ? 'https://lastframe.test' : origin);
+  return {
+    request: { destination } as Pick<Request, 'destination'>,
+    url: { pathname: parsed.pathname, hostname: parsed.hostname, protocol: parsed.protocol },
+    sameOrigin,
+  };
+};
 
 describe('pwa manifest', () => {
   it('names the app Last Frame with the brand theme colour', () => {
@@ -45,6 +50,29 @@ describe('isImageRequest', () => {
     expect(isImageRequest(ctx('document', '/title/42'))).toBe(false);
     expect(isImageRequest(ctx('', '/.netlify/functions/health'))).toBe(false);
     expect(isImageRequest(ctx('', '/api/png'))).toBe(false);
+  });
+
+  it('caches TMDB poster images (allowed by CSP connect-src)', () => {
+    expect(isImageRequest(ctx('image', '/t/p/w500/abc.jpg', 'https://image.tmdb.org'))).toBe(true);
+    expect(isImageRequest(ctx('', '/t/p/w500/abc.jpg', 'https://image.tmdb.org'))).toBe(true);
+  });
+
+  it('leaves images from hosts outside CSP connect-src to the browser', () => {
+    for (const origin of [
+      'https://picsum.photos',
+      'https://fastly.picsum.photos',
+      'https://i.ytimg.com',
+      'https://evil.example',
+      'https://image.tmdb.org.evil.example',
+      'http://image.tmdb.org',
+    ]) {
+      expect(isImageRequest(ctx('image', '/id/1/300/450.jpg', origin))).toBe(false);
+    }
+  });
+
+  it('stays self-contained so workbox can serialise it into the SW', () => {
+    const src = isImageRequest.toString();
+    expect(src).not.toMatch(/\bPWA_|\bIMAGE_CACHE/);
   });
 
 });

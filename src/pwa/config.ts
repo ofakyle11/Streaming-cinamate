@@ -33,18 +33,30 @@ export const pwaManifest: Partial<ManifestOptions> = {
 
 interface ImageMatchContext {
   request: Pick<Request, 'destination'>;
-  url: Pick<URL, 'pathname'>;
+  url: Pick<URL, 'pathname' | 'hostname' | 'protocol'>;
+  /** Provided by Workbox: true when the request targets the SW's own origin. */
+  sameOrigin: boolean;
 }
 
 /**
- * Matches image requests: anything the browser fetches as an image
- * (<img>, CSS backgrounds) plus explicit fetches of image files.
+ * Matches image requests the service worker may cache: anything the browser
+ * fetches as an image (<img>, CSS backgrounds) plus explicit fetches of image
+ * files, limited to origins allowed by the Content-Security-Policy connect-src
+ * in netlify.toml ('self' and https://image.tmdb.org).
+ *
+ * Inside a service worker the fetch() Workbox makes is checked against
+ * connect-src, not img-src. Any other image host (mock posters/avatars on
+ * picsum.photos, YouTube thumbnails on i.ytimg.com) is left unhandled so the
+ * browser loads it directly under img-src instead of failing inside the SW.
  *
  * NOTE: workbox-build serialises this function into the generated service
  * worker with Function#toString, so it must stay self-contained (no imports,
  * no references to module scope).
  */
-export function isImageRequest({ request, url }: ImageMatchContext): boolean {
+export function isImageRequest({ request, url, sameOrigin }: ImageMatchContext): boolean {
+  const allowedOrigin =
+    sameOrigin || (url.protocol === 'https:' && url.hostname === 'image.tmdb.org');
+  if (!allowedOrigin) return false;
   return (
     request.destination === 'image' || /\.(?:png|jpe?g|webp|avif|gif|svg|ico)$/i.test(url.pathname)
   );
