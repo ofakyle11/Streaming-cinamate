@@ -32,8 +32,14 @@ src/
     primitives.css    Styles for ui/ primitives
     theme.css         Imports tokens + primitives; app styles; prefers-reduced-motion overrides
   test/               Vitest setup and integration tests
+  services/db/sync.ts        Pure store <-> row mapping + last-write-wins merge
+  services/db/syncEngine.ts  startCloudSync: initial pull, merge, debounced upserts, persisted retry queue
+  services/supabase.ts       One lazily loaded Supabase client shared by auth + db
 netlify/functions/    Serverless functions (health.ts)
-supabase/migrations/  SQL (RLS on every table, policies keyed on auth.uid())
+supabase/schema.sql   Sync tables: profiles, watchlist, history, ratings (PK starts with user_id;
+                      RLS own-row policies on auth.uid(); soft deletes; LWW trigger ignores stale upserts)
+supabase/seed.sql     Local-dev demo user + rows (`supabase db reset`)
+supabase/migrations/  SQL (RLS on every table, policies keyed on auth.uid()); schema.sql ships here too
 docs/                 AGENTS.md (team rules), ARCHITECTURE.md (this file)
 ```
 
@@ -41,6 +47,12 @@ docs/                 AGENTS.md (team rules), ARCHITECTURE.md (this file)
 
 Page/component -> hook -> zustand store (user state), or -> `services` (catalogue/auth/db).
 `services.mode` reports which adapters are live.
+
+Cloud sync: while a user is signed in, `AuthProvider` runs `startCloudSync` against `services.db`.
+It pulls all rows (tombstones included), merges them with the local store (newer `updatedAt` wins;
+unsent local edits are kept in `lf.sync.pending.<userId>`), then upserts local edits after a quiet
+period (debounced, retried with backoff, flushed on sign-out/page hide). The mock DB returns `null`
+from `pullSnapshot`, which switches sync off, so guests and mock mode stay fully local.
 
 ## Environment
 

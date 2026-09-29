@@ -72,5 +72,13 @@ export function createMockDb(): DbService {
       save();
       return clamped;
     },
+    // Cloud sync is a no-op without Supabase: `null` tells the sync engine
+    // there is no remote store, so the local zustand store stays the source of truth.
+    async pullSnapshot() {
+      return null;
+    },
+    async pushChanges() {
+      /* no remote store in mock mode */
+    },
   };
 }

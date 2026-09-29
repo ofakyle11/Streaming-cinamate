@@ -17,6 +17,7 @@ import { createLiveDb } from './db/live';
 import { createMockBilling } from './billing/mock';
 import { createMockAnalytics } from './analytics/mock';
 import { fromBillingService, type BillingAdapter } from './billing/types';
+import { createSupabaseLoader } from './supabase';
 
 export * from './types';
 
@@ -28,11 +29,13 @@ const supabaseAnon = (env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim() 
 const useLiveTmdb = Boolean(tmdbProxy);
 // Both the URL and the public anon key are needed; with either missing we stay on mocks.
 const useLiveSupabase = Boolean(supabaseUrl) && Boolean(supabaseAnon);
+// Auth and DB share one lazily loaded client so they see the same session.
+const loadSupabase = useLiveSupabase ? createSupabaseLoader(supabaseUrl as string, supabaseAnon) : undefined;
 
 export const services: Services = {
   tmdb: useLiveTmdb ? createLiveTmdb(tmdbProxy as string) : createMockTmdb(),
-  auth: useLiveSupabase ? createLiveAuth(supabaseUrl as string, supabaseAnon) : createMockAuth(),
-  db: useLiveSupabase ? createLiveDb(supabaseUrl as string, supabaseAnon) : createMockDb(),
+  auth: useLiveSupabase ? createLiveAuth(supabaseUrl as string, supabaseAnon, { loadClient: loadSupabase }) : createMockAuth(),
+  db: useLiveSupabase ? createLiveDb(supabaseUrl as string, supabaseAnon, { loadClient: loadSupabase }) : createMockDb(),
   billing: createMockBilling(),
   analytics: createMockAnalytics(),
   mode: {
@@ -101,3 +104,8 @@ export type { BillingAdapter, CheckoutResult, PlanFeatureRow, FeatureValue } fro
 
 /** BillingAdapter view over the active billing service (mock-only on the client). */
 export const billingAdapter: BillingAdapter = fromBillingService(billing);
+
+/* ------------------------------------------------------- Cloud sync */
+
+export { startCloudSync, pendingStorageKey } from './db/syncEngine';
+export type { CloudSync, CloudSyncOptions, StopOptions, SyncStatus } from './db/syncEngine';

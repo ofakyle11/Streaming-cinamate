@@ -147,7 +147,69 @@ export interface DbService {
   removeFromList(userId: string, kind: ListKind, titleId: number): Promise<void>;
   getProgress(userId: string, titleId: number): Promise<WatchProgress | null>;
   setProgress(progress: WatchProgress): Promise<WatchProgress>;
+  /**
+   * Cloud sync: fetch every synced row (tombstones included) for the signed-in
+   * user. Returns `null` when there is no remote store (mock mode), which turns
+   * sync off entirely.
+   */
+  pullSnapshot(userId: string): Promise<SyncSnapshot | null>;
+  /** Cloud sync: upsert rows (deletes are `deleted: true` tombstones). No-op in mock mode. */
+  pushChanges(userId: string, changes: SyncChange[]): Promise<void>;
 }
+
+/* -------------------------------------------------------------- DB sync */
+
+/**
+ * Rows mirrored between the local zustand store and Supabase
+ * (supabase/schema.sql). Times are epoch ms. `updatedAt` drives
+ * last-write-wins; deletions are soft (`deleted: true`) so they propagate.
+ */
+interface SyncRowBase {
+  profileId: string;
+  updatedAt: number;
+  deleted: boolean;
+}
+
+export interface SyncProfileRow extends SyncRowBase {
+  name: string;
+  avatar: string;
+  kid: boolean;
+  createdAt: number;
+}
+
+export interface SyncWatchlistRow extends SyncRowBase {
+  titleId: number;
+  addedAt: number;
+}
+
+export interface SyncHistoryRow extends SyncRowBase {
+  titleId: number;
+  position: number;
+  duration: number;
+  lastWatchedAt: number;
+  completed: boolean;
+}
+
+export interface SyncRatingRow extends SyncRowBase {
+  titleId: number;
+  rating: 1 | 2 | 3 | 4 | 5;
+  ratedAt: number;
+}
+
+export interface SyncSnapshot {
+  profiles: SyncProfileRow[];
+  watchlist: SyncWatchlistRow[];
+  history: SyncHistoryRow[];
+  ratings: SyncRatingRow[];
+}
+
+export type SyncTable = keyof SyncSnapshot;
+
+export type SyncChange =
+  | { table: 'profiles'; row: SyncProfileRow }
+  | { table: 'watchlist'; row: SyncWatchlistRow }
+  | { table: 'history'; row: SyncHistoryRow }
+  | { table: 'ratings'; row: SyncRatingRow };
 
 /* ----------------------------------------------------------------- Billing */
 
