@@ -11,11 +11,18 @@ export default function Hero({ featured, onMore }: Props) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    // Nothing to rotate with 0-1 features (and avoids `% 0`); no auto-advance under reduced motion.
+    if (featured.length <= 1) return;
+    const reduced =
+      typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return;
     const t = setInterval(() => setIndex((i) => (i + 1) % featured.length), 7000);
     return () => clearInterval(t);
   }, [featured.length]);
 
-  const movie = featured[index];
+  if (featured.length === 0) return null;
+
+  const movie = featured[index] ?? featured[0];
 
   return (
     <header className="hero">

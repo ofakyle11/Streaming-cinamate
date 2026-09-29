@@ -4,7 +4,9 @@ import Row from '../components/Row';
 import DetailModal from '../components/DetailModal';
 import GenreChips from '../components/GenreChips';
 import { AnalyticsEvents, track } from '../services/analytics/track';
-import { loadHomeCatalog, type CatalogRow, type Movie } from '../services';
+import { type CatalogRow, type Movie } from '../services';
+import { loadHomeCatalogSafe } from '../services/discovery';
+import { Button } from '../components/ui';
 
 interface Catalog {
   featured: Movie[];
@@ -15,10 +17,15 @@ export default function Home() {
   const [selected, setSelected] = useState<Movie | null>(null);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const retry = () => {
+    setError(null);
+    setAttempt((n) => n + 1);
+  };
 
   useEffect(() => {
     let cancelled = false;
-    loadHomeCatalog()
+    loadHomeCatalogSafe()
       .then((c) => {
         if (!cancelled) setCatalog(c);
       })
@@ -28,7 +35,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   const select = (m: Movie) => {
     track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'home' });
@@ -50,7 +57,16 @@ export default function Home() {
       ) : (
         <main className="rows" aria-busy={!error}>
           <div className="hero-card glass" role="status">
-            {error ? <p>{error}</p> : <p>Loading the catalogue…</p>}
+            {error ? (
+              <>
+                <p>{error}</p>
+                <Button variant="primary" onClick={retry}>
+                  Try again
+                </Button>
+              </>
+            ) : (
+              <p>Loading the catalogue…</p>
+            )}
           </div>
         </main>
       )}

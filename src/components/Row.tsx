@@ -8,14 +8,18 @@ interface Props {
   onSelect: (m: Movie) => void;
 }
 
+const hasIO = () => typeof window !== 'undefined' && typeof window.IntersectionObserver === 'function';
+
 export default function Row({ title, items, onSelect }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
+  // No IntersectionObserver (old browsers, some test envs): show the row immediately.
+  const [visible, setVisible] = useState(() => !hasIO());
 
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
+    if (!hasIO()) return; // already visible via the initial state
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
