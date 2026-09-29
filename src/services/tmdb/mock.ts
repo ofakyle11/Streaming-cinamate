@@ -188,9 +188,13 @@ function paginate(items: TmdbTitle[], page = 1): TmdbPage<TmdbTitle> {
   };
 }
 
-/** Small artificial latency so loading states are exercised, skipped in tests. */
-const latency = () =>
-  new Promise<void>((r) => setTimeout(r, typeof window === 'undefined' ? 0 : 120 + Math.random() * 180));
+/**
+ * Small artificial latency so loading states are exercised in the browser.
+ * Skipped in tests (jsdom defines `window`, so check the Vitest mode too): a
+ * random 120-300ms wall-clock delay per call made Home tests flaky under load.
+ */
+const SKIP_LATENCY = typeof window === 'undefined' || import.meta.env.MODE === 'test';
+const latency = () => new Promise<void>((r) => setTimeout(r, SKIP_LATENCY ? 0 : 120 + Math.random() * 180));
 
 const byType = (t?: MediaType) => (t ? MOCK_TITLES.filter((x) => x.media_type === t) : MOCK_TITLES);
 
