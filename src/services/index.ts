@@ -25,7 +25,8 @@ const supabaseUrl = (env.VITE_SUPABASE_URL as string | undefined)?.trim();
 const supabaseAnon = (env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim() ?? '';
 
 const useLiveTmdb = Boolean(tmdbProxy);
-const useLiveSupabase = Boolean(supabaseUrl);
+// Both the URL and the public anon key are needed; with either missing we stay on mocks.
+const useLiveSupabase = Boolean(supabaseUrl) && Boolean(supabaseAnon);
 
 export const services: Services = {
   tmdb: useLiveTmdb ? createLiveTmdb(tmdbProxy as string) : createMockTmdb(),

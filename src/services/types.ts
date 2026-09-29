@@ -87,6 +87,9 @@ export interface User {
 
 export type AuthUnsubscribe = () => void;
 
+/** OAuth providers the UI offers. */
+export type OAuthProvider = 'google';
+
 export interface AuthService {
   currentUser(): Promise<User | null>;
   signInWithEmail(email: string, password: string): Promise<User>;
@@ -94,6 +97,16 @@ export interface AuthService {
   signInWithMagicLink(email: string): Promise<void>;
   signOut(): Promise<void>;
   onAuthStateChange(cb: (user: User | null) => void): AuthUnsubscribe;
+  /**
+   * Start an OAuth sign-in. Live: redirects the browser to the provider and the
+   * session is picked up on return. Mock: signs a demo user in immediately.
+   */
+  signInWithOAuth(provider: OAuthProvider): Promise<void>;
+  /**
+   * Erase the signed-in user's server-side data (or queue its erasure) and sign
+   * out. Local device data is cleared separately by the caller.
+   */
+  requestDataDeletion(): Promise<void>;
 }
 
 /* ---------------------------------------------------------------------- DB */
