@@ -24,6 +24,8 @@ export interface TmdbTitle {
   runtime: number;
   /** Content rating (e.g. PG-13, TV-MA). Not in base TMDB payloads; mocks supply it. */
   certification?: string;
+  /** YouTube video key for the official trailer, when known. */
+  trailer_key?: string;
 }
 
 export interface TmdbGenre {
@@ -116,6 +118,8 @@ export interface Movie {
   poster: string;
   backdrop: string;
   runtime: number;
+  /** YouTube trailer key, if any. */
+  trailerKey?: string;
 }
 
 export interface CatalogRow {

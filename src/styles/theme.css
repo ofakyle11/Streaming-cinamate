@@ -61,6 +61,16 @@ a.avatar { display: block; }
 }
 .hero-bg.active { opacity: 1; animation: kenburns 8s linear forwards; }
 @keyframes kenburns { from { transform: scale(1.08); } to { transform: scale(1.18) translateX(-2%); } }
+.hero-trailer {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  opacity: 0; transition: opacity 1.2s var(--ease);
+}
+.hero-trailer.visible { opacity: 1; }
+.hero-trailer iframe {
+  position: absolute; top: 50%; left: 50%; border: 0;
+  width: max(100%, 177.78vh); height: max(100%, 56.25vw); transform: translate(-50%, -50%) scale(1.15);
+}
+.hero-mute { position: absolute; right: 5vw; bottom: calc(18vh + 28px); }
 .hero-fade { position: absolute; inset: 0; background: linear-gradient(to top, var(--bg) 2%, transparent 50%), linear-gradient(to right, rgba(11, 11, 18, 0.8), transparent 60%); }
 .hero-card {
   position: absolute; left: 5vw; bottom: 16vh; max-width: 520px;
