@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Movie } from '../../services/types';
 import { selectRatingFor, selectThumbFor, selectThumbs, useLastFrameStore } from '../../state/store';
 import MovieCard from '../MovieCard';
+import { ToastProvider } from '../ui';
 import StarRating from './StarRating';
 import ThumbsControl from './ThumbsControl';
 
@@ -69,5 +70,40 @@ describe('ratings controls', () => {
     expect(selectThumbFor(1000)(state())).toBe('up');
     fireEvent.click(screen.getByRole('radio', { name: '5 out of 5' }));
     expect(selectRatingFor(1000)(state())).toBe(5);
+  });
+});
+
+describe('CardRating feedback', () => {
+  beforeEach(() => {
+    useLastFrameStore.setState({ ratings: {}, thumbs: {} });
+  });
+
+  const renderCard = () =>
+    render(
+      <ToastProvider>
+        <MemoryRouter>
+          <MovieCard movie={movie} delay={0} />
+        </MemoryRouter>
+      </ToastProvider>,
+    );
+
+  it('toasts on a card thumb and Undo restores the previous thumb', () => {
+    state().setThumb(1000, 'down', { mediaType: 'movie', title: 'Neon Drift' });
+    renderCard();
+    fireEvent.click(screen.getByRole('button', { name: 'I like Neon Drift' }));
+    expect(selectThumbFor(1000)(state())).toBe('up');
+    expect(screen.getByText('Glad you liked Neon Drift')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(selectThumbFor(1000)(state())).toBe('down');
+  });
+
+  it('toasts without Undo when a thumb is cleared', () => {
+    state().setThumb(1000, 'up', { mediaType: 'movie', title: 'Neon Drift' });
+    renderCard();
+    fireEvent.click(screen.getByRole('button', { name: 'I like Neon Drift' }));
+    expect(selectThumbFor(1000)(state())).toBeFalsy();
+    expect(screen.getByText('Removed your thumb for Neon Drift')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
   });
 });

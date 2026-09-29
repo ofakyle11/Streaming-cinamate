@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Movie } from '../services/types';
@@ -146,6 +146,63 @@ describe('Row', () => {
   it('stays hidden until intersecting when IntersectionObserver exists', () => {
     renderRow();
     expect(screen.getByRole('region', { name: 'Trending Now' })).not.toHaveClass('in');
+  });
+});
+
+describe('Row focus retention', () => {
+  const rowAt = (items: Movie[]) => (
+    <MemoryRouter>
+      <Row title="Recently Viewed" items={items} />
+    </MemoryRouter>
+  );
+  const link = (id: number) => screen.getByRole('link', { name: `Title ${id} (2021)` });
+
+  it('moves focus to the card now at the same index when the focused card is removed', () => {
+    const { rerender } = render(rowAt(ITEMS));
+    // Focus a control inside card 3 (not its link) to mirror a remove/thumb button press.
+    const btn = within(link(3).closest('.card') as HTMLElement).getByRole('button', { name: /I like Title 3/ });
+    act(() => btn.focus());
+    rerender(rowAt(ITEMS.filter((m) => m.id !== 3)));
+    expect(link(4)).toHaveFocus();
+  });
+
+  it('falls back to the previous card when the last card in the row is removed', () => {
+    const { rerender } = render(rowAt(ITEMS));
+    act(() => link(6).focus());
+    rerender(rowAt(ITEMS.slice(0, 5)));
+    expect(link(5)).toHaveFocus();
+  });
+
+  it('focuses the row heading when the row becomes empty', () => {
+    const { rerender } = render(rowAt([movie(1)]));
+    act(() => link(1).focus());
+    rerender(rowAt([]));
+    const heading = screen.getByRole('heading', { level: 2, name: 'Recently Viewed' });
+    expect(heading).toHaveFocus();
+    expect(heading).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('leaves focus alone when it moved elsewhere before the card was removed', () => {
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    const { rerender } = render(rowAt(ITEMS));
+    act(() => link(2).focus());
+    act(() => outside.focus());
+    rerender(rowAt(ITEMS.filter((m) => m.id !== 2)));
+    expect(outside).toHaveFocus();
+    outside.remove();
+  });
+
+  it('scrolls the new target into view instantly under reduced motion', () => {
+    setReducedMotion(true);
+    const scrollIntoView = vi.fn();
+    (HTMLElement.prototype as HTMLElement & { scrollIntoView: unknown }).scrollIntoView = scrollIntoView;
+    const { rerender } = render(rowAt(ITEMS));
+    act(() => link(1).focus());
+    rerender(rowAt(ITEMS.slice(1)));
+    expect(link(2)).toHaveFocus();
+    expect(scrollIntoView).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'auto' }));
+    delete (HTMLElement.prototype as Partial<HTMLElement>).scrollIntoView;
   });
 });
 

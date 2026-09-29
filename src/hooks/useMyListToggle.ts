@@ -28,6 +28,7 @@ export function useMyListToggle(
 ) {
   const inList = useLastFrameStore(selectIsInWatchlist(item.id));
   const toggleWatchlist = useLastFrameStore((s) => s.toggleWatchlist);
+  const addToWatchlist = useLastFrameStore((s) => s.addToWatchlist);
   const { toast } = useOptionalToast();
   const { id, mediaType, title } = item;
 
@@ -36,8 +37,21 @@ export function useMyListToggle(
     const wasIn = selectIsInWatchlist(id)(useLastFrameStore.getState());
     toggleWatchlist(id, mediaType);
     analytics.track(wasIn ? 'watchlist_remove' : 'watchlist_add', { id, mediaType, source });
-    toast(myListToastMessage(title, !wasIn), { kind: wasIn ? 'info' : 'success' });
-  }, [analytics, id, mediaType, source, title, toast, toggleWatchlist]);
+    // On /my-list the card vanishes on removal, so offer Undo (re-added with its original media type).
+    const undo =
+      wasIn && source === 'my-list'
+        ? {
+            duration: 6000,
+            action: {
+              label: 'Undo',
+              onAction: () => {
+                if (!selectIsInWatchlist(id)(useLastFrameStore.getState())) addToWatchlist(id, mediaType);
+              },
+            },
+          }
+        : undefined;
+    toast(myListToastMessage(title, !wasIn), { kind: wasIn ? 'info' : 'success', ...undo });
+  }, [addToWatchlist, analytics, id, mediaType, source, title, toast, toggleWatchlist]);
 
   return { inList, toggle };
 }

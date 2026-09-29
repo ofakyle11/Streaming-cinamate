@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ToastProvider } from '../components/ui';
@@ -50,6 +50,34 @@ describe('Because you liked X', () => {
     const card = first.closest('.card') as HTMLElement;
     fireEvent.click(within(card).getByRole('button', { name: /not for me/i }));
     await waitFor(() => expect(within(section).queryByRole('link', { name: first.getAttribute('aria-label')! })).toBeNull());
+  });
+
+  it('keeps focus in the row when a card is thumbed away, with an Undo toast that restores it', async () => {
+    state().setThumb(1000, 'up', { mediaType: 'movie', title: 'Neon Drift' });
+    render(
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/']}>
+          <Home svc={createMockTmdb()} />
+        </MemoryRouter>
+      </ToastProvider>,
+    );
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Because you liked Neon Drift' }, T);
+    const section = heading.closest('section') as HTMLElement;
+    const first = within(section).getAllByRole('link')[0];
+    const name = first.getAttribute('aria-label')!;
+    const title = name.replace(/ \(\d{4}\)$/, '');
+    const card = first.closest('.card') as HTMLElement;
+    const like = within(card).getByRole('button', { name: `I like ${title}` });
+    act(() => like.focus());
+    fireEvent.click(like);
+
+    expect(within(section).queryByRole('link', { name })).toBeNull();
+    expect(section.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toHaveClass('card-link');
+    expect(screen.getByText(`Glad you liked ${title}`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(await within(section).findByRole('link', { name })).toBeInTheDocument();
   });
 
   it('uses 4+ star ratings as seeds and resolves missing titles from the service', async () => {

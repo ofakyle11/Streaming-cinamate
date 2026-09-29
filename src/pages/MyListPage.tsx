@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import { Button, Skeleton } from '../components/ui';
+import { useKeepFocusOnRemoval } from '../hooks/useKeepFocusOnRemoval';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { useWatchlistActions } from '../hooks/useWatchlist';
 import { MY_LIST_SORTS, sortMyList, useMyListTitles, type MyListSort } from '../hooks/useMyListTitles';
-import { analytics, tmdb as defaultTmdb, type TmdbService } from '../services';
+import { analytics, tmdb as defaultTmdb, type Movie, type TmdbService } from '../services';
 import '../styles/my-list.css';
 
 interface Props {
@@ -14,13 +16,17 @@ interface Props {
 
 const SKELETON_COUNT = 6;
 
+const itemKey = (m: Movie) => `${m.mediaType}-${m.id}`;
+
 function EmptyState() {
   return (
     <section className="mylist-empty glass" aria-labelledby="mylist-empty-title">
       <span className="mylist-empty-icon" aria-hidden>
         🍿
       </span>
-      <h2 id="mylist-empty-title">Your list is empty</h2>
+      <h2 id="mylist-empty-title" tabIndex={-1}>
+        Your list is empty
+      </h2>
       <p className="muted">
         Tap <span className="mylist-empty-plus" aria-hidden>＋</span>
         <span className="mylist-sr-only">the plus button</span> on any poster or title page to save it for later.
@@ -51,11 +57,22 @@ export default function MyListPage({ svc = defaultTmdb }: Props) {
   const count = state.status === 'ready' ? state.items.length : null;
   const empty = state.status === 'ready' && state.items.length === 0 && state.missing.length === 0;
 
+  // Removing a title unmounts its card: keep focus in the grid, else on the empty-state (or page) heading.
+  const gridRef = useRef<HTMLUListElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const reduceMotion = usePrefersReducedMotion();
+  const focusKeeper = useKeepFocusOnRemoval(gridRef, items.map(itemKey), {
+    fallback: () => document.getElementById('mylist-empty-title') ?? headingRef.current,
+    reduceMotion,
+  });
+
   return (
     <main className="mylist-page">
       <header className="mylist-header glass">
         <div>
-          <h1>My List</h1>
+          <h1 ref={headingRef} tabIndex={-1}>
+            My List
+          </h1>
           <p className="muted" aria-live="polite">
             {count === null ? 'Loading your titles…' : count === 1 ? '1 title saved' : `${count} titles saved`}
           </p>
@@ -97,9 +114,9 @@ export default function MyListPage({ svc = defaultTmdb }: Props) {
       {empty && <EmptyState />}
 
       {state.status === 'ready' && items.length > 0 && (
-        <ul className="mylist-grid" aria-label="Saved titles">
+        <ul className="mylist-grid" aria-label="Saved titles" ref={gridRef} {...focusKeeper}>
           {items.map((m) => (
-            <li key={`${m.mediaType}-${m.id}`}>
+            <li key={itemKey(m)}>
               <MovieCard movie={m} delay={0} listSource="my-list" />
             </li>
           ))}

@@ -99,6 +99,21 @@ describe('HistoryRows', () => {
     expect(keys()).toContain('movie:11');
   });
 
+  it('moves focus to the next card link when a focused history card is removed', () => {
+    act(() => {
+      const { recordView } = useLastFrameStore.getState();
+      recordView(movie(52, 'Third'), 'open');
+      recordView(movie(51, 'Second'), 'open');
+      recordView(movie(50, 'First'), 'open');
+    });
+    renderWithToasts();
+    const btn = screen.getByRole('button', { name: 'Remove Second from Recently Viewed' });
+    act(() => btn.focus());
+    fireEvent.click(btn);
+    expect(screen.queryByRole('link', { name: /second/i })).toBeNull();
+    expect(within(section('Recently Viewed')).getByRole('link', { name: /third/i })).toHaveFocus();
+  });
+
   it('removes a Continue Watching card and Undo keeps it in Continue Watching', () => {
     act(() => useLastFrameStore.getState().recordView(movie(20, 'Trailer Film'), 'trailer'));
     renderWithToasts();

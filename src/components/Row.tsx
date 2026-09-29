@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { Movie } from '../services';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { useKeepFocusOnRemoval } from '../hooks/useKeepFocusOnRemoval';
 import MovieCard from './MovieCard';
 import { ROW_SCROLL_STEP, measureTrack, sameTrackState, type TrackState } from './rowTrack';
 import './Row.css';
@@ -13,9 +14,12 @@ interface Props {
   cardExtra?: (m: Movie) => ReactNode;
 }
 
+const cardKey = (m: Movie) => `${m.mediaType}-${m.id}`;
+
 export default function Row({ title, items, onSelect, cardExtra }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const reduceMotion = usePrefersReducedMotion();
   const uid = useId();
   const headingId = `row-title-${uid}`;
@@ -76,6 +80,12 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
     update();
   }, [items, update]);
 
+  // A card that held focus can unmount (removed, rated away): keep keyboard users in the row.
+  const focusKeeper = useKeepFocusOnRemoval(trackRef, items.map(cardKey), {
+    fallback: () => headingRef.current,
+    reduceMotion,
+  });
+
   const scroll = (dir: 1 | -1) => {
     const el = trackRef.current;
     if (!el) return;
@@ -85,7 +95,9 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
 
   return (
     <section ref={sectionRef} className={`row ${visible ? 'in' : ''}`} aria-labelledby={headingId}>
-      <h2 id={headingId}>{title}</h2>
+      <h2 id={headingId} ref={headingRef} tabIndex={-1}>
+        {title}
+      </h2>
       <div className={`row-wrap${track.overflows ? ' overflows' : ''}`}>
         <button
           type="button"
@@ -98,10 +110,10 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
         >
           ‹
         </button>
-        <div className="track" id={trackId} ref={trackRef}>
+        <div className="track" id={trackId} ref={trackRef} {...focusKeeper}>
           {items.map((m, i) => (
             <MovieCard
-              key={`${m.mediaType}-${m.id}`}
+              key={cardKey(m)}
               movie={m}
               delay={i * 60}
               onSelect={onSelect}
