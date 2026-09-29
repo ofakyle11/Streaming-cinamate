@@ -19,8 +19,8 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`}>
-      <Link to="/" className="logo">LAST FRAME</Link>
+    <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`} aria-label="Primary">
+      <Link to="/" className="logo" aria-label="Last Frame home">LAST FRAME</Link>
       <ul className="nav-links">
         {links.map((l) => (
           <li key={l.to}>
@@ -31,7 +31,7 @@ export default function Navbar() {
         ))}
       </ul>
       <div className="nav-right">
-        <input className="search glass" placeholder="Search" />
+        <input className="search glass" type="search" placeholder="Search" aria-label="Search titles" />
         <Link to="/profiles" className="avatar" aria-label="Profiles" />
       </div>
     </nav>

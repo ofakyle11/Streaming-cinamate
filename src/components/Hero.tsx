@@ -10,6 +10,8 @@ export default function Hero({ featured, onMore }: Props) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    // WCAG 2.2.2 / reduced motion: no auto-rotation when the user asks for less motion.
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const t = setInterval(() => setIndex((i) => (i + 1) % featured.length), 7000);
     return () => clearInterval(t);
   }, [featured.length]);
@@ -36,17 +38,22 @@ export default function Hero({ featured, onMore }: Props) {
         </div>
         <p>{movie.description}</p>
         <div className="actions">
-          <button className="btn primary">▶ Play</button>
-          <button className="btn glass" onClick={() => onMore(movie)}>ⓘ More Info</button>
+          <button className="btn primary">
+            <span aria-hidden="true">▶ </span>Play
+          </button>
+          <button className="btn glass" onClick={() => onMore(movie)}>
+            <span aria-hidden="true">ⓘ </span>More Info
+          </button>
         </div>
       </div>
-      <div className="hero-dots">
+      <div className="hero-dots" role="group" aria-label="Featured titles">
         {featured.map((m, i) => (
           <button
             key={m.id}
             className={i === index ? 'active' : ''}
             onClick={() => setIndex(i)}
             aria-label={`Show ${m.title}`}
+            aria-pressed={i === index}
           />
         ))}
       </div>
