@@ -69,6 +69,8 @@ data (profiles, lists, history, ratings) to a fresh guest, since the cloud holds
 
 None are required; with none set the app is fully mocked.
 
+The production CSP in `netlify.toml` allows `https://*.supabase.co` and `wss://*.supabase.co` in `connect-src`; a self-hosted (non-`*.supabase.co`) Supabase URL must be added to `connect-src` by hand.
+
 ## PWA
 
 `vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Last Frame" (theme `#0b0b12`), icons generated at build
