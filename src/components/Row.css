@@ -54,3 +54,12 @@
   .row-wrap .arrow:hover { transition: none; transform: translateY(-50%); }
   .track { scroll-behavior: auto; }
 }
+
+/* Row heading receives focus programmatically (tabIndex=-1) when its last focused card is removed.
+   Show the ring for keyboard users only. */
+.row > h2[tabindex='-1']:focus { outline: none; }
+.row > h2[tabindex='-1']:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}

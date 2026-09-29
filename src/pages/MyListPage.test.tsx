@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ToastProvider } from '../components/ui';
@@ -60,6 +60,36 @@ describe('MyListPage', () => {
     expect(ids()).toEqual([]);
     expect(screen.getByRole('heading', { level: 2, name: /your list is empty/i })).toBeInTheDocument();
     expect(screen.getByText('Removed Neon Drift from My List')).toBeInTheDocument();
+  });
+
+  it('keeps focus in the grid on removal and Undo re-adds with the original media type', async () => {
+    const { addToWatchlist } = useLastFrameStore.getState();
+    addToWatchlist(1000, 'movie'); // Neon Drift
+    addToWatchlist(1002, 'tv'); // Midnight Protocol
+    renderPage();
+    const btn = await screen.findByRole('button', { name: 'Remove Midnight Protocol from My List' }, T);
+    act(() => btn.focus());
+    fireEvent.click(btn);
+    expect(ids()).toEqual([1000]);
+    const grid = screen.getByRole('list', { name: /saved titles/i });
+    expect(within(grid).getByRole('link', { name: 'Neon Drift (2015)' })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    const entries = selectWatchlist(useLastFrameStore.getState());
+    expect(entries.find((e) => e.titleId === 1002)?.mediaType).toBe('tv');
+    expect(await within(grid).findByRole('link', { name: 'Midnight Protocol (2017)' })).toHaveAttribute(
+      'href',
+      '/title/tv/1002',
+    );
+  });
+
+  it('moves focus to the empty-state heading when the last title is removed', async () => {
+    useLastFrameStore.getState().addToWatchlist(1000, 'movie');
+    renderPage();
+    const btn = await screen.findByRole('button', { name: 'Remove Neon Drift from My List' }, T);
+    act(() => btn.focus());
+    fireEvent.click(btn);
+    expect(screen.getByRole('heading', { level: 2, name: /your list is empty/i })).toHaveFocus();
   });
 
   it('offers to clean up titles that no longer resolve', async () => {

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ToastProvider } from '../components/ui';
@@ -50,6 +50,71 @@ describe('Because you liked X', () => {
     const card = first.closest('.card') as HTMLElement;
     fireEvent.click(within(card).getByRole('button', { name: /not for me/i }));
     await waitFor(() => expect(within(section).queryByRole('link', { name: first.getAttribute('aria-label')! })).toBeNull());
+  });
+
+  it('keeps focus in the row when a card is thumbed away, with an Undo toast that restores it', async () => {
+    state().setThumb(1000, 'up', { mediaType: 'movie', title: 'Neon Drift' });
+    render(
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/']}>
+          <Home svc={createMockTmdb()} />
+        </MemoryRouter>
+      </ToastProvider>,
+    );
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Because you liked Neon Drift' }, T);
+    const section = heading.closest('section') as HTMLElement;
+    const first = within(section).getAllByRole('link')[0];
+    const name = first.getAttribute('aria-label')!;
+    const title = name.replace(/ \(\d{4}\)$/, '');
+    const card = first.closest('.card') as HTMLElement;
+    const like = within(card).getByRole('button', { name: `I like ${title}` });
+    act(() => like.focus());
+    fireEvent.click(like);
+
+    expect(within(section).queryByRole('link', { name })).toBeNull();
+    expect(section.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toHaveClass('card-link');
+    expect(screen.getByText(`Glad you liked ${title}`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(await within(section).findByRole('link', { name })).toBeInTheDocument();
+  });
+
+  it('moves focus to a neighbouring row when the last card of a row is thumbed away', async () => {
+    state().setThumb(1000, 'up', { mediaType: 'movie', title: 'Neon Drift' }, 'movie');
+    render(
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/']}>
+          <Home svc={createMockTmdb()} />
+        </MemoryRouter>
+      </ToastProvider>,
+    );
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Because you liked Neon Drift' }, T);
+    const section = heading.closest('section') as HTMLElement;
+    const keep = within(section).getAllByRole('link')[0];
+    // Rate every other recommendation (the row is capped, so repeat as more fill in) until one card is left.
+    for (let pass = 0; pass < 10 && within(section).getAllByRole('link').length > 1; pass++) {
+      const rest = within(section).getAllByRole('link').filter((l) => l !== keep);
+      act(() => {
+        for (const link of rest) {
+          const [, , type, id] = link.getAttribute('href')!.split('/');
+          const mediaType = type as 'movie' | 'tv';
+          state().setThumb(Number(id), 'down', { mediaType, title: link.getAttribute('aria-label')! }, mediaType);
+        }
+      });
+    }
+    expect(within(section).getAllByRole('link')).toEqual([keep]);
+
+    const title = keep.getAttribute('aria-label')!.replace(/ \(\d{4}\)$/, '');
+    const down = within(keep.closest('.card') as HTMLElement).getByRole('button', { name: `Not for me: ${title}` });
+    act(() => down.focus());
+    fireEvent.click(down);
+
+    expect(screen.queryByRole('heading', { name: 'Because you liked Neon Drift' })).toBeNull();
+    expect(section.isConnected).toBe(false);
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement).toHaveClass('card-link');
+    expect(document.activeElement?.closest('.row')).not.toBeNull();
   });
 
   it('uses 4+ star ratings as seeds and resolves missing titles from the service', async () => {

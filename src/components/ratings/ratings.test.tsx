@@ -2,8 +2,9 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Movie } from '../../services/types';
-import { selectRatingFor, selectThumbFor, selectThumbs, useLastFrameStore } from '../../state/store';
+import { selectRatingFor, selectThumbFor, selectThumbForTitle, selectThumbs, useLastFrameStore } from '../../state/store';
 import MovieCard from '../MovieCard';
+import { ToastProvider } from '../ui';
 import StarRating from './StarRating';
 import ThumbsControl from './ThumbsControl';
 
@@ -95,5 +96,40 @@ describe('ratings controls title identity', () => {
     fireEvent.click(within(tvStars).getByRole('radio', { name: '4 out of 5' }));
     expect(within(tvStars).getByRole('radio', { name: '4 out of 5' })).toHaveAttribute('aria-checked', 'true');
     expect(within(movieStars).getByRole('radio', { name: '4 out of 5' })).toHaveAttribute('aria-checked', 'false');
+  });
+});
+
+describe('CardRating feedback', () => {
+  beforeEach(() => {
+    useLastFrameStore.setState({ ratings: {}, thumbs: {} });
+  });
+
+  const renderCard = () =>
+    render(
+      <ToastProvider>
+        <MemoryRouter>
+          <MovieCard movie={movie} delay={0} />
+        </MemoryRouter>
+      </ToastProvider>,
+    );
+
+  it('toasts on a card thumb and Undo restores the previous thumb', () => {
+    state().setThumb(1000, 'down', { mediaType: 'movie', title: 'Neon Drift' }, 'movie');
+    renderCard();
+    fireEvent.click(screen.getByRole('button', { name: 'I like Neon Drift' }));
+    expect(selectThumbForTitle(1000, 'movie')(state())).toBe('up');
+    expect(screen.getByText('Glad you liked Neon Drift')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(selectThumbForTitle(1000, 'movie')(state())).toBe('down');
+  });
+
+  it('toasts without Undo when a thumb is cleared', () => {
+    state().setThumb(1000, 'up', { mediaType: 'movie', title: 'Neon Drift' }, 'movie');
+    renderCard();
+    fireEvent.click(screen.getByRole('button', { name: 'I like Neon Drift' }));
+    expect(selectThumbForTitle(1000, 'movie')(state())).toBeFalsy();
+    expect(screen.getByText('Removed your thumb for Neon Drift')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
   });
 });

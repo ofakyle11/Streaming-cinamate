@@ -78,3 +78,13 @@
   .mylist-header, .mylist-empty, .mylist-empty-icon, .mylist-grid .card { animation: none; }
   .mylist-grid .card:hover, .mylist-grid .card:focus-within { transform: none; }
 }
+
+/* Headings take programmatic focus (tabIndex=-1) when the last focused card is removed. */
+.mylist-page h1[tabindex='-1']:focus,
+.mylist-empty h2[tabindex='-1']:focus { outline: none; }
+.mylist-page h1[tabindex='-1']:focus-visible,
+.mylist-empty h2[tabindex='-1']:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}
