@@ -5,6 +5,7 @@
 import { tmdb, toMovie } from './index';
 import type { DiscoverSort, MediaType, Movie, TmdbGenre, TmdbService } from './types';
 import { DEFAULT_DISCOVER_SORT, isDiscoverSort, sortTitles } from './tmdb/sort';
+import { TMDB_MAX_PAGE } from './tmdb/live';
 
 export interface GenreQuery {
   genreId: number | null;
@@ -110,7 +111,8 @@ export async function loadGenrePage(
     genre,
     items: sortTitles(res.results, sortBy).map((t) => toMovie(t, genres, svc)),
     page: res.page,
-    totalPages: res.total_pages,
+    // Defensive: never offer a "Next" past TMDB's hard page limit, whatever the adapter reports.
+    totalPages: Math.min(res.total_pages, TMDB_MAX_PAGE),
     totalResults: res.total_results,
     mediaType,
     defaultType,

@@ -8,6 +8,7 @@ import type {
   TmdbService,
   TmdbTitle,
 } from '../../services/types';
+import { TMDB_MAX_PAGE } from '../../services/tmdb/live';
 import { applyFilters, searchKey, type SearchFilters } from './filters';
 
 export interface SearchPageResult {
@@ -87,7 +88,7 @@ export async function fetchSearchPage(
       res = {
         page,
         results: mergeByPopularity(pageResults(movies, page), pageResults(tv, page)),
-        total_pages: Math.max(movies.total_pages, tv.total_pages),
+        total_pages: Math.min(Math.max(movies.total_pages, tv.total_pages), TMDB_MAX_PAGE),
         total_results: movies.total_results + tv.total_results,
       };
     }
@@ -95,7 +96,8 @@ export async function fetchSearchPage(
   return {
     results: applyFilters(res.results, f),
     page: res.page,
-    totalPages: res.total_pages,
+    // TMDB rejects pages above TMDB_MAX_PAGE, so never let hasMore reach past it.
+    totalPages: Math.min(res.total_pages, TMDB_MAX_PAGE),
     totalResults: res.total_results,
   };
 }

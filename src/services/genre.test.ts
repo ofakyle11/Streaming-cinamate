@@ -139,3 +139,19 @@ describe('loadGenrePage', () => {
     expect(years).toEqual([...years].sort((a, b) => b - a));
   });
 });
+
+describe('loadGenrePage TMDB page limit', () => {
+  it('caps totalPages at 500 when the adapter reports more', async () => {
+    const base = createMockTmdb();
+    const stub = {
+      ...base,
+      discover: async (o: Parameters<typeof base.discover>[0]) => ({
+        ...(await base.discover(o)),
+        total_pages: 9999,
+      }),
+    };
+    const data = await loadGenrePage(18, 1, 'popularity', stub);
+    expect(data.totalPages).toBeLessThanOrEqual(500);
+    expect(data.totalPages).toBe(500);
+  });
+});
