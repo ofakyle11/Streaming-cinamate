@@ -1,0 +1,74 @@
+/* Last Frame design tokens.
+   Single source of truth for colors, glass, radii and motion.
+   Legacy names (--bg, --text, --radius, --ease, ...) are kept as aliases so
+   existing selectors keep rendering identically. */
+:root {
+  /* ---------- colors ---------- */
+  --color-bg: #0b0b12;
+  --color-text: #f4f4f8;
+  --color-text-soft: #d6d6e0;
+  --color-muted: #a9a9bb;
+  --color-accent: #e50914;
+  --color-violet: #7c3aed;
+  --color-cyan: #06b6d4;
+  --color-success: #46d369;
+  --color-danger: #e50914;
+  --color-on-light: #000;
+  --color-surface: rgba(20, 20, 32, 0.6);
+  --color-surface-solid: rgb(20, 20, 32);
+  --color-scrim: rgba(0, 0, 0, 0.5);
+
+  /* ---------- glass ---------- */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-faint: rgba(255, 255, 255, 0.03);
+  --glass-bg-strong: rgba(15, 15, 25, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-strong: rgba(255, 255, 255, 0.25);
+  --glass-blur: blur(18px) saturate(160%);
+  --glass-blur-soft: blur(10px);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.3);
+
+  /* ---------- radii ---------- */
+  --radius-xs: 4px;
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* ---------- motion: easings ---------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-standard: ease;
+  --ease-in-out: ease-in-out;
+
+  /* ---------- motion: durations ---------- */
+  --dur-fast: 0.2s;
+  --dur-base: 0.3s;
+  --dur-medium: 0.4s;
+  --dur-slow: 0.6s;
+  --dur-slower: 0.8s;
+  --dur-hero: 1.2s;
+
+  /* ---------- focus ---------- */
+  --focus-ring-color: rgba(244, 244, 248, 0.9);
+  --focus-ring-glow: rgba(124, 58, 237, 0.55);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* ---------- shadows / glows ---------- */
+  --shadow-card-hover: 0 0 0 1px rgba(255, 255, 255, 0.25), 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(124, 58, 237, 0.45);
+  --glow-accent: 0 0 18px rgba(229, 9, 20, 0.6);
+  --glow-light: 0 0 24px rgba(255, 255, 255, 0.45);
+
+  /* ---------- legacy aliases (do not remove) ---------- */
+  --bg: var(--color-bg);
+  --text: var(--color-text);
+  --muted: var(--color-muted);
+  --accent: var(--color-accent);
+  --violet: var(--color-violet);
+  --cyan: var(--color-cyan);
+  --radius: var(--radius-lg);
+  --ease: var(--ease-out);
+}
