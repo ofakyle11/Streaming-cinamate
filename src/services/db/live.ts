@@ -29,7 +29,8 @@ export const SYNC_CONFLICT_COLUMNS: Record<SyncTable, string> = {
   ratings: 'user_id,profile_id,title_id',
 };
 
-const SYNC_TABLES: readonly SyncTable[] = ['profiles', 'watchlist', 'history', 'ratings'];
+/** Every per-user cloud sync table (see supabase/schema.sql). */
+export const SYNC_TABLES: readonly SyncTable[] = ['profiles', 'watchlist', 'history', 'ratings'];
 
 /* ------------------------------------------------------------- row mapping */
 

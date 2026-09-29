@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import schema from '../../supabase/schema.sql?raw';
 import migration from '../../supabase/migrations/20260929010000_sync_tables.sql?raw';
+import processDeletions from '../../supabase/migrations/20260929020000_process_account_deletions.sql?raw';
 import seed from '../../supabase/seed.sql?raw';
 import { SYNC_CONFLICT_COLUMNS } from '../services/db/live';
 
@@ -52,5 +53,34 @@ describe('supabase/schema.sql', () => {
     expect(identity).toContain("'email'");
     expect(identity).toMatch(/"sub":"11111111-1111-4111-8111-111111111111"/);
     expect(identity).toMatch(/"email":"demo@lastframe\.local"/);
+  });
+});
+
+describe('supabase/migrations/20260929020000_process_account_deletions.sql', () => {
+  const sql = processDeletions;
+
+  it('defines lf_process_account_deletions() as a security definer returning integer', () => {
+    const header = sql.split('create or replace function public.lf_process_account_deletions()')[1]?.split('as $$')[0];
+    expect(header).toBeDefined();
+    expect(header).toMatch(/returns integer/);
+    expect(header).toMatch(/language plpgsql/);
+    expect(header).toMatch(/security definer/);
+    expect(header).toMatch(/set search_path = public, auth/);
+  });
+
+  it('deletes the auth user for each pending request', () => {
+    const body = sql.split('as $$')[1].split('$$;')[0];
+    expect(body).toMatch(/from public\.account_deletion_requests/);
+    expect(body).toMatch(/where r\.processed_at is null/);
+    expect(body).toMatch(/delete from auth\.users where id = /);
+    expect(body).toMatch(/return processed;/);
+  });
+
+  it('revokes execute from clients and grants it only to service_role', () => {
+    expect(sql).toMatch(
+      /revoke all on function public\.lf_process_account_deletions\(\) from public, anon, authenticated;/,
+    );
+    expect(sql).toMatch(/grant execute on function public\.lf_process_account_deletions\(\) to service_role;/);
+    expect(sql).not.toMatch(/grant[^;]*to (anon|authenticated|public)\b/i);
   });
 });
