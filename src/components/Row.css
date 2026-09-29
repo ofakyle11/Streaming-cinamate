@@ -1,0 +1,65 @@
+/* Row carousel: overrides for the base .row/.arrow rules in theme.css.
+   Arrows are revealed on hover, on keyboard focus (focus-within / focus-visible),
+   dimmed when they cannot scroll further, and removed on touch-only devices
+   where native swipe is the scroll affordance. */
+
+.row-wrap .arrow {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 1;
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.row-wrap .arrow[hidden] { display: none; }
+
+.row-wrap:hover .arrow,
+.row-wrap:focus-within .arrow,
+.row-wrap .arrow:focus-visible {
+  opacity: 1;
+}
+
+.row-wrap .arrow:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 calc(var(--focus-ring-width) + var(--focus-ring-offset) + 2px) var(--focus-ring-glow);
+}
+
+/* End of track: keep the button focusable (so focus is not lost) but show it as inert. */
+.row-wrap:hover .arrow[aria-disabled='true'],
+.row-wrap:focus-within .arrow[aria-disabled='true'],
+.row-wrap .arrow[aria-disabled='true']:focus-visible {
+  opacity: 0.35;
+}
+.row-wrap .arrow[aria-disabled='true'] { cursor: default; }
+.row-wrap .arrow[aria-disabled='true']:hover { transform: translateY(-50%); }
+
+/* Touch-only devices: native swipe, no hover-revealed buttons eating taps. */
+@media (hover: none) {
+  .row-wrap .arrow { display: none; }
+}
+
+/* Narrow viewports: pull the arrows inside the row so -22px offsets cannot
+   cause horizontal page overflow (e.g. at 375px). */
+@media (max-width: 760px) {
+  .row-wrap .arrow { width: 40px; height: 40px; font-size: 1.4rem; }
+  .row-wrap .arrow.left { left: 4px; }
+  .row-wrap .arrow.right { right: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-wrap .arrow,
+  .row-wrap .arrow:hover { transition: none; transform: translateY(-50%); }
+  .track { scroll-behavior: auto; }
+}
+
+/* Row heading receives focus programmatically (tabIndex=-1) when its last focused card is removed.
+   Show the ring for keyboard users only. */
+.row > h2[tabindex='-1']:focus { outline: none; }
+.row > h2[tabindex='-1']:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}

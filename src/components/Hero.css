@@ -1,0 +1,100 @@
+/* Hero trailer preview: muted YouTube embed faded in behind the glass card.
+   Layering inside .hero: .hero-bg -> .hero-trailer -> .hero-fade -> .hero-card / controls. */
+
+.hero-trailer {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  container-type: size;
+  opacity: 0;
+  transition: opacity var(--dur-hero) var(--ease-out);
+}
+/* Small extra delay hides YouTube's initial black frame / spinner. */
+.hero-trailer.ready { opacity: 1; transition-delay: var(--dur-slow); }
+
+/* 16:9 "object-fit: cover" for the iframe, slightly over-scaled to crop YouTube chrome. */
+.hero-trailer iframe {
+  position: absolute; top: 50%; left: 50%;
+  width: max(100cqw, 177.78cqh); height: max(100cqh, 56.25cqw);
+  transform: translate(-50%, -50%) scale(1.2);
+  border: 0; pointer-events: none;
+}
+
+/* Keep the backdrop from Ken-Burns-zooming behind a playing trailer. */
+.hero.has-trailer .hero-bg.active { animation-play-state: paused; }
+
+.hero-trailer-controls {
+  position: absolute; z-index: 3; right: 5vw; bottom: calc(18vh + 28px);
+  display: flex; gap: 10px;
+  animation: hero-controls-in var(--dur-medium) var(--ease-out);
+}
+.hero-trailer-controls .icon-btn { color: var(--color-text); }
+.hero-trailer-controls .icon-btn[aria-pressed="true"] { background: var(--glass-bg-strong); border-color: var(--glass-border-strong); }
+.hero-trailer-controls .icon-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 6px var(--focus-ring-glow);
+}
+@keyframes hero-controls-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* Actions: Play / My List / More Info wrap instead of overflowing the card. */
+.hero-card .actions { flex-wrap: wrap; }
+.hero-card .actions .btn { display: inline-flex; align-items: center; gap: 6px; }
+.hero-card .hero-list-btn.is-listed { border-color: var(--color-success); }
+.hero-card .btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Dots + slideshow pause control share one row (overrides the bare .hero-dots placement). */
+.hero-nav {
+  position: absolute; z-index: 3; right: 5vw; bottom: 18vh;
+  display: flex; align-items: center; gap: 12px;
+}
+.hero-nav .hero-dots { position: static; }
+.hero-nav .hero-dots button:focus-visible,
+.hero-nav .icon-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.hero-pause { color: var(--color-text); font-size: 0.7rem; letter-spacing: -1px; }
+.hero-pause[aria-pressed="true"] { background: var(--glass-bg-strong); border-color: var(--glass-border-strong); }
+
+@media (max-width: 760px) {
+  /* Card spans the width on phones; park the controls top-right under the navbar. */
+  .hero-trailer-controls { top: 84px; right: 16px; bottom: auto; }
+
+  /* Stack: card, then the dots/pause row, both clear of the rows that overlap
+     the hero's bottom 10vh (.rows { margin-top: -10vh }). */
+  .hero-nav { left: 16px; right: 16px; bottom: calc(10vh + 12px); justify-content: center; }
+  .hero-card { bottom: calc(10vh + 60px); }
+  .hero-card p {
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
+    margin: 8px 0 14px;
+  }
+  .hero-card .actions { gap: 8px; }
+  .hero-card .actions .btn { flex: 1 1 auto; justify-content: center; padding: 10px 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-trailer, .hero-trailer.ready { transition: none; }
+  .hero-trailer-controls { animation: none; }
+}
+
+/* Carousel a11y: visually hidden live region announcing the current slide. */
+.hero-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Play while the trailer key is being looked up: busy, non-interactive look. */
+.hero-card .hero-play.is-pending { cursor: progress; opacity: 0.8; }
+.hero-card .hero-play.is-pending:hover { transform: none; }
+.hero-play-spinner {
+  display: inline-block; width: 0.9em; height: 0.9em; flex: none; box-sizing: border-box;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: hero-play-spin 0.8s linear infinite;
+}
+@keyframes hero-play-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  /* Static "loading" ring: a partial circle with no rotation. */
+  .hero-play-spinner { animation: none; }
+}

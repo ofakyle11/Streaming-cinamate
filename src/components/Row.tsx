@@ -1,25 +1,35 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { Movie } from '../services';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { useKeepFocusOnRemoval, useKeepFocusOnUnmount } from '../hooks/useKeepFocusOnRemoval';
 import MovieCard from './MovieCard';
+import { ROW_SCROLL_STEP, measureTrack, sameTrackState, type TrackState } from './rowTrack';
+import './Row.css';
 
 interface Props {
   title: string;
   items: Movie[];
-  onSelect: (m: Movie) => void;
+  onSelect?: (m: Movie) => void;
+  /** Optional per-card overlay passed to MovieCard's `extraAction` slot. */
+  cardExtra?: (m: Movie) => ReactNode;
 }
 
-const hasIO = () => typeof window !== 'undefined' && typeof window.IntersectionObserver === 'function';
+const cardKey = (m: Movie) => `${m.mediaType}-${m.id}`;
 
-export default function Row({ title, items, onSelect }: Props) {
+export default function Row({ title, items, onSelect, cardExtra }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
-  // No IntersectionObserver (old browsers, some test envs): show the row immediately.
-  const [visible, setVisible] = useState(() => !hasIO());
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const reduceMotion = usePrefersReducedMotion();
+  const uid = useId();
+  const headingId = `row-title-${uid}`;
+  const trackId = `row-track-${uid}`;
+  const [visible, setVisible] = useState(() => typeof IntersectionObserver === 'undefined');
+  const [track, setTrack] = useState<TrackState>({ overflows: false, atStart: true, atEnd: true });
 
   useEffect(() => {
     const el = sectionRef.current;
-    if (!el) return;
-    if (!hasIO()) return; // already visible via the initial state
+    if (!el || typeof IntersectionObserver === 'undefined') return;
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -33,22 +43,97 @@ export default function Row({ title, items, onSelect }: Props) {
     return () => io.disconnect();
   }, []);
 
+  const update = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const next = measureTrack(el);
+    setTrack((prev) => (sameTrackState(prev, next) ? prev : next));
+  }, []);
+
+  // Track scroll position (rAF-throttled) and size changes to drive arrow state.
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    let frame = 0;
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    };
+    update();
+    el.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule);
+    ro?.observe(el);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      el.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      ro?.disconnect();
+    };
+  }, [update]);
+
+  // Content changes can alter the scroll range without a resize.
+  useEffect(() => {
+    update();
+  }, [items, update]);
+
+  // A card that held focus can unmount (removed, rated away): keep keyboard users in the row.
+  const focusKeeper = useKeepFocusOnRemoval(trackRef, items.map(cardKey), {
+    fallback: () => headingRef.current,
+    reduceMotion,
+  });
+  // Parents drop a row once it is empty (history, "Because you liked"): if it held focus, hand it to a neighbour.
+  useKeepFocusOnUnmount(sectionRef, reduceMotion);
+
   const scroll = (dir: 1 | -1) => {
     const el = trackRef.current;
-    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: 'smooth' });
+    if (!el) return;
+    if ((dir === -1 && track.atStart) || (dir === 1 && track.atEnd)) return;
+    el.scrollBy({ left: dir * el.clientWidth * ROW_SCROLL_STEP, behavior: reduceMotion ? 'auto' : 'smooth' });
   };
 
   return (
-    <section ref={sectionRef} className={`row ${visible ? 'in' : ''}`}>
-      <h2>{title}</h2>
-      <div className="row-wrap">
-        <button className="arrow left glass" onClick={() => scroll(-1)} aria-label="Scroll left">‹</button>
-        <div className="track" ref={trackRef}>
+    <section ref={sectionRef} className={`row ${visible ? 'in' : ''}`} aria-labelledby={headingId}>
+      <h2 id={headingId} ref={headingRef} tabIndex={-1}>
+        {title}
+      </h2>
+      <div className={`row-wrap${track.overflows ? ' overflows' : ''}`}>
+        <button
+          type="button"
+          className="arrow left glass"
+          onClick={() => scroll(-1)}
+          aria-label={`Scroll ${title} left`}
+          aria-controls={trackId}
+          aria-disabled={track.atStart}
+          hidden={!track.overflows}
+        >
+          ‹
+        </button>
+        <div className="track" id={trackId} ref={trackRef} {...focusKeeper}>
           {items.map((m, i) => (
-            <MovieCard key={`${title}-${m.id}`} movie={m} delay={i * 60} onSelect={onSelect} />
+            <MovieCard
+              key={cardKey(m)}
+              movie={m}
+              delay={i * 60}
+              onSelect={onSelect}
+              extraAction={cardExtra?.(m)}
+            />
           ))}
         </div>
-        <button className="arrow right glass" onClick={() => scroll(1)} aria-label="Scroll right">›</button>
+        <button
+          type="button"
+          className="arrow right glass"
+          onClick={() => scroll(1)}
+          aria-label={`Scroll ${title} right`}
+          aria-controls={trackId}
+          aria-disabled={track.atEnd}
+          hidden={!track.overflows}
+        >
+          ›
+        </button>
       </div>
     </section>
   );

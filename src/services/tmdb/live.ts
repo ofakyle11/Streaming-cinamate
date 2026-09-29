@@ -1,6 +1,7 @@
 import type {
   DiscoverSort,
   MediaType,
+  TmdbCastMember,
   TmdbGenre,
   TmdbImageSize,
   TmdbPage,
@@ -13,6 +14,9 @@ import type {
   TmdbTitleDetails,
   TmdbTrendingOptions,
   TmdbVideo,
+  TmdbWatchProvider,
+  TmdbWatchProviders,
+  WatchRegion,
 } from '../types';
 import { toTmdbSortParam } from './sort';
 
@@ -391,8 +395,60 @@ export function createLiveTmdb(
       const [movie, tv] = await Promise.all([genreList('movie'), genreList('tv')]);
       return mergeGenres(movie, tv);
     },
+    async videos(mediaType, id) {
+      // Proxy mirrors TMDB: GET {proxy}/{movie|tv}/{id}/videos -> { results: TmdbVideo[] }
+      const body = await get<{ results?: TmdbVideo[] }>(`/${mediaType}/${encodeURIComponent(String(id))}/videos`);
+      return Array.isArray(body.results) ? body.results : [];
+    },
     imageUrl(path: string, size: TmdbImageSize = 'w500') {
       return tmdbImageUrl(path, size);
     },
+    async credits(mediaType, id) {
+      const res = await get<{ cast?: TmdbCastMember[] }>(`/${mediaType}/${id}/credits`);
+      return (res.cast ?? []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        character: c.character ?? '',
+        profile_path: c.profile_path ?? null,
+        order: c.order ?? 0,
+      }));
+    },
+    async similar(mediaType, id, page = 1) {
+      const res = normalizePage(
+        await get<TmdbRawPage>(`/${mediaType}/${id}/similar`, { page: clampTmdbPage(page) }),
+        mediaType,
+      );
+      return { ...res, results: res.results.filter((t) => t.id !== id) };
+    },
+    async watchProviders(mediaType, id, region) {
+      const res = await get<{ results?: Record<string, RawProviders | undefined> }>(`/${mediaType}/${id}/watch/providers`);
+      const r = res.results?.[region];
+      return r ? normaliseProviders(r, region) : null;
+    },
+  };
+}
+
+/* ---------------------------------------------------- title extras (w1) */
+
+interface RawProviders {
+  link?: string;
+  flatrate?: TmdbWatchProvider[];
+  free?: TmdbWatchProvider[];
+  ads?: TmdbWatchProvider[];
+  rent?: TmdbWatchProvider[];
+  buy?: TmdbWatchProvider[];
+}
+
+function normaliseProviders(r: RawProviders, region: WatchRegion): TmdbWatchProviders {
+  const byPriority = (list?: TmdbWatchProvider[]) =>
+    list ? [...list].sort((a, b) => a.display_priority - b.display_priority) : undefined;
+  return {
+    region,
+    link: r.link ?? '',
+    flatrate: byPriority(r.flatrate),
+    free: byPriority(r.free),
+    ads: byPriority(r.ads),
+    rent: byPriority(r.rent),
+    buy: byPriority(r.buy),
   };
 }

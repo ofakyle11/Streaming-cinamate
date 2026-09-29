@@ -46,7 +46,7 @@ describe('Navbar discovery links', () => {
     fireEvent.click(link);
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe(href), T);
     // Wait for titles to load, then make sure it is not the genre 404.
-    await waitFor(() => expect(screen.getAllByRole('img').length).toBeGreaterThan(0), T);
+    await waitFor(() => expect(screen.getAllByRole('link', { name: /\(\d{4}\)$/ }).length).toBeGreaterThan(0), T);
     expect(screen.queryByRole('heading', { name: /genre not found/i })).toBeNull();
   });
 

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
-import DetailModal from '../components/DetailModal';
 import { Button, Skeleton } from '../components/ui';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { tmdb as defaultTmdb, type Movie, type TmdbGenre, type TmdbService } from '../services';
@@ -114,12 +113,9 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
     // Re-observe after every page so a still-visible sentinel keeps loading.
   }, [hasIO, hasMore, status, loadMore, items.length]);
 
-  const [selected, setSelected] = useState<Movie | null>(null);
   const select = (m: Movie) => {
     track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'search' });
-    setSelected(m);
   };
-  const closeModal = useCallback(() => setSelected(null), []);
 
   const years = useMemo(() => {
     const now = new Date().getFullYear();
@@ -314,7 +310,6 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
         )}
       </section>
 
-      {selected && <DetailModal movie={selected} onClose={closeModal} />}
     </main>
   );
 }

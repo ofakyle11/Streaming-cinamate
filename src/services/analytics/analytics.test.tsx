@@ -8,7 +8,10 @@ import { usePageViews } from '../../hooks/usePageViews';
 import { createMockAnalytics } from './mock';
 import SearchPage from '../../pages/SearchPage';
 import GenrePage from '../../pages/GenrePage';
-import DetailModal from '../../components/DetailModal';
+import TrailerModal from '../../components/title/TrailerModal';
+import TitlePage from '../../pages/TitlePage';
+import { ToastProvider } from '../../components/ui';
+import { useLastFrameStore } from '../../state/store';
 import { createMockTmdb } from '../tmdb/mock';
 import type { Movie } from '../types';
 
@@ -134,7 +137,7 @@ describe('title-open events', () => {
         </Routes>
       </MemoryRouter>,
     );
-    fireEvent.click(await screen.findByRole('button', { name: /Neon Drift/i }, T));
+    fireEvent.click(await screen.findByRole('link', { name: /^Neon Drift/i }, T));
     expect(t).toHaveBeenCalledWith(
       AnalyticsEvents.titleOpen,
       expect.objectContaining({ id: expect.any(Number), mediaType: expect.any(String), source: 'search' }),
@@ -152,7 +155,7 @@ describe('title-open events', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('heading', { level: 1, name: 'Science Fiction' }, T);
-    const card = screen.getAllByRole('button').find((b) => b.classList.contains('card'));
+    const card = screen.getAllByRole('link').find((b) => b.classList.contains('card-link'));
     expect(card).toBeDefined();
     fireEvent.click(card as HTMLElement);
     expect(t).toHaveBeenCalledWith(
@@ -176,8 +179,8 @@ describe('title-open from New & Popular', () => {
         </Routes>
       </MemoryRouter>,
     );
-    await waitFor(() => expect(screen.getAllByRole('button').some((b) => b.classList.contains('card'))).toBe(true), T);
-    const card = screen.getAllByRole('button').find((b) => b.classList.contains('card'));
+    await waitFor(() => expect(screen.getAllByRole('link').some((b) => b.classList.contains('card-link'))).toBe(true), T);
+    const card = screen.getAllByRole('link').find((b) => b.classList.contains('card-link'));
     fireEvent.click(card as HTMLElement);
     const tracks = mock.events().filter((e) => e.type === 'track');
     const opens = tracks.filter((e) => e.name === AnalyticsEvents.titleOpen);
@@ -188,7 +191,7 @@ describe('title-open from New & Popular', () => {
   });
 });
 
-describe('DetailModal events', () => {
+describe('title action events (trailer + My List)', () => {
   const movie: Movie = {
     id: 42,
     mediaType: 'movie',
@@ -202,16 +205,45 @@ describe('DetailModal events', () => {
     backdrop: '',
   } as unknown as Movie;
 
-  it('emits play-trailer and add-to-list', () => {
+  it('emits add-to-list from the trailer modal footer', () => {
+    useLastFrameStore.setState({ watchlist: {} });
     const t = vi.spyOn(analytics, 'track').mockImplementation(() => {});
-    render(<DetailModal movie={movie} onClose={() => {}} />);
+    render(
+      <ToastProvider>
+        <TrailerModal
+          video={{ id: 'v', key: 'aqz-KE-bpKQ', name: 'Trailer', site: 'YouTube', type: 'Trailer' }}
+          title={movie.title}
+          poster=""
+          onClose={() => {}}
+          movie={movie}
+        />
+      </ToastProvider>,
+    );
     const dialog = screen.getByRole('dialog');
-    fireEvent.click(within(dialog).getByRole('button', { name: /Play/ }));
-    expect(t).toHaveBeenLastCalledWith(AnalyticsEvents.playTrailer, expect.objectContaining({ id: 42, mediaType: 'movie' }));
     fireEvent.click(within(dialog).getByRole('button', { name: /My List/ }));
     expect(t).toHaveBeenLastCalledWith(
       AnalyticsEvents.addToList,
       expect.objectContaining({ id: 42, mediaType: 'movie', list: 'watchlist' }),
+    );
+  });
+
+  it('emits play-trailer from the title page', async () => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const t = vi.spyOn(analytics, 'track').mockImplementation(() => {});
+    render(
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/title/movie/1000']}>
+          <Routes>
+            <Route path="/title/:type/:id" element={<TitlePage />} />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>,
+    );
+    const play = await screen.findByRole('button', { name: /Play trailer/ }, T);
+    fireEvent.click(play);
+    expect(t).toHaveBeenCalledWith(
+      AnalyticsEvents.playTrailer,
+      expect.objectContaining({ id: 1000, mediaType: 'movie' }),
     );
   });
 });

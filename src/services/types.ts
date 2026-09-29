@@ -67,12 +67,20 @@ export interface TmdbService {
   details(mediaType: MediaType, id: number): Promise<TmdbTitleDetails | null>;
   /** All genres (movie + TV merged) or just one media type's list. */
   genres(mediaType?: MediaType): Promise<TmdbGenre[]>;
+  /** Videos (trailers, teasers, ...) attached to a title. Empty when none. */
+  videos(mediaType: MediaType, id: number): Promise<TmdbVideo[]>;
   /** Resolve a TMDB `*_path` to a fully qualified image URL. */
   imageUrl(path: string, size?: TmdbImageSize): string;
   /** Upcoming movie releases. */
   upcoming(page?: number): Promise<TmdbPage<TmdbTitle>>;
   /** Popular titles in a genre (movie by default). */
   byGenre(genreId: number, opts?: { mediaType?: MediaType; page?: number }): Promise<TmdbPage<TmdbTitle>>;
+  /** Top-billed cast for a title (TMDB /credits `cast`, ordered by billing). */
+  credits(mediaType: MediaType, id: number): Promise<TmdbCastMember[]>;
+  /** Titles similar to the given one (TMDB /similar). Never includes the title itself. */
+  similar(mediaType: MediaType, id: number, page?: number): Promise<TmdbPage<TmdbTitle>>;
+  /** Where-to-watch offers for one region (TMDB /watch/providers, data by JustWatch). */
+  watchProviders(mediaType: MediaType, id: number, region: WatchRegion): Promise<TmdbWatchProviders | null>;
 }
 
 /* ------------------------------------------------------ TMDB extended types */
@@ -95,11 +103,15 @@ export interface TmdbSearchFilters {
   minRating?: number;
 }
 
+/* ------------------------------------------------- TMDB title extras (w1) */
+
 export interface TmdbCastMember {
   id: number;
   name: string;
   character: string;
-  profile_path: string;
+  /** May be null (or empty) when TMDB has no headshot. */
+  profile_path: string | null;
+  /** Billing order, 0 = top billed. */
   order: number;
 }
 
@@ -116,16 +128,21 @@ export interface TmdbCredits {
   crew: TmdbCrewMember[];
 }
 
+/** TMDB `/{type}/{id}/videos` result entry (subset). */
 export interface TmdbVideo {
   id: string;
+  /** Provider video id, e.g. the YouTube video key. */
   key: string;
   name: string;
   /** e.g. 'YouTube', 'Vimeo'. */
-  site: string;
+  site: 'YouTube' | 'Vimeo' | string;
   /** e.g. 'Trailer', 'Teaser', 'Clip'. */
-  type: string;
-  official: boolean;
+  type: 'Trailer' | 'Teaser' | 'Clip' | 'Featurette' | string;
+  official?: boolean;
 }
+
+/** Regions the Where-to-watch panel supports. */
+export type WatchRegion = 'US' | 'CA';
 
 export interface TmdbWatchProvider {
   provider_id: number;
@@ -134,6 +151,17 @@ export interface TmdbWatchProvider {
   display_priority: number;
 }
 
+/** One region's offers. Upstream data is supplied by JustWatch and must be attributed. */
+export interface TmdbWatchProviders {
+  region: WatchRegion;
+  /** TMDB watch page for this title/region; empty when unknown. */
+  link: string;
+  flatrate?: TmdbWatchProvider[];
+  free?: TmdbWatchProvider[];
+  ads?: TmdbWatchProvider[];
+  rent?: TmdbWatchProvider[];
+  buy?: TmdbWatchProvider[];
+}
 export interface TmdbWatchProviderRegion {
   link?: string;
   flatrate?: TmdbWatchProvider[];

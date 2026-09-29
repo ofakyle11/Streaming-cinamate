@@ -1,0 +1,62 @@
+import { useCallback } from 'react';
+import { useOptionalToast } from '../components/ui/Toast';
+import { analytics as defaultAnalytics, type AnalyticsService, type MediaType } from '../services';
+import { selectIsInWatchlistFor, useLastFrameStore } from '../state/store';
+import { AnalyticsEvents, track } from '../services/analytics/track';
+
+/** The minimum a surface needs to know about a title to add it to My List. */
+export interface ListableTitle {
+  id: number;
+  mediaType: MediaType;
+  title: string;
+}
+
+/** Where the toggle was used; sent with the analytics event. */
+export type MyListSource = 'card' | 'title' | 'modal' | 'my-list' | 'hero';
+
+export function myListToastMessage(title: string, added: boolean): string {
+  return added ? `Added ${title} to My List` : `Removed ${title} from My List`;
+}
+
+/**
+ * Add/remove a title from the active profile's My List, with a toast and an
+ * analytics event. Shared by poster cards, the title page and the detail modal.
+ */
+export function useMyListToggle(
+  item: ListableTitle,
+  source: MyListSource,
+  analytics: AnalyticsService = defaultAnalytics,
+) {
+  const inList = useLastFrameStore(selectIsInWatchlistFor(item.id, item.mediaType));
+  const toggleWatchlist = useLastFrameStore((s) => s.toggleWatchlist);
+  const addToWatchlist = useLastFrameStore((s) => s.addToWatchlist);
+  const { toast } = useOptionalToast();
+  const { id, mediaType, title } = item;
+
+  const toggle = useCallback(() => {
+    // Read fresh state so rapid double-clicks cannot desync the toast from the store.
+    const wasIn = selectIsInWatchlistFor(id, mediaType)(useLastFrameStore.getState());
+    toggleWatchlist(id, mediaType);
+    track(
+      wasIn ? AnalyticsEvents.removeFromList : AnalyticsEvents.addToList,
+      { id, mediaType, list: 'watchlist', source },
+      analytics,
+    );
+    // On /my-list the card vanishes on removal, so offer Undo (re-added with its original media type).
+    const undo =
+      wasIn && source === 'my-list'
+        ? {
+            duration: 6000,
+            action: {
+              label: 'Undo',
+              onAction: () => {
+                if (!selectIsInWatchlistFor(id, mediaType)(useLastFrameStore.getState())) addToWatchlist(id, mediaType);
+              },
+            },
+          }
+        : undefined;
+    toast(myListToastMessage(title, !wasIn), { kind: wasIn ? 'info' : 'success', ...undo });
+  }, [addToWatchlist, analytics, id, mediaType, source, title, toast, toggleWatchlist]);
+
+  return { inList, toggle };
+}

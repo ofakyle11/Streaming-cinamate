@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Row from '../components/Row';
-import DetailModal from '../components/DetailModal';
 import { Button, Skeleton } from '../components/ui';
 import { tmdb as defaultTmdb, type CatalogRow, type Movie, type TmdbService } from '../services';
 import { AnalyticsEvents, track, trackPage } from '../services/analytics/track';
@@ -25,7 +24,6 @@ const SKELETON_CARDS = [0, 1, 2, 3, 4, 5];
 export default function NewPopularPage({ svc = defaultTmdb }: Props) {
   const [attempt, setAttempt] = useState(0);
   const [settled, setSettled] = useState<Settled | null>(null);
-  const [selected, setSelected] = useState<Movie | null>(null);
   const state: State = settled?.attempt === attempt ? settled : { status: 'loading' };
 
   useEffect(() => {
@@ -49,10 +47,8 @@ export default function NewPopularPage({ svc = defaultTmdb }: Props) {
     };
   }, [svc, attempt]);
 
-  const close = useCallback(() => setSelected(null), []);
   const select = (m: Movie) => {
     track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'new' });
-    setSelected(m);
   };
 
   return (
@@ -100,7 +96,6 @@ export default function NewPopularPage({ svc = defaultTmdb }: Props) {
           </div>
         )}
       </section>
-      {selected && <DetailModal movie={selected} onClose={close} />}
     </main>
   );
 }

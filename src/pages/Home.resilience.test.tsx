@@ -1,15 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Movie } from '../services/types';
+import type { Movie, TmdbService } from '../services/types';
+import { createMockTmdb } from '../services/tmdb/mock';
 
 const T = { timeout: 3000 };
-
-const { loadSafe } = vi.hoisted(() => ({ loadSafe: vi.fn() }));
-vi.mock('../services/discovery', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../services/discovery')>();
-  return { ...actual, loadHomeCatalogSafe: loadSafe };
-});
 
 import Home from './Home';
 import Hero from '../components/Hero';
@@ -30,25 +25,39 @@ const movie = (id: number, title: string): Movie => ({
 });
 
 afterEach(() => {
-  loadSafe.mockReset();
   vi.useRealTimers();
 });
 
 describe('Home resilience', () => {
   it('shows the error state and recovers on Try again', async () => {
-    loadSafe
-      .mockRejectedValueOnce(new Error('TMDB 502'))
-      .mockResolvedValueOnce({ featured: [movie(1, 'Recovered')], rows: [{ title: 'Trending Now', items: [movie(1, 'Recovered')] }] });
+    // Every catalogue call fails on the first attempt, then succeeds.
+    const base = createMockTmdb();
+    let fail = true;
+    const guard =
+      <A extends unknown[], R>(fn: (...args: A) => Promise<R>) =>
+      (...args: A): Promise<R> =>
+        fail ? Promise.reject(new Error('TMDB 502')) : fn(...args);
+    const svc: TmdbService = {
+      ...base,
+      trending: guard(base.trending),
+      popular: guard(base.popular),
+      topRated: guard(base.topRated),
+      nowPlaying: guard(base.nowPlaying),
+      discover: guard(base.discover),
+      upcoming: guard(base.upcoming),
+      byGenre: guard(base.byGenre),
+      genres: guard(base.genres),
+    };
     render(
       <MemoryRouter>
-        <Home />
+        <Home svc={svc} />
       </MemoryRouter>,
     );
-    expect(await screen.findByText('TMDB 502', undefined, T)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByRole('heading', { level: 2, name: 'Trending Now' }, T)).toBeInTheDocument();
-    expect(screen.queryByText('TMDB 502')).toBeNull();
-    expect(loadSafe).toHaveBeenCalledTimes(2);
+    expect(await screen.findByRole('heading', { name: /couldn’t load the catalogue/ }, T)).toBeInTheDocument();
+    fail = false;
+    fireEvent.click(screen.getByRole('button', { name: /Try again/ }));
+    expect(await screen.findByRole('heading', { level: 1 }, T)).toBeInTheDocument();
+    expect(screen.queryByText(/couldn’t load the catalogue/)).toBeNull();
   });
 });
 
@@ -85,7 +94,11 @@ describe('Row without IntersectionObserver', () => {
     // @ts-expect-error -- simulate a browser without IntersectionObserver
     delete window.IntersectionObserver;
     try {
-      const { container } = render(<Row title="Shelf" items={[movie(1, 'A')]} onSelect={() => {}} />);
+      const { container } = render(
+        <MemoryRouter>
+          <Row title="Shelf" items={[movie(1, 'A')]} onSelect={() => {}} />
+        </MemoryRouter>,
+      );
       expect(screen.getByRole('heading', { level: 2, name: 'Shelf' })).toBeInTheDocument();
       expect(container.querySelector('section.row')).toHaveClass('in');
     } finally {

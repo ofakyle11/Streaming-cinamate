@@ -1,11 +1,16 @@
 import type {
   MediaType,
+  TmdbCastMember,
   TmdbGenre,
   TmdbImageSize,
   TmdbPage,
   TmdbService,
   TmdbTitle,
   TmdbTitleDetails,
+  TmdbVideo,
+  TmdbWatchProvider,
+  TmdbWatchProviders,
+  WatchRegion,
 } from '../types';
 import { sortTitles } from './sort';
 
@@ -127,6 +132,38 @@ export const MOCK_TITLES: TmdbTitle[] = SEEDS.map((s, i) => {
     popularity: Math.round((20 + ((i * 53) % 97) * 4.3) * 10) / 10, // deterministic 20 .. ~437
   };
 });
+
+/**
+ * Trailer fixtures. Our titles are fictional, so the mock points at openly licensed
+ * Blender Foundation shorts on YouTube. Some titles (e.g. 1028, the 5th trending
+ * slide) deliberately have no trailer so the "no preview" path is exercised.
+ */
+const TRAILER_KEYS: Array<[titleId: number, key: string, name: string]> = [
+  [1000, 'aqz-KE-bpKQ', 'Official Trailer'],
+  [1007, 'eRsGyueVLvQ', 'Official Trailer'],
+  [1014, 'R6MlUcmOul8', 'Teaser'],
+  [1021, 'TLkA0RELQ1g', 'Official Trailer'],
+  [1035, 'Y-rmzh0PI3c', 'Official Trailer'],
+  [1042, 'WhWc3b3KhnY', 'Official Trailer'],
+  [1049, 'mN0zPOpADL4', 'Official Trailer'],
+];
+
+export const MOCK_VIDEOS: Record<number, TmdbVideo[]> = Object.fromEntries(
+  TRAILER_KEYS.map(([titleId, key, name]) => [
+    titleId,
+    [
+      { id: `v${titleId}-bts`, key: `lf-bts-${titleId}`, name: 'Behind the scenes', site: 'Vimeo', type: 'Featurette' },
+      {
+        id: `v${titleId}`,
+        key,
+        name,
+        site: 'YouTube',
+        type: name === 'Teaser' ? 'Teaser' : 'Trailer',
+        official: true,
+      },
+    ],
+  ]),
+);
 
 const PAGE_SIZE = 20;
 
@@ -258,6 +295,11 @@ export function createMockTmdb(): TmdbService {
       const ids = new Set(byType(mediaType).flatMap((t) => t.genre_ids));
       return MOCK_GENRES.filter((g) => ids.has(g.id));
     },
+    async videos(mediaType, id) {
+      await latency();
+      const exists = MOCK_TITLES.some((t) => t.id === id && t.media_type === mediaType);
+      return exists ? (MOCK_VIDEOS[id] ?? []) : [];
+    },
     imageUrl: mockImageUrl,
     async upcoming(page) {
       await latency();
@@ -269,5 +311,89 @@ export function createMockTmdb(): TmdbService {
       const items = byType(mediaType).filter((t) => t.genre_ids.includes(genreId));
       return paginate([...items].sort((a, b) => b.vote_average - a.vote_average), page);
     },
+    async credits(mediaType, id) {
+      await latency();
+      return findMock(mediaType, id) ? mockCredits(id) : [];
+    },
+    async similar(mediaType, id, page) {
+      await latency();
+      const t = findMock(mediaType, id);
+      return paginate(t ? mockSimilar(t) : [], page);
+    },
+    async watchProviders(mediaType, id, region) {
+      await latency();
+      const t = findMock(mediaType, id);
+      return t ? mockWatchProviders(t, region) : null;
+    },
+  };
+}
+
+/* ------------------------------------------------ Title extras fixtures */
+
+const findMock = (mediaType: MediaType, id: number) =>
+  MOCK_TITLES.find((t) => t.id === id && t.media_type === mediaType);
+
+/** Invented names; combined deterministically per title. */
+const FIRST_NAMES = [
+  'Mara', 'Idris', 'Juno', 'Tobias', 'Selene', 'Rafael', 'Anouk', 'Kenji', 'Priya', 'Otto',
+  'Lena', 'Caspian', 'Noor', 'Declan', 'Ines', 'Wes', 'Yara', 'Felix', 'Hana', 'Rowan',
+];
+const LAST_NAMES = [
+  'Vale', 'Okafor', 'Lindqvist', 'Moreau', 'Achterberg', 'Castillo', 'Hale', 'Nakamura', 'Rao', 'Brandt',
+  'Sørensen', 'Quill', 'Haddad', 'Fairweather', 'Duarte', 'Kowal', 'Ashby', 'Ferreira', 'Mori', 'Byrne',
+];
+const ROLES = [
+  'The Courier', 'Dr. Elin Voss', 'Captain Reyes', 'The Stranger', 'Nell', 'Agent Holloway', 'Theo',
+  'The Archivist', 'Marguerite', 'Sam', 'Old Ferryman', 'Detective Lark', 'Pilot', 'Iris', 'The Voice',
+];
+
+export function mockCredits(titleId: number): TmdbCastMember[] {
+  const seed = titleId - 1000;
+  const count = 8 + (seed % 5);
+  return Array.from({ length: count }, (_, order) => {
+    const f = FIRST_NAMES[(seed * 3 + order * 7) % FIRST_NAMES.length];
+    const l = LAST_NAMES[(seed * 5 + order * 11) % LAST_NAMES.length];
+    return {
+      id: 50_000 + seed * 100 + order,
+      name: `${f} ${l}`,
+      character: ROLES[(seed + order * 4) % ROLES.length],
+      // Every fourth member has no headshot so the monogram fallback is exercised.
+      profile_path: order % 4 === 3 ? null : `/lfcast${seed}-${order}`,
+      order,
+    };
+  });
+}
+
+/** Titles sharing the most genres, best-rated first; excludes the title itself. */
+export function mockSimilar(t: TmdbTitle): TmdbTitle[] {
+  const overlap = (x: TmdbTitle) => x.genre_ids.filter((g) => t.genre_ids.includes(g)).length;
+  return MOCK_TITLES.filter((x) => x.id !== t.id && overlap(x) > 0).sort(
+    (a, b) => overlap(b) - overlap(a) || b.vote_average - a.vote_average || a.id - b.id,
+  );
+}
+
+/** Fictional services; logos intentionally empty so the UI renders monograms. */
+export const MOCK_PROVIDERS: TmdbWatchProvider[] = [
+  { provider_id: 9001, provider_name: 'Lumen+', logo_path: '', display_priority: 1 },
+  { provider_id: 9002, provider_name: 'Reelhouse', logo_path: '', display_priority: 2 },
+  { provider_id: 9003, provider_name: 'Nova Stream', logo_path: '', display_priority: 3 },
+  { provider_id: 9004, provider_name: 'Marquee', logo_path: '', display_priority: 4 },
+  { provider_id: 9005, provider_name: 'Cinevault', logo_path: '', display_priority: 5 },
+  { provider_id: 9006, provider_name: 'Northern Lights TV', logo_path: '', display_priority: 6 },
+];
+
+export function mockWatchProviders(t: TmdbTitle, region: WatchRegion): TmdbWatchProviders {
+  const seed = t.id - 1000;
+  const pick = (...idx: number[]) => idx.map((i) => MOCK_PROVIDERS[i % MOCK_PROVIDERS.length]);
+  const base: TmdbWatchProviders = { region, link: '' };
+  // Every seventh title is unavailable in Canada so the empty state is exercised.
+  if (region === 'CA' && seed % 7 === 6) return base;
+  const offset = region === 'CA' ? 2 : 0;
+  return {
+    ...base,
+    flatrate: pick(seed + offset, seed + offset + 3),
+    ...(seed % 3 === 0 ? { free: pick(5) } : {}),
+    rent: pick(seed + offset + 1),
+    buy: pick(seed + offset + 1, seed + offset + 4),
   };
 }

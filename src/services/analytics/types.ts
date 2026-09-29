@@ -11,6 +11,11 @@ export const AnalyticsEvents = {
   addToList: 'add-to-list',
   playTrailer: 'play-trailer',
   titleOpen: 'title-open',
+  removeFromList: 'remove-from-list',
+  thumbUp: 'thumb-up',
+  thumbDown: 'thumb-down',
+  thumbClear: 'thumb-clear',
+  historyClear: 'history-clear',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

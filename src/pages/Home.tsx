@@ -1,76 +1,87 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Hero from '../components/Hero';
+import HeroSkeleton from '../components/HeroSkeleton';
+import HistoryRows from '../components/HistoryRows';
 import Row from '../components/Row';
-import DetailModal from '../components/DetailModal';
 import GenreChips from '../components/GenreChips';
-import { AnalyticsEvents, track } from '../services/analytics/track';
-import { type CatalogRow, type Movie } from '../services';
-import { loadHomeCatalogSafe } from '../services/discovery';
+import RowSkeleton from '../components/RowSkeleton';
+import RowError from '../components/RowError';
 import { Button } from '../components/ui';
+import { tmdb, type Movie, type TmdbService } from '../services';
+import { AnalyticsEvents, track, trackPage } from '../services/analytics/track';
+import { useHomeRows } from '../hooks/useHomeRows';
+import { useBecauseYouLiked } from '../hooks/useBecauseYouLiked';
+import { HERO_ROW_ID, titlePath } from './homeRows';
+import '../styles/home.css';
 
-interface Catalog {
-  featured: Movie[];
-  rows: CatalogRow[];
+interface Props {
+  /** TMDB adapter override (tests). Defaults to the active mock/live adapter. */
+  svc?: TmdbService;
 }
 
-export default function Home() {
-  const [selected, setSelected] = useState<Movie | null>(null);
-  const [catalog, setCatalog] = useState<Catalog | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState(0);
-  const retry = () => {
-    setError(null);
-    setAttempt((n) => n + 1);
-  };
+export default function Home({ svc = tmdb }: Props) {
+  const navigate = useNavigate();
+  const { rows, featured, heroStatus, allFailed, retry, retryAll } = useHomeRows(svc);
+  const likedRows = useBecauseYouLiked(svc);
 
   useEffect(() => {
-    let cancelled = false;
-    loadHomeCatalogSafe()
-      .then((c) => {
-        if (!cancelled) setCatalog(c);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not load the catalogue.');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [attempt]);
+    trackPage('home');
+  }, []);
 
-  const select = (m: Movie) => {
+  const trackOpen = useCallback((m: Movie) => {
     track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'home' });
-    setSelected(m);
-  };
+  }, []);
+
+  const openFromHero = useCallback(
+    (m: Movie) => {
+      trackOpen(m);
+      navigate(titlePath(m));
+    },
+    [navigate, trackOpen],
+  );
+
+  if (allFailed) {
+    return (
+      <main className="rows home-rows no-hero">
+        <div className="home-error glass" role="alert">
+          <h1>We couldn’t load the catalogue</h1>
+          <p>Check your connection and try again.</p>
+          <Button variant="primary" onClick={retryAll}>
+            ↻ Try again
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  const hasHero = heroStatus !== 'error';
+
+  // "Because you liked X" rows sit right after the hero row (or first, if it is missing).
+  const likedAfter = rows.some((r) => r.id === HERO_ROW_ID) ? HERO_ROW_ID : null;
+  const liked = likedRows.map((r) => <Row key={r.id} title={r.title} items={r.items} onSelect={trackOpen} />);
 
   return (
     <>
-      {catalog ? (
-        <>
-          <Hero featured={catalog.featured} onMore={select} />
-          <main className="rows">
-            {catalog.rows.map((r) => (
-              <Row key={r.title} title={r.title} items={r.items} onSelect={select} />
-            ))}
-            <GenreChips />
-          </main>
-        </>
-      ) : (
-        <main className="rows" aria-busy={!error}>
-          <div className="hero-card glass" role="status">
-            {error ? (
-              <>
-                <p>{error}</p>
-                <Button variant="primary" onClick={retry}>
-                  Try again
-                </Button>
-              </>
-            ) : (
-              <p>Loading the catalogue…</p>
-            )}
-          </div>
-        </main>
-      )}
-      {selected && <DetailModal movie={selected} onClose={() => setSelected(null)} />}
+      {featured ? <Hero featured={featured} onMore={openFromHero} /> : heroStatus === 'loading' && <HeroSkeleton />}
+      <main className={`rows home-rows${hasHero ? '' : ' no-hero'}`}>
+        <HistoryRows onSelect={trackOpen} />
+        {likedAfter === null && liked}
+        {rows.map(({ id, title, state }) => {
+          let row;
+          if (state.status === 'loading') row = <RowSkeleton title={title} />;
+          else if (state.status === 'error') {
+            row = <RowError title={title} message={state.message} onRetry={() => retry(id)} />;
+          } else if (state.items.length > 0) row = <Row title={title} items={state.items} onSelect={trackOpen} />;
+          return (
+            <Fragment key={id}>
+              {row}
+              {id === likedAfter && liked}
+            </Fragment>
+          );
+        })}
+        <GenreChips />
+      </main>
     </>
   );
 }

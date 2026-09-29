@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import DetailModal from '../components/DetailModal';
 import MovieCard from '../components/MovieCard';
 import { Button, Skeleton } from '../components/ui';
 import { type DiscoverSort, type MediaType, type Movie } from '../services';
@@ -29,7 +28,6 @@ export default function GenrePage() {
   const [params, setParams] = useSearchParams();
   const { genreId, page, sortBy, type } = parseGenreQuery(id, params);
   const [settled, setSettled] = useState<Settled | null>(null);
-  const [selected, setSelected] = useState<Movie | null>(null);
   const [attempt, setAttempt] = useState(0);
   const requestKey = `${genreId}|${page}|${sortBy}|${type ?? ''}|${attempt}`;
   const state: State = settled?.key === requestKey ? settled : { status: 'loading' };
@@ -66,10 +64,8 @@ export default function GenrePage() {
     document.scrollingElement?.scrollTo?.({ top: 0 });
   };
 
-  const close = useCallback(() => setSelected(null), []);
   const select = (m: Movie) => {
     track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'genre', genreId, page, sortBy });
-    setSelected(m);
   };
 
   const data = state.status === 'ready' ? state.data : null;
@@ -167,7 +163,6 @@ export default function GenrePage() {
           </nav>
         )}
       </section>
-      {selected && <DetailModal movie={selected} onClose={close} />}
     </main>
   );
 }

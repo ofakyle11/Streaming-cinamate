@@ -18,7 +18,7 @@ describe('GenrePage', () => {
   it('renders the genre name and a grid of titles', async () => {
     renderAt('/genre/878');
     expect(await screen.findByRole('heading', { level: 1, name: 'Science Fiction' })).toBeInTheDocument();
-    expect(screen.getAllByRole('img').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /\(\d{4}\)$/ }).length).toBeGreaterThan(0);
   });
 
   it('switches sort via the sort control', async () => {

@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import Row from '../components/Row';
 import { TITLE_PLACEHOLDER_IMAGE, imageOrPlaceholder } from './images';
@@ -59,7 +60,11 @@ describe('toMovie with live-shaped data', () => {
 
   it('a Row renders no empty img src and no empty badge', () => {
     const m = toMovie(liveTitle, genres, live);
-    const { container } = render(<Row title="Live" items={[m]} onSelect={() => {}} />);
+    const { container } = render(
+      <MemoryRouter>
+        <Row title="Live" items={[m]} onSelect={() => {}} />
+      </MemoryRouter>,
+    );
     const imgs = Array.from(container.querySelectorAll('img'));
     expect(imgs.length).toBeGreaterThan(0);
     for (const img of imgs) expect(img.getAttribute('src')).toBeTruthy();

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import NewPopularPage from './NewPopularPage';
 import { createMockTmdb } from '../services/tmdb/mock';
@@ -22,15 +22,22 @@ describe('NewPopularPage', () => {
     for (const name of ['Trending This Week', 'Coming Soon', 'Now Playing', 'Popular TV']) {
       expect(await screen.findByRole('heading', { level: 2, name }, T)).toBeInTheDocument();
     }
-    expect(screen.getAllByRole('img').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /\(\d{4}\)$/ }).length).toBeGreaterThan(0);
   });
 
-  it('opens the detail modal on select', async () => {
-    renderPage(createMockTmdb());
+  it('opens the title page on select', async () => {
+    render(
+      <MemoryRouter initialEntries={['/new']}>
+        <Routes>
+          <Route path="/new" element={<NewPopularPage svc={createMockTmdb()} />} />
+          <Route path="/title/:type/:id" element={<p>title page</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
     await screen.findByRole('heading', { level: 2, name: 'Trending This Week' }, T);
-    const [first] = screen.getAllByRole('img');
-    fireEvent.click(first.closest('button') as HTMLButtonElement);
-    expect(await screen.findByRole('dialog', undefined, T)).toBeInTheDocument();
+    const [first] = screen.getAllByRole('link', { name: /\(\d{4}\)$/ });
+    fireEvent.click(first);
+    expect(await screen.findByText('title page', undefined, T)).toBeInTheDocument();
   });
 
   it('shows an error and retries', async () => {
