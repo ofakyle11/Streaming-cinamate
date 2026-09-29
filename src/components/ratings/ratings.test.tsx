@@ -1,0 +1,73 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Movie } from '../../services/types';
+import { selectRatingFor, selectThumbFor, selectThumbs, useLastFrameStore } from '../../state/store';
+import MovieCard from '../MovieCard';
+import StarRating from './StarRating';
+import ThumbsControl from './ThumbsControl';
+
+const state = () => useLastFrameStore.getState();
+
+const movie: Movie = {
+  id: 1000,
+  mediaType: 'movie',
+  title: 'Neon Drift',
+  year: 2024,
+  rating: 'PG-13',
+  match: 95,
+  genres: ['Science Fiction'],
+  description: '',
+  poster: '',
+  backdrop: '',
+  runtime: 110,
+};
+
+describe('ratings controls', () => {
+  beforeEach(() => {
+    useLastFrameStore.setState({ ratings: {}, thumbs: {} });
+  });
+
+  it('toggles thumbs up/down and reports changes', () => {
+    const onChange = vi.fn();
+    render(<ThumbsControl titleId={1000} mediaType="movie" title="Neon Drift" onChange={onChange} />);
+    const up = screen.getByRole('button', { name: 'I like Neon Drift' });
+    const down = screen.getByRole('button', { name: /not for me/i });
+
+    fireEvent.click(up);
+    expect(up).toHaveAttribute('aria-pressed', 'true');
+    expect(selectThumbs(state())[0]).toMatchObject({ titleId: 1000, thumb: 'up', mediaType: 'movie', title: 'Neon Drift' });
+
+    fireEvent.click(down);
+    expect(down).toHaveAttribute('aria-pressed', 'true');
+    expect(up).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(down);
+    expect(selectThumbFor(1000)(state())).toBeNull();
+    expect(onChange.mock.calls.map((c) => c[0])).toEqual(['up', 'down', null]);
+  });
+
+  it('sets and clears optional stars', () => {
+    render(<StarRating titleId={1000} mediaType="movie" title="Neon Drift" />);
+    fireEvent.click(screen.getByRole('radio', { name: '4 out of 5' }));
+    expect(selectRatingFor(1000)(state())).toBe(4);
+    expect(screen.getByRole('radio', { name: '4 out of 5' })).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByRole('radio', { name: '4 out of 5' }));
+    expect(selectRatingFor(1000)(state())).toBeNull();
+  });
+
+  it('card overlay rates without navigating away from the card link', () => {
+    render(
+      <MemoryRouter>
+        <MovieCard movie={movie} delay={0} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: 'Neon Drift (2024)' })).toHaveAttribute('href', '/title/movie/1000');
+    const up = screen.getByRole('button', { name: 'I like Neon Drift' });
+    expect(up.closest('a')).toBeNull();
+    fireEvent.click(up);
+    expect(selectThumbFor(1000)(state())).toBe('up');
+    fireEvent.click(screen.getByRole('radio', { name: '5 out of 5' }));
+    expect(selectRatingFor(1000)(state())).toBe(5);
+  });
+});

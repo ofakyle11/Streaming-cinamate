@@ -1,8 +1,13 @@
-/* Poster cards render as router links to /title/:type/:id. */
-a.card { display: block; color: inherit; text-decoration: none; }
-.card:focus-visible .card-info { transform: none; }
-.row.in .card:focus-visible { transform: translateY(-8px) scale(1.04); z-index: 3; }
+/* Poster cards: the .card shell holds a router link to /title/:type/:id plus
+   a sibling rating overlay (buttons can't live inside a link). */
+.card-link { display: block; width: 100%; height: 100%; color: inherit; text-decoration: none; }
+.card-link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: calc(-1 * var(--focus-ring-width));
+  border-radius: inherit; box-shadow: inset 0 0 0 5px var(--focus-ring-glow);
+}
+.card:focus-within .card-info { transform: none; }
+.row.in .card:focus-within { transform: translateY(-8px) scale(1.04); z-index: 3; }
 
 @media (prefers-reduced-motion: reduce) {
-  .row.in .card:focus-visible { transform: none; }
+  .row.in .card:focus-within { transform: none; }
 }

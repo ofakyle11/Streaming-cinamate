@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { Fragment, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Hero from '../components/Hero';
 import HeroSkeleton from '../components/HeroSkeleton';
@@ -8,7 +8,8 @@ import RowError from '../components/RowError';
 import { Button } from '../components/ui';
 import { analytics, tmdb, type Movie, type TmdbService } from '../services';
 import { useHomeRows } from '../hooks/useHomeRows';
-import { titlePath } from './homeRows';
+import { useBecauseYouLiked } from '../hooks/useBecauseYouLiked';
+import { HERO_ROW_ID, titlePath } from './homeRows';
 import '../styles/home.css';
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
 export default function Home({ svc = tmdb }: Props) {
   const navigate = useNavigate();
   const { rows, featured, heroStatus, allFailed, retry, retryAll } = useHomeRows(svc);
+  const likedRows = useBecauseYouLiked(svc);
 
   useEffect(() => {
     analytics.page('home');
@@ -52,17 +54,27 @@ export default function Home({ svc = tmdb }: Props) {
 
   const hasHero = heroStatus !== 'error';
 
+  // "Because you liked X" rows sit right after the hero row (or first, if it is missing).
+  const likedAfter = rows.some((r) => r.id === HERO_ROW_ID) ? HERO_ROW_ID : null;
+  const liked = likedRows.map((r) => <Row key={r.id} title={r.title} items={r.items} onSelect={track} />);
+
   return (
     <>
       {featured ? <Hero featured={featured} onMore={openFromHero} /> : heroStatus === 'loading' && <HeroSkeleton />}
       <main className={`rows home-rows${hasHero ? '' : ' no-hero'}`}>
+        {likedAfter === null && liked}
         {rows.map(({ id, title, state }) => {
-          if (state.status === 'loading') return <RowSkeleton key={id} title={title} />;
-          if (state.status === 'error') {
-            return <RowError key={id} title={title} message={state.message} onRetry={() => retry(id)} />;
-          }
-          if (state.items.length === 0) return null;
-          return <Row key={id} title={title} items={state.items} onSelect={track} />;
+          let row;
+          if (state.status === 'loading') row = <RowSkeleton title={title} />;
+          else if (state.status === 'error') {
+            row = <RowError title={title} message={state.message} onRetry={() => retry(id)} />;
+          } else if (state.items.length > 0) row = <Row title={title} items={state.items} onSelect={track} />;
+          return (
+            <Fragment key={id}>
+              {row}
+              {id === likedAfter && liked}
+            </Fragment>
+          );
         })}
       </main>
     </>
