@@ -20,8 +20,8 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`}>
-      <Link to="/" className="logo logo--with-mark">
+    <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`} aria-label="Primary">
+      <Link to="/" className="logo logo--with-mark" aria-label="Last Frame home">
         <LogoMark size={30} decorative />
         LAST FRAME
       </Link>
@@ -35,7 +35,7 @@ export default function Navbar() {
         ))}
       </ul>
       <div className="nav-right">
-        <input className="search glass" placeholder="Search" />
+        <input className="search glass" type="search" placeholder="Search" aria-label="Search titles" />
         <Link to="/profiles" className="avatar" aria-label="Profiles" />
       </div>
     </nav>
