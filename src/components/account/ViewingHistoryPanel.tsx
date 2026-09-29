@@ -61,7 +61,7 @@ export default function ViewingHistoryPanel() {
           {views.slice(0, PREVIEW_COUNT).map((e) => (
             <li key={e.key} className="history-item">
               <Link to={titlePath(e.title)} className="history-link">
-                <img src={e.title.poster} alt="" loading="lazy" />
+                <img src={e.title.poster} alt="" loading="lazy" decoding="async" width={40} height={60} />
                 <span className="history-text">
                   <strong>{e.title.title}</strong>
                   <span className="muted">

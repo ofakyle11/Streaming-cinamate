@@ -29,7 +29,7 @@ function ProviderChip({ p, svc }: { p: TmdbWatchProvider; svc: TmdbService }) {
   return (
     <li className="provider glass">
       {p.logo_path ? (
-        <img className="provider-logo" src={svc.imageUrl(p.logo_path, 'w342')} alt="" loading="lazy" />
+        <img className="provider-logo" src={svc.imageUrl(p.logo_path, 'w342')} alt="" loading="lazy" decoding="async" width={30} height={30} />
       ) : (
         <span className="provider-logo provider-monogram" aria-hidden>
           {initials(p.provider_name)}
