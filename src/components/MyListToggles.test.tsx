@@ -1,9 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { Movie } from '../services/types';
 import { selectWatchlist, useLastFrameStore } from '../state/store';
-import DetailModal from './DetailModal';
 import MovieCard from './MovieCard';
 import { ToastProvider } from './ui';
 
@@ -66,21 +65,5 @@ describe('My List toggles', () => {
     expect(list()).toHaveLength(1);
   });
 
-  it('detail modal My List button toggles the store', () => {
-    const onClose = vi.fn();
-    render(
-      <ToastProvider>
-        <DetailModal movie={MOVIE} onClose={onClose} />
-      </ToastProvider>,
-    );
-    const btn = screen.getByRole('button', { name: /^my list$/i });
-    expect(btn).toHaveAttribute('aria-pressed', 'false');
-    fireEvent.click(btn);
-    expect(btn).toHaveAttribute('aria-pressed', 'true');
-    expect(list()).toMatchObject([{ titleId: 1002, mediaType: 'tv' }]);
-    expect(screen.getByText('Added Midnight Protocol to My List')).toBeInTheDocument();
-    fireEvent.click(btn);
-    expect(list()).toEqual([]);
-    expect(onClose).not.toHaveBeenCalled();
-  });
+  // The modal My List toggle is covered in components/title/TrailerModal.test.tsx.
 });

@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
-import type { TmdbVideo } from '../../services';
-import { IconButton } from '../ui';
-import { trailerEmbedUrl } from './titleUtils';
+import { useMyListToggle } from '../../hooks/useMyListToggle';
+import type { Movie, TmdbVideo } from '../../services';
+import type { Thumb } from '../../state/store';
+import ThumbsControl from '../ratings/ThumbsControl';
+import { Button, IconButton } from '../ui';
+import { FOCUSABLE_SELECTOR, trailerEmbedUrl } from './titleUtils';
+import './trailer-modal.css';
 
 interface Props {
   video: TmdbVideo;
@@ -9,13 +13,36 @@ interface Props {
   /** Shown behind the fallback card when the video cannot be embedded (unknown site / unsafe key). */
   poster: string;
   onClose: () => void;
+  /** When given, the dialog gets a footer with a My List toggle and thumbs (inside the focus trap). */
+  movie?: Movie;
+  /** Called after the footer thumbs change, e.g. for toasts/analytics. */
+  onThumbChange?: (thumb: Thumb | null) => void;
+}
+
+function TrailerFooter({ movie, onThumbChange }: { movie: Movie; onThumbChange?: (thumb: Thumb | null) => void }) {
+  const { inList, toggle } = useMyListToggle(movie, 'modal');
+  return (
+    <footer className="trailer-foot">
+      <Button
+        variant="glass"
+        size="sm"
+        onClick={toggle}
+        aria-pressed={inList}
+        aria-label={inList ? `Remove ${movie.title} from My List` : `Add ${movie.title} to My List`}
+        className={`trailer-list-btn${inList ? ' is-listed' : ''}`}
+      >
+        <span aria-hidden>{inList ? '✓' : '＋'}</span> My List
+      </Button>
+      <ThumbsControl titleId={movie.id} mediaType={movie.mediaType} title={movie.title} size="sm" onChange={onThumbChange} />
+    </footer>
+  );
 }
 
 function prefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-export default function TrailerModal({ video, title, poster, onClose }: Props) {
+export default function TrailerModal({ video, title, poster, onClose, movie, onThumbChange }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -30,7 +57,7 @@ export default function TrailerModal({ video, title, poster, onClose }: Props) {
       }
       // Minimal focus trap: keep Tab inside the dialog.
       if (e.key === 'Tab' && dialogRef.current) {
-        const focusables = dialogRef.current.querySelectorAll<HTMLElement>('button, iframe, a[href]');
+        const focusables = dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
         if (focusables.length === 0) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
@@ -91,6 +118,7 @@ export default function TrailerModal({ video, title, poster, onClose }: Props) {
             </div>
           )}
         </div>
+        {movie && <TrailerFooter movie={movie} onThumbChange={onThumbChange} />}
       </div>
     </div>
   );
