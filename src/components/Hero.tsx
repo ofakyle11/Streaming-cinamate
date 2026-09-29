@@ -32,7 +32,7 @@ export default function Hero({ featured, onMore }: Props) {
         <div className="meta">
           <span className="match">{movie.match}% Match</span>
           <span>{movie.year}</span>
-          <span className="badge">{movie.rating}</span>
+          {movie.rating && <span className="badge">{movie.rating}</span>}
           <span>{movie.genres.join(' · ')}</span>
         </div>
         <p>{movie.description}</p>

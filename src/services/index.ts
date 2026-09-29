@@ -20,8 +20,10 @@ import { createLiveDb } from './db/live';
 import { createMockBilling } from './billing/mock';
 import { createMockAnalytics } from './analytics/mock';
 import { createPlausibleAnalytics } from './analytics/plausible';
+import { imageOrPlaceholder } from './images';
 
 export * from './types';
+export { TITLE_PLACEHOLDER_IMAGE, imageOrPlaceholder } from './images';
 
 const env = import.meta.env;
 const tmdbProxy = (env.VITE_TMDB_PROXY as string | undefined)?.trim();
@@ -68,12 +70,13 @@ export function toMovie(t: TmdbTitle, genres: readonly TmdbGenre[], svc: TmdbSer
     mediaType: t.media_type,
     title: t.title ?? t.name ?? 'Untitled',
     year: Number(t.release_date?.slice(0, 4)) || new Date().getFullYear(),
-    rating: t.certification ?? (t.media_type === 'tv' ? 'TV-14' : 'PG-13'),
+    // List payloads carry no certification; show none rather than invent one.
+    rating: t.certification || '',
     match: matchScore(t),
     genres: t.genre_ids.map((id) => genreMap.get(id)).filter((g): g is string => Boolean(g)),
     description: t.overview,
-    poster: svc.imageUrl(t.poster_path, 'w500'),
-    backdrop: svc.imageUrl(t.backdrop_path, 'w1280'),
+    poster: imageOrPlaceholder(svc.imageUrl(t.poster_path, 'w500')),
+    backdrop: imageOrPlaceholder(svc.imageUrl(t.backdrop_path, 'w1280')),
     runtime: t.runtime,
   };
 }
