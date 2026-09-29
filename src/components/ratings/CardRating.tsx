@@ -17,7 +17,7 @@ import './ratings.css';
  */
 export default function CardRating({ movie }: { movie: Movie }) {
   const { id, mediaType, title } = movie;
-  const previous = useThumbFor(id);
+  const previous = useThumbFor(id, mediaType);
   const { setThumb } = useThumbActions();
   // Optional so cards still render in isolation (tests) without a ToastProvider.
   const { toast } = useOptionalToast();
@@ -29,7 +29,7 @@ export default function CardRating({ movie }: { movie: Movie }) {
         kind: thumb === 'up' ? 'success' : 'info',
         ...(thumb && {
           duration: 6000,
-          action: { label: 'Undo', onAction: () => setThumb(id, previous, { mediaType, title }) },
+          action: { label: 'Undo', onAction: () => setThumb(id, previous, { mediaType, title }, mediaType) },
         }),
       });
     },

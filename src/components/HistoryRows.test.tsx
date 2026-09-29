@@ -151,3 +151,22 @@ describe('HistoryRows', () => {
     expect(within(cw).queryByRole('progressbar')).toBeNull();
   });
 });
+
+describe('HistoryRows title identity', () => {
+  beforeEach(() => {
+    useLastFrameStore.setState({ views: {}, history: {} });
+  });
+
+  it('keys progress by media type so a movie and series sharing an id stay separate', () => {
+    act(() => {
+      const s = useLastFrameStore.getState();
+      s.recordView(movie(70, 'Film Seventy', 'movie'), 'trailer');
+      s.recordView(movie(70, 'Show Seventy', 'tv'), 'trailer');
+      s.recordProgress(70, 2700, 5400, 'tv');
+    });
+    renderWithToasts();
+    const cw = section('Continue Watching');
+    expect(within(cw).getByRole('progressbar', { name: /show seventy/i })).toHaveAttribute('aria-valuenow', '50');
+    expect(within(cw).queryByRole('progressbar', { name: /film seventy/i })).toBeNull();
+  });
+});

@@ -27,12 +27,12 @@ function ThumbIcon({ down }: { down?: boolean }) {
 
 /** Thumbs up / down toggle pair, stored per profile. Pressing the active thumb clears it. */
 export default function ThumbsControl({ titleId, mediaType, title, size = 'md', onChange }: Props) {
-  const thumb = useThumbFor(titleId);
+  const thumb = useThumbFor(titleId, mediaType);
   const { setThumb } = useThumbActions();
 
   const press = (value: Thumb) => {
     const next = thumb === value ? null : value;
-    setThumb(titleId, next, { mediaType, title });
+    setThumb(titleId, next, { mediaType, title }, mediaType);
     onChange?.(next);
   };
 

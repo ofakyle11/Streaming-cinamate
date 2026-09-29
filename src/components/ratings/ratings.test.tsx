@@ -1,8 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Movie } from '../../services/types';
-import { selectRatingFor, selectThumbFor, selectThumbs, useLastFrameStore } from '../../state/store';
+import { selectRatingFor, selectThumbFor, selectThumbForTitle, selectThumbs, useLastFrameStore } from '../../state/store';
 import MovieCard from '../MovieCard';
 import { ToastProvider } from '../ui';
 import StarRating from './StarRating';
@@ -73,6 +73,32 @@ describe('ratings controls', () => {
   });
 });
 
+describe('ratings controls title identity', () => {
+  beforeEach(() => {
+    useLastFrameStore.setState({ ratings: {}, thumbs: {} });
+  });
+
+  it('a thumb or stars on the movie do not light up the series with the same id', () => {
+    render(
+      <>
+        <ThumbsControl titleId={1000} mediaType="movie" title="Film" />
+        <ThumbsControl titleId={1000} mediaType="tv" title="Show" />
+        <StarRating titleId={1000} mediaType="movie" title="Film" />
+        <StarRating titleId={1000} mediaType="tv" title="Show" />
+      </>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'I like Film' }));
+    expect(screen.getByRole('button', { name: 'I like Film' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'I like Show' })).toHaveAttribute('aria-pressed', 'false');
+
+    const tvStars = screen.getByRole('radiogroup', { name: 'Stars for Show' });
+    const movieStars = screen.getByRole('radiogroup', { name: 'Stars for Film' });
+    fireEvent.click(within(tvStars).getByRole('radio', { name: '4 out of 5' }));
+    expect(within(tvStars).getByRole('radio', { name: '4 out of 5' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(movieStars).getByRole('radio', { name: '4 out of 5' })).toHaveAttribute('aria-checked', 'false');
+  });
+});
+
 describe('CardRating feedback', () => {
   beforeEach(() => {
     useLastFrameStore.setState({ ratings: {}, thumbs: {} });
@@ -88,21 +114,21 @@ describe('CardRating feedback', () => {
     );
 
   it('toasts on a card thumb and Undo restores the previous thumb', () => {
-    state().setThumb(1000, 'down', { mediaType: 'movie', title: 'Neon Drift' });
+    state().setThumb(1000, 'down', { mediaType: 'movie', title: 'Neon Drift' }, 'movie');
     renderCard();
     fireEvent.click(screen.getByRole('button', { name: 'I like Neon Drift' }));
-    expect(selectThumbFor(1000)(state())).toBe('up');
+    expect(selectThumbForTitle(1000, 'movie')(state())).toBe('up');
     expect(screen.getByText('Glad you liked Neon Drift')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(selectThumbFor(1000)(state())).toBe('down');
+    expect(selectThumbForTitle(1000, 'movie')(state())).toBe('down');
   });
 
   it('toasts without Undo when a thumb is cleared', () => {
-    state().setThumb(1000, 'up', { mediaType: 'movie', title: 'Neon Drift' });
+    state().setThumb(1000, 'up', { mediaType: 'movie', title: 'Neon Drift' }, 'movie');
     renderCard();
     fireEvent.click(screen.getByRole('button', { name: 'I like Neon Drift' }));
-    expect(selectThumbFor(1000)(state())).toBeFalsy();
+    expect(selectThumbForTitle(1000, 'movie')(state())).toBeFalsy();
     expect(screen.getByText('Removed your thumb for Neon Drift')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
   });

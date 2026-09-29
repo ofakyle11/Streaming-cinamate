@@ -19,6 +19,10 @@ const THUMB_UP_SCORE = 4.5;
 /** Extra weight when a title has both stars and a thumbs-up. */
 const THUMB_UP_BONUS = 0.5;
 
+const MEDIA_TYPES: readonly MediaType[] = ['movie', 'tv'];
+const titleKey = (mediaType: MediaType, id: TitleId) => `${mediaType}:${id}`;
+const untypedKey = (id: TitleId) => `?:${id}`;
+
 interface Merged {
   id: TitleId;
   mediaType?: MediaType;
@@ -35,30 +39,43 @@ interface Merged {
  * (similar lookups need it). Ordered by score, then most recently rated.
  */
 export function likedSeeds(ratings: readonly RatingEntry[], thumbs: readonly ThumbEntry[], limit = 2): LikedSeed[] {
-  const byId = new Map<TitleId, Merged>();
+  // Keyed by media type + id so a movie and a series sharing an id are separate seeds.
+  // Untyped (legacy) entries merge with a typed entry for the same id when one exists.
+  const byKey = new Map<string, Merged>();
+  const findKey = (id: TitleId, mediaType?: MediaType): string | undefined => {
+    if (mediaType) {
+      const typed = titleKey(mediaType, id);
+      if (byKey.has(typed)) return typed;
+      return byKey.has(untypedKey(id)) ? untypedKey(id) : undefined;
+    }
+    for (const type of MEDIA_TYPES) if (byKey.has(titleKey(type, id))) return titleKey(type, id);
+    return byKey.has(untypedKey(id)) ? untypedKey(id) : undefined;
+  };
+  const keyFor = (e: Merged) => (e.mediaType ? titleKey(e.mediaType, e.id) : untypedKey(e.id));
+
   for (const r of ratings) {
-    byId.set(r.titleId, {
-      id: r.titleId,
-      mediaType: r.mediaType,
-      title: r.title ?? null,
-      ratedAt: r.ratedAt,
-      stars: r.rating,
-    });
+    const entry: Merged = { id: r.titleId, mediaType: r.mediaType, title: r.title ?? null, ratedAt: r.ratedAt, stars: r.rating };
+    const key = keyFor(entry);
+    if (!byKey.has(key)) byKey.set(key, entry);
   }
   for (const t of thumbs) {
-    const prev = byId.get(t.titleId);
-    byId.set(t.titleId, {
+    const prevKey = findKey(t.titleId, t.mediaType);
+    const prev = prevKey ? byKey.get(prevKey) : undefined;
+    if (prevKey) byKey.delete(prevKey);
+    const entry: Merged = {
       id: t.titleId,
       mediaType: t.mediaType ?? prev?.mediaType,
       title: t.title ?? prev?.title ?? null,
       ratedAt: Math.max(t.ratedAt, prev?.ratedAt ?? 0),
       stars: prev?.stars,
       thumb: t.thumb,
-    });
+    };
+    const key = keyFor(entry);
+    if (!byKey.has(key)) byKey.set(key, entry);
   }
 
   const out: LikedSeed[] = [];
-  for (const e of byId.values()) {
+  for (const e of byKey.values()) {
     if (!e.mediaType || e.thumb === 'down') continue;
     const likedByStars = e.stars !== undefined && e.stars >= LIKED_MIN_STARS;
     if (!likedByStars && e.thumb !== 'up') continue;
@@ -69,7 +86,26 @@ export function likedSeeds(ratings: readonly RatingEntry[], thumbs: readonly Thu
   return out.slice(0, Math.max(0, limit));
 }
 
-/** Titles to hide from recommendations: anything the profile already rated or thumbed. */
+/**
+ * Titles to hide from recommendations, as `${mediaType}:${id}` keys (fu2), so rating
+ * a movie never hides the series with the same id. Legacy entries without a media
+ * type hide both.
+ */
+export function ratedTitleKeys(ratings: readonly RatingEntry[], thumbs: readonly ThumbEntry[]): Set<string> {
+  const keys = new Set<string>();
+  const add = (e: { titleId: TitleId; mediaType?: MediaType }) => {
+    if (e.mediaType) keys.add(titleKey(e.mediaType, e.titleId));
+    else MEDIA_TYPES.forEach((type) => keys.add(titleKey(type, e.titleId)));
+  };
+  ratings.forEach(add);
+  thumbs.forEach(add);
+  return keys;
+}
+
+/**
+ * Titles to hide from recommendations: anything the profile already rated or thumbed.
+ * @deprecated id-only; movie and TV ids collide. Prefer {@link ratedTitleKeys}.
+ */
 export function ratedTitleIds(ratings: readonly RatingEntry[], thumbs: readonly ThumbEntry[]): Set<TitleId> {
   const ids = new Set<TitleId>();
   ratings.forEach((r) => ids.add(r.titleId));
@@ -79,19 +115,21 @@ export function ratedTitleIds(ratings: readonly RatingEntry[], thumbs: readonly 
 
 /**
  * Filters "Because you liked" rows for display: drops already-rated titles and
- * titles shown in an earlier row, then caps each row.
+ * titles shown in an earlier row, then caps each row. `exclude` holds either
+ * `${mediaType}:${id}` keys (see ratedTitleKeys) or, for older callers, bare ids.
  */
 export function dedupeRecommendationRows<R extends { items: Movie[] }>(
   rows: readonly R[],
-  exclude: ReadonlySet<TitleId>,
+  exclude: ReadonlySet<TitleId> | ReadonlySet<string>,
   limit = 12,
 ): R[] {
+  const excluded = exclude as ReadonlySet<TitleId | string>;
   const seen = new Set<string>();
   return rows.map((row) => {
     const items: Movie[] = [];
     for (const m of row.items) {
       const key = `${m.mediaType}:${m.id}`;
-      if (exclude.has(m.id) || seen.has(key)) continue;
+      if (excluded.has(m.id) || excluded.has(key) || seen.has(key)) continue;
       seen.add(key);
       items.push(m);
       if (items.length >= limit) break;
