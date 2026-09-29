@@ -22,6 +22,8 @@ src/
     types.ts          Service interfaces + domain types
     tmdb|auth|db/     mock.ts + live.ts adapters
     billing|analytics/ mock.ts only on the client (no Stripe SDK or keys, ever)
+    billing/types.ts  BillingAdapter (getPlans, getSubscription, startCheckout), plan feature table, price/URL helpers;
+                      exposed as `billingAdapter` from services/index.ts and used by /plans
   data/movies.ts      Static catalogue helpers
   styles/
     tokens.css        Design tokens (color, radius, blur, motion)

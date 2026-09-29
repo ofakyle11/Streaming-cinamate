@@ -16,6 +16,7 @@ import { createMockDb } from './db/mock';
 import { createLiveDb } from './db/live';
 import { createMockBilling } from './billing/mock';
 import { createMockAnalytics } from './analytics/mock';
+import { fromBillingService, type BillingAdapter } from './billing/types';
 
 export * from './types';
 
@@ -92,3 +93,10 @@ export async function loadHomeCatalog(svc: TmdbService = tmdb): Promise<{ featur
     ],
   };
 }
+
+/* ------------------------------------------------------- Billing adapter */
+
+export type { BillingAdapter, CheckoutResult, PlanFeatureRow, FeatureValue } from './billing/types';
+
+/** BillingAdapter view over the active billing service (mock-only on the client). */
+export const billingAdapter: BillingAdapter = fromBillingService(billing);
