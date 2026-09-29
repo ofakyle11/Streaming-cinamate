@@ -27,6 +27,7 @@ src/
     billing/types.ts  BillingAdapter (getPlans, getSubscription, startCheckout), plan feature table, price/URL helpers;
                       exposed as `billingAdapter` from services/index.ts and used by /plans
   data/movies.ts      Static catalogue helpers
+  pwa/                config.ts (manifest + workbox image caching), install.ts (install prompt controller/hook)
   styles/
     tokens.css        Design tokens (color, radius, blur, motion)
     primitives.css    Styles for ui/ primitives
@@ -62,6 +63,13 @@ from `pullSnapshot`, which switches sync off, so guests and mock mode stay fully
 | `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` | Live auth + db (both required; Supabase SDK is lazy-loaded). Auth: magic link + Google OAuth; add `<origin>/account` to Supabase redirect URLs |
 
 None are required; with none set the app is fully mocked.
+
+## PWA
+
+`vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Last Frame" (theme `#0b0b12`), icons generated at build
+from `public/logo.svg` via `pwa-assets.config.ts`, generateSW service worker precaching the app shell and caching
+images cache-first (`lf-images`, 250 entries / 30 days). `main.tsx` captures `beforeinstallprompt`; the Account
+page's `InstallAppCard` offers "Install app" (manual Add to Home Screen hint on iOS). The SW is build-only.
 
 ## Checks
 

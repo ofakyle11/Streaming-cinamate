@@ -4,13 +4,16 @@ import { AuthProvider, clearLocalData, isLastFrameKey } from '../auth';
 import { createMockAuth } from '../services/auth/mock';
 import type { AuthService } from '../services/types';
 import { useLastFrameStore } from '../state/store';
+import { ToastProvider } from '../components/ui';
 import AccountPage from './AccountPage';
 
 function renderPage(service: AuthService = createMockAuth(), clearLocal = vi.fn()) {
   render(
-    <AuthProvider service={service} mode="mock" clearLocal={clearLocal}>
-      <AccountPage />
-    </AuthProvider>,
+    <ToastProvider>
+      <AuthProvider service={service} mode="mock" clearLocal={clearLocal}>
+        <AccountPage />
+      </AuthProvider>
+    </ToastProvider>,
   );
   return { service, clearLocal };
 }
