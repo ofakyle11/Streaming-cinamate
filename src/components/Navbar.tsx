@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
+import LogoMark from './brand/LogoMark';
 
 const links = [
   { to: '/', label: 'Home' },
@@ -20,7 +21,10 @@ export default function Navbar() {
 
   return (
     <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`}>
-      <Link to="/" className="logo">LAST FRAME</Link>
+      <Link to="/" className="logo logo--with-mark">
+        <LogoMark size={30} decorative />
+        LAST FRAME
+      </Link>
       <ul className="nav-links">
         {links.map((l) => (
           <li key={l.to}>
