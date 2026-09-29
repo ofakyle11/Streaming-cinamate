@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { Movie } from '../services';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import MovieCard from './MovieCard';
@@ -9,9 +9,11 @@ interface Props {
   title: string;
   items: Movie[];
   onSelect?: (m: Movie) => void;
+  /** Optional per-card overlay passed to MovieCard's `extraAction` slot. */
+  cardExtra?: (m: Movie) => ReactNode;
 }
 
-export default function Row({ title, items, onSelect }: Props) {
+export default function Row({ title, items, onSelect, cardExtra }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const reduceMotion = usePrefersReducedMotion();
@@ -98,7 +100,13 @@ export default function Row({ title, items, onSelect }: Props) {
         </button>
         <div className="track" id={trackId} ref={trackRef}>
           {items.map((m, i) => (
-            <MovieCard key={`${m.mediaType}-${m.id}`} movie={m} delay={i * 60} onSelect={onSelect} />
+            <MovieCard
+              key={`${m.mediaType}-${m.id}`}
+              movie={m}
+              delay={i * 60}
+              onSelect={onSelect}
+              extraAction={cardExtra?.(m)}
+            />
           ))}
         </div>
         <button

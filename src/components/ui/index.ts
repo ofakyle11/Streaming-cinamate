@@ -5,4 +5,4 @@ export type { IconButtonProps } from './IconButton';
 export { default as Skeleton } from './Skeleton';
 export type { SkeletonProps } from './Skeleton';
 export { ToastProvider, useToast, useOptionalToast } from './Toast';
-export type { ToastKind, ToastOptions } from './Toast';
+export type { ToastKind, ToastOptions, ToastAction } from './Toast';
