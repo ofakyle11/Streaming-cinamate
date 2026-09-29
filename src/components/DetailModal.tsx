@@ -30,7 +30,7 @@ export default function DetailModal({ movie, onClose }: Props) {
           <div className="meta">
             <span className="match">{movie.match}% Match</span>
             <span>{movie.year}</span>
-            <span className="badge">{movie.rating}</span>
+            {movie.rating && <span className="badge">{movie.rating}</span>}
           </div>
           <p>{movie.description}</p>
           <p className="genres">Genres: {movie.genres.join(', ')}</p>
