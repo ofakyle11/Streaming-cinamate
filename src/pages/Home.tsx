@@ -1,58 +1,70 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Hero from '../components/Hero';
+import HeroSkeleton from '../components/HeroSkeleton';
 import Row from '../components/Row';
-import DetailModal from '../components/DetailModal';
-import { analytics, loadHomeCatalog, type CatalogRow, type Movie } from '../services';
+import RowSkeleton from '../components/RowSkeleton';
+import RowError from '../components/RowError';
+import { Button } from '../components/ui';
+import { analytics, tmdb, type Movie, type TmdbService } from '../services';
+import { useHomeRows } from '../hooks/useHomeRows';
+import { titlePath } from './homeRows';
+import '../styles/home.css';
 
-interface Catalog {
-  featured: Movie[];
-  rows: CatalogRow[];
+interface Props {
+  /** TMDB adapter override (tests). Defaults to the active mock/live adapter. */
+  svc?: TmdbService;
 }
 
-export default function Home() {
-  const [selected, setSelected] = useState<Movie | null>(null);
-  const [catalog, setCatalog] = useState<Catalog | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export default function Home({ svc = tmdb }: Props) {
+  const navigate = useNavigate();
+  const { rows, featured, heroStatus, allFailed, retry, retryAll } = useHomeRows(svc);
 
   useEffect(() => {
-    let cancelled = false;
     analytics.page('home');
-    loadHomeCatalog()
-      .then((c) => {
-        if (!cancelled) setCatalog(c);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not load the catalogue.');
-      });
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  const select = (m: Movie) => {
+  const track = useCallback((m: Movie) => {
     analytics.track('title_open', { id: m.id, mediaType: m.mediaType });
-    setSelected(m);
-  };
+  }, []);
+
+  const openFromHero = useCallback(
+    (m: Movie) => {
+      track(m);
+      navigate(titlePath(m));
+    },
+    [navigate, track],
+  );
+
+  if (allFailed) {
+    return (
+      <main className="rows home-rows no-hero">
+        <div className="home-error glass" role="alert">
+          <h1>We couldn’t load the catalogue</h1>
+          <p>Check your connection and try again.</p>
+          <Button variant="primary" onClick={retryAll}>
+            ↻ Try again
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  const hasHero = heroStatus !== 'error';
 
   return (
     <>
-      {catalog ? (
-        <>
-          <Hero featured={catalog.featured} onMore={select} />
-          <main className="rows">
-            {catalog.rows.map((r) => (
-              <Row key={r.title} title={r.title} items={r.items} onSelect={select} />
-            ))}
-          </main>
-        </>
-      ) : (
-        <main className="rows" aria-busy={!error}>
-          <div className="hero-card glass" role="status">
-            {error ? <p>{error}</p> : <p>Loading the catalogue…</p>}
-          </div>
-        </main>
-      )}
-      {selected && <DetailModal movie={selected} onClose={() => setSelected(null)} />}
+      {featured ? <Hero featured={featured} onMore={openFromHero} /> : heroStatus === 'loading' && <HeroSkeleton />}
+      <main className={`rows home-rows${hasHero ? '' : ' no-hero'}`}>
+        {rows.map(({ id, title, state }) => {
+          if (state.status === 'loading') return <RowSkeleton key={id} title={title} />;
+          if (state.status === 'error') {
+            return <RowError key={id} title={title} message={state.message} onRetry={() => retry(id)} />;
+          }
+          if (state.items.length === 0) return null;
+          return <Row key={id} title={title} items={state.items} onSelect={track} />;
+        })}
+      </main>
     </>
   );
 }
