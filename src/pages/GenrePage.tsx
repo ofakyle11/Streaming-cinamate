@@ -3,7 +3,8 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import DetailModal from '../components/DetailModal';
 import MovieCard from '../components/MovieCard';
 import { Button, Skeleton } from '../components/ui';
-import { analytics, type DiscoverSort, type Movie } from '../services';
+import { type DiscoverSort, type Movie } from '../services';
+import { AnalyticsEvents, track } from '../services/analytics/track';
 import { genreSearch, loadGenrePage, parseGenreQuery, type GenrePageData } from '../services/genre';
 import { DISCOVER_SORTS } from '../services/tmdb/sort';
 import '../styles/genre.css';
@@ -32,7 +33,6 @@ export default function GenrePage() {
     if (genreId == null) return;
     let cancelled = false;
     const key = `${genreId}|${page}|${sortBy}|${attempt}`;
-    analytics.page('genre', { genreId, page, sortBy });
     loadGenrePage(genreId, page, sortBy)
       .then((data) => {
         if (!cancelled) setSettled({ key, status: 'ready', data });
@@ -55,7 +55,7 @@ export default function GenrePage() {
 
   const close = useCallback(() => setSelected(null), []);
   const select = (m: Movie) => {
-    analytics.track('title_open', { id: m.id, mediaType: m.mediaType, from: 'genre' });
+    track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'genre', genreId, page, sortBy });
     setSelected(m);
   };
 

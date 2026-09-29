@@ -10,6 +10,7 @@ export const AnalyticsEvents = {
   search: 'search',
   addToList: 'add-to-list',
   playTrailer: 'play-trailer',
+  titleOpen: 'title-open',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
