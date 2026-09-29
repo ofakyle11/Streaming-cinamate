@@ -1,6 +1,7 @@
 import { FormEvent, useId, useState } from 'react';
 import Page from './Page';
 import { Button, Skeleton } from '../components/ui';
+import InstallAppCard from '../components/InstallAppCard';
 import { useAuth } from '../auth';
 import { isValidEmail, normalizeEmail } from '../services/auth/validate';
 import type { User } from '../services/types';
@@ -203,6 +204,7 @@ export default function AccountPage() {
             )}
           </section>
         )}
+        <InstallAppCard />
       </div>
     </Page>
   );

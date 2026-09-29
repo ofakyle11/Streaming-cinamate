@@ -1,0 +1,31 @@
+/* PWA install card (Account page). Uses design tokens only. */
+.install-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+  animation: spring var(--dur-slow) var(--ease-out);
+}
+.install-card-mark {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 20px var(--focus-ring-glow);
+}
+.install-card-body { flex: 1; min-width: 0; }
+.install-card-body h2 { margin: 0 0 4px; font-size: 1.1rem; }
+.install-card-body p { margin: 0; line-height: 1.45; color: var(--color-muted); }
+.install-card-action { flex: none; }
+
+@media (max-width: 480px) {
+  .install-card { flex-wrap: wrap; padding: 16px; }
+  .install-card-body { flex-basis: calc(100% - 64px); }
+  .install-card-action { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install-card { animation: none; }
+}
