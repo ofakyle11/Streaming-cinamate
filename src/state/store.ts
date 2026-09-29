@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { isViewEntry, removeView, upsertView, type ViewEntry, type ViewSource, type ViewedTitle } from '../lib/viewHistory';
+import { isViewEntry, removeView, restoreView, upsertView, type ViewEntry, type ViewSource, type ViewedTitle } from '../lib/viewHistory';
 import type { MediaType } from '../services/types';
 
 /** Persisted slices for Last Frame. Keyed per profile so switching profiles swaps state. */
@@ -99,6 +99,8 @@ export interface ViewsSlice {
   recordView: (title: ViewedTitle, source: ViewSource) => void;
   removeView: (key: string) => void;
   clearViews: () => void;
+  /** Undo a removal: re-inserts the exact entry snapshot (no new view recorded). */
+  restoreView: (entry: ViewEntry) => void;
 }
 
 export interface ThumbsSlice {
@@ -319,6 +321,13 @@ export const useLastFrameStore = create<LastFrameState>()(
 
       clearViews: () =>
         set((s) => (s.activeProfileId ? { views: { ...s.views, [s.activeProfileId]: [] } } : {})),
+
+      restoreView: (entry) =>
+        set((s) => {
+          const pid = s.activeProfileId;
+          if (!pid) return {};
+          return { views: { ...s.views, [pid]: restoreView(s.views[pid] ?? [], entry) } };
+        }),
 
       // ---- thumbs (w2-ratings) ----
       thumbs: {},

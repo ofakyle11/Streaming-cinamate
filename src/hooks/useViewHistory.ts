@@ -34,6 +34,7 @@ export function useViewActions() {
       removeView: s.removeView,
       clearViews: s.clearViews,
       clearHistory: s.clearHistory,
+      restoreView: s.restoreView,
     })),
   );
   return useMemo(
@@ -45,6 +46,8 @@ export function useViewActions() {
         actions.clearViews();
         actions.clearHistory();
       },
+      /** Undo a removal with the exact captured entry (keeps position, counts and timestamps). */
+      restoreView: actions.restoreView,
     }),
     [actions],
   );

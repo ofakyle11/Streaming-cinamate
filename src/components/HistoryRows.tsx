@@ -25,7 +25,7 @@ export default function HistoryRows({ onSelect }: Props) {
   const { continueWatching, recentlyViewed } = useHistoryRows();
   const views = useViews();
   const playback = useLastFrameStore(selectHistory);
-  const { recordView, removeView } = useViewActions();
+  const { recordView, removeView, restoreView } = useViewActions();
   // Optional so Home still renders in isolation (tests) without a ToastProvider.
   const { toast } = useOptionalToast();
 
@@ -45,11 +45,12 @@ export default function HistoryRows({ onSelect }: Props) {
         duration: 6000,
         action: {
           label: 'Undo',
-          onAction: () => recordView(entry?.title ?? m, entry?.trailerPlayedAt !== undefined ? 'trailer' : 'open'),
+          // Restore the exact snapshot; only re-record when nothing was captured.
+          onAction: () => (entry ? restoreView(entry) : recordView(m, 'open')),
         },
       });
     },
-    [entriesByKey, removeView, recordView, toast],
+    [entriesByKey, removeView, restoreView, recordView, toast],
   );
 
   const removeButton = (m: Movie, row: HistoryRowName) => (
