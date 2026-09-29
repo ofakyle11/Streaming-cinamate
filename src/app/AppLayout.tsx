@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import ErrorBoundary from '../components/errors/ErrorBoundary';
 import OfflineBanner from '../components/errors/OfflineBanner';
+import RouteAnnouncer from '../components/a11y/RouteAnnouncer';
 import '../styles/a11y.css';
 
 /** Move focus to the content wrapper without adding a history entry (router-friendly). */
@@ -33,6 +34,7 @@ export default function AppLayout() {
         </ErrorBoundary>
       </div>
       <OfflineBanner />
+      <RouteAnnouncer />
       <footer className="footer">Last Frame · lastframe.tv</footer>
     </>
   );
