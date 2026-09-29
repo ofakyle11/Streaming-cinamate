@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { Movie } from '../services';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
-import { useKeepFocusOnRemoval } from '../hooks/useKeepFocusOnRemoval';
+import { useKeepFocusOnRemoval, useKeepFocusOnUnmount } from '../hooks/useKeepFocusOnRemoval';
 import MovieCard from './MovieCard';
 import { ROW_SCROLL_STEP, measureTrack, sameTrackState, type TrackState } from './rowTrack';
 import './Row.css';
@@ -85,6 +85,8 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
     fallback: () => headingRef.current,
     reduceMotion,
   });
+  // Parents drop a row once it is empty (history, "Because you liked"): if it held focus, hand it to a neighbour.
+  useKeepFocusOnUnmount(sectionRef, reduceMotion);
 
   const scroll = (dir: 1 | -1) => {
     const el = trackRef.current;

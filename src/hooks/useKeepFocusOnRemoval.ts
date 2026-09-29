@@ -82,3 +82,65 @@ export function useKeepFocusOnRemoval(
   /** Spread onto the list container (`onFocus`/`onBlur` bubble like focusin/focusout). */
   return { onFocus, onBlur };
 }
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Where focus should go when `section` (a `.row`) unmounts while holding focus,
+ * best first: the following rows' first card link (or heading), then the
+ * preceding rows', then the nearest focusable element after, then before, the
+ * section. Must be called while `section` is still in the document.
+ */
+export function focusTargetsAfterRemoval(section: HTMLElement): HTMLElement[] {
+  const follows = (el: Element) => Boolean(section.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING);
+  const rows = Array.from(document.querySelectorAll<HTMLElement>('.row')).filter(
+    (r) => r !== section && !section.contains(r) && !r.contains(section),
+  );
+  const after = rows.filter(follows);
+  const before = rows.filter((r) => !follows(r)).reverse();
+  const rowTargets = [...after, ...before]
+    .map((r) => r.querySelector<HTMLElement>('.card-link') ?? r.querySelector<HTMLElement>('h2'))
+    .filter((el): el is HTMLElement => el !== null);
+
+  const focusables = Array.from(document.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => !section.contains(el));
+  const next = focusables.find(follows);
+  const prev = focusables.filter((el) => !follows(el)).pop();
+  return [...new Set([...rowTargets, ...(next ? [next] : []), ...(prev ? [prev] : [])])];
+}
+
+/**
+ * Keeps keyboard focus on the page when a whole row unmounts while it holds focus
+ * (its last card was removed or rated away and the parent drops the row). Runs in
+ * a layout cleanup, before React detaches the row's DOM, so neighbours can still
+ * be found; focus moves to the first of {@link focusTargetsAfterRemoval}. If that
+ * target is removed in the same commit (e.g. the page is navigating away), the
+ * next still-connected target is used, and nothing happens when none remain.
+ */
+export function useKeepFocusOnUnmount(sectionRef: RefObject<HTMLElement | null>, reduceMotion = false) {
+  const reduceRef = useRef(reduceMotion);
+  useLayoutEffect(() => {
+    reduceRef.current = reduceMotion;
+  });
+
+  useLayoutEffect(() => {
+    const section = sectionRef.current;
+    return () => {
+      if (!section || !section.isConnected || !section.contains(document.activeElement)) return;
+      const targets = focusTargetsAfterRemoval(section);
+      const first = targets[0];
+      // Move now, while the section is still attached, so focus never passes through <body>.
+      first?.focus({ preventScroll: true });
+      queueMicrotask(() => {
+        const rm = reduceRef.current;
+        const active = document.activeElement;
+        if (active && active !== document.body && active.isConnected) {
+          if (active === first) first.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: rm ? 'auto' : 'smooth' });
+          return;
+        }
+        const target = targets.find((t) => t.isConnected);
+        if (target) focusWithoutJump(target, rm);
+      });
+    };
+  }, [sectionRef]);
+}

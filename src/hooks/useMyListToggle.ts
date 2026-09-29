@@ -45,7 +45,7 @@ export function useMyListToggle(
             action: {
               label: 'Undo',
               onAction: () => {
-                if (!selectIsInWatchlist(id)(useLastFrameStore.getState())) addToWatchlist(id, mediaType);
+                if (!selectIsInWatchlistFor(id, mediaType)(useLastFrameStore.getState())) addToWatchlist(id, mediaType);
               },
             },
           }

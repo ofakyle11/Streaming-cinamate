@@ -114,6 +114,37 @@ describe('HistoryRows', () => {
     expect(within(section('Recently Viewed')).getByRole('link', { name: /third/i })).toHaveFocus();
   });
 
+  it('keeps focus on the page when the only Recently Viewed card is removed and the row unmounts', () => {
+    act(() => {
+      const { recordView } = useLastFrameStore.getState();
+      recordView(movie(60, 'Watching Now'), 'trailer');
+      recordView(movie(61, 'Only Viewed'), 'open');
+    });
+    renderWithToasts();
+    const btn = screen.getByRole('button', { name: 'Remove Only Viewed from Recently Viewed' });
+    act(() => btn.focus());
+    fireEvent.click(btn);
+
+    expect(screen.queryByRole('heading', { name: 'Recently Viewed' })).toBeNull();
+    expect(document.activeElement).not.toBe(document.body);
+    expect(within(section('Continue Watching')).getByRole('link', { name: /watching now/i })).toHaveFocus();
+  });
+
+  it('moves focus to the next row when a row above it loses its only card', () => {
+    act(() => {
+      const { recordView } = useLastFrameStore.getState();
+      recordView(movie(62, 'Viewed Film'), 'open');
+      recordView(movie(63, 'Only Trailer'), 'trailer');
+    });
+    renderWithToasts();
+    const link = within(section('Continue Watching')).getByRole('link', { name: /only trailer/i });
+    act(() => link.focus());
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Only Trailer from Continue Watching' }));
+
+    expect(screen.queryByRole('heading', { name: 'Continue Watching' })).toBeNull();
+    expect(within(section('Recently Viewed')).getByRole('link', { name: /viewed film/i })).toHaveFocus();
+  });
+
   it('removes a Continue Watching card and Undo keeps it in Continue Watching', () => {
     act(() => useLastFrameStore.getState().recordView(movie(20, 'Trailer Film'), 'trailer'));
     renderWithToasts();

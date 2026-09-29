@@ -80,6 +80,43 @@ describe('Because you liked X', () => {
     expect(await within(section).findByRole('link', { name })).toBeInTheDocument();
   });
 
+  it('moves focus to a neighbouring row when the last card of a row is thumbed away', async () => {
+    state().setThumb(1000, 'up', { mediaType: 'movie', title: 'Neon Drift' }, 'movie');
+    render(
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/']}>
+          <Home svc={createMockTmdb()} />
+        </MemoryRouter>
+      </ToastProvider>,
+    );
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Because you liked Neon Drift' }, T);
+    const section = heading.closest('section') as HTMLElement;
+    const keep = within(section).getAllByRole('link')[0];
+    // Rate every other recommendation (the row is capped, so repeat as more fill in) until one card is left.
+    for (let pass = 0; pass < 10 && within(section).getAllByRole('link').length > 1; pass++) {
+      const rest = within(section).getAllByRole('link').filter((l) => l !== keep);
+      act(() => {
+        for (const link of rest) {
+          const [, , type, id] = link.getAttribute('href')!.split('/');
+          const mediaType = type as 'movie' | 'tv';
+          state().setThumb(Number(id), 'down', { mediaType, title: link.getAttribute('aria-label')! }, mediaType);
+        }
+      });
+    }
+    expect(within(section).getAllByRole('link')).toEqual([keep]);
+
+    const title = keep.getAttribute('aria-label')!.replace(/ \(\d{4}\)$/, '');
+    const down = within(keep.closest('.card') as HTMLElement).getByRole('button', { name: `Not for me: ${title}` });
+    act(() => down.focus());
+    fireEvent.click(down);
+
+    expect(screen.queryByRole('heading', { name: 'Because you liked Neon Drift' })).toBeNull();
+    expect(section.isConnected).toBe(false);
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement).toHaveClass('card-link');
+    expect(document.activeElement?.closest('.row')).not.toBeNull();
+  });
+
   it('uses 4+ star ratings as seeds and resolves missing titles from the service', async () => {
     useLastFrameStore.setState({
       ratings: { [state().activeProfileId!]: [{ titleId: 1000, rating: 5, ratedAt: 1, mediaType: 'movie' }] },
