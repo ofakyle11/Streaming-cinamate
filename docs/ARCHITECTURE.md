@@ -23,6 +23,7 @@ src/
     tmdb|auth|db/     mock.ts + live.ts adapters
     billing|analytics/ mock.ts only on the client (no Stripe SDK or keys, ever)
   data/movies.ts      Static catalogue helpers
+  pwa/                config.ts (manifest + workbox image caching), install.ts (install prompt controller/hook)
   styles/
     tokens.css        Design tokens (color, radius, blur, motion)
     primitives.css    Styles for ui/ primitives
@@ -45,6 +46,13 @@ Page/component -> hook -> zustand store (user state), or -> `services` (catalogu
 | `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` | Live auth + db |
 
 None are required; with none set the app is fully mocked.
+
+## PWA
+
+`vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Last Frame" (theme `#0b0b12`), icons generated at build
+from `public/logo.svg` via `pwa-assets.config.ts`, generateSW service worker precaching the app shell and caching
+images cache-first (`lf-images`, 250 entries / 30 days). `main.tsx` captures `beforeinstallprompt`; the Account
+page's `InstallAppCard` offers "Install app" (manual Add to Home Screen hint on iOS). The SW is build-only.
 
 ## Checks
 
