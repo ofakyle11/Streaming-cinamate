@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { MemoryRouter, Route, RouterProvider, Routes, createMemoryRouter } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '../components/ui';
+import { analytics } from '../services';
 import { selectRatingFor, selectIsInWatchlist, selectViews, useLastFrameStore } from '../state/store';
 import TitlePage from './TitlePage';
 
@@ -23,6 +24,12 @@ function renderAt(path: string) {
 describe('TitlePage', () => {
   beforeEach(() => {
     useLastFrameStore.setState({ watchlist: {}, ratings: {} });
+    // jsdom does not implement scrolling; TitleView scrolls to top on mount.
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('shows a skeleton, then the glass info panel', async () => {
@@ -121,4 +128,70 @@ describe('TitlePage', () => {
       expect(screen.getByRole('link', { name: /back home/i })).toHaveAttribute('href', '/');
     },
   );
+
+  describe('opening a Similar card', () => {
+    it('pushes a single history entry, scrolls to top and focuses the new heading', async () => {
+      const scrollTo = vi.mocked(window.scrollTo);
+      const track = vi.spyOn(analytics, 'track');
+      const router = createMemoryRouter([{ path: '/title/:type/:id', element: <TitlePage /> }], {
+        initialEntries: ['/title/movie/1000'],
+      });
+      const actions: string[] = [];
+      const unsubscribe = router.subscribe((state) => {
+        if (state.navigation.state === 'idle') actions.push(`${state.historyAction} ${state.location.pathname}`);
+      });
+      render(
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>,
+      );
+
+      const first = await screen.findByRole('heading', { level: 1, name: 'Neon Drift' }, T);
+      expect(first).toHaveFocus();
+      expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'smooth' });
+      scrollTo.mockClear();
+
+      const similar = within(
+        screen.getByRole('heading', { name: 'More like this' }).closest('section')!,
+      ).getAllByRole('link')[0];
+      const href = similar.getAttribute('href')!;
+      expect(href).toMatch(/^\/title\/(movie|tv)\/\d+$/);
+      const [, , type, id] = href.split('/');
+      fireEvent.click(similar);
+
+      expect(actions).toEqual([`PUSH ${href}`]);
+      expect(track).toHaveBeenCalledWith('title_open', { id: Number(id), mediaType: type, source: 'similar' });
+
+      const next = await screen.findByRole('heading', { level: 1, name: /.+/ }, T);
+      await waitFor(() => expect(next).not.toHaveTextContent('Neon Drift'), T);
+      await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveFocus(), T);
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+
+      // One press of Back returns to the original title.
+      await act(() => router.navigate(-1));
+      await screen.findByRole('heading', { level: 1, name: 'Neon Drift' }, T);
+      expect(router.state.location.pathname).toBe('/title/movie/1000');
+      unsubscribe();
+    });
+
+    it('jumps (no smooth scroll) when the user prefers reduced motion', async () => {
+      const scrollTo = vi.mocked(window.scrollTo);
+      vi.spyOn(window, 'matchMedia').mockImplementation(
+        (query: string) =>
+          ({
+            matches: query.includes('prefers-reduced-motion'),
+            media: query,
+            onchange: null,
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: () => false,
+          }) as MediaQueryList,
+      );
+      renderAt('/title/movie/1000');
+      await screen.findByRole('heading', { level: 1, name: 'Neon Drift' }, T);
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+    });
+  });
 });

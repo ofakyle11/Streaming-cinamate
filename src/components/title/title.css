@@ -211,3 +211,9 @@
   .title-panel, .cast-card, .provider, .rate-pop, .trailer-modal, .title-state { animation: none; }
   .rate-star:hover { transform: none; }
 }
+
+/* The heading receives programmatic focus on title change (tabIndex=-1) for screen readers;
+   it is not interactive, so no focus ring. */
+#title-heading:focus {
+  outline: none;
+}

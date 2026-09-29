@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import Row from '../components/Row';
 import CastStrip from '../components/title/CastStrip';
 import ThumbsControl from '../components/ratings/ThumbsControl';
@@ -11,6 +11,7 @@ import WhereToWatch from '../components/title/WhereToWatch';
 import '../components/title/title.css';
 import { Button, useToast } from '../components/ui';
 import { useViewActions } from '../hooks';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { useMyListToggle } from '../hooks/useMyListToggle';
 import { formatRuntime, useTitleDetails, type TitleDetails } from '../hooks/useTitleDetails';
 import { analytics, type Movie } from '../services';
@@ -65,7 +66,8 @@ function TitleError({ message, onRetry }: { message: string; onRetry: () => void
 
 function TitleView({ data }: { data: TitleDetails }) {
   const { movie, raw, cast, similar, trailer } = data;
-  const navigate = useNavigate();
+  const reducedMotion = usePrefersReducedMotion();
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const { inList, toggle: toggleList } = useMyListToggle(movie, 'title');
   const [trailerOpen, setTrailerOpen] = useState(false);
   const { recordView } = useViewActions();
@@ -76,6 +78,17 @@ function TitleView({ data }: { data: TitleDetails }) {
     document.title = `${movie.title} (${movie.year}) · Last Frame`;
     analytics.page('title', { id: movie.id, mediaType: movie.mediaType });
   }, [movie.id, movie.mediaType, movie.title, movie.year]);
+
+  // TitleView is keyed per title, so this runs once per title change (including Similar-card opens):
+  // bring the new title into view and move focus to its heading so screen readers announce it.
+  // Reduced motion is read once on mount on purpose; toggling it later must not re-scroll.
+  const reducedMotionOnMount = useRef(reducedMotion);
+  useEffect(() => {
+    if (typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: reducedMotionOnMount.current ? 'auto' : 'smooth' });
+    }
+    headingRef.current?.focus({ preventScroll: true });
+  }, []);
 
   // Track the open in viewing history (feeds Home's Continue Watching / Recently Viewed).
   // TitleView is keyed per title; the ref keeps StrictMode's double effect from counting twice.
@@ -102,10 +115,10 @@ function TitleView({ data }: { data: TitleDetails }) {
     setTrailerOpen(true);
   };
 
+  // Side effects only: MovieCard's <Link> performs the navigation. Calling navigate() here as well
+  // would push the same /title entry twice (Back would need two presses).
   const openSimilar = (m: Movie) => {
     analytics.track('title_open', { id: m.id, mediaType: m.mediaType, source: 'similar' });
-    navigate(`/title/${m.mediaType}/${m.id}`);
-    window.scrollTo({ top: 0 });
   };
 
   return (
@@ -114,7 +127,9 @@ function TitleView({ data }: { data: TitleDetails }) {
       <div className="title-content">
         <article className="title-panel glass" aria-labelledby="title-heading">
           <p className="title-kind">{movie.mediaType === 'tv' ? 'Series' : 'Film'}</p>
-          <h1 id="title-heading">{movie.title}</h1>
+          <h1 id="title-heading" ref={headingRef} tabIndex={-1}>
+            {movie.title}
+          </h1>
           <ul className="title-facts" aria-label="Details">
             <li className="match">{movie.match}% Match</li>
             <li>{movie.year}</li>
