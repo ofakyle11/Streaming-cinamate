@@ -6,6 +6,9 @@
  *   VITE_SUPABASE_URL      -> live Auth + DB (needs VITE_SUPABASE_ANON_KEY too)
  *
  * Billing and analytics are mock-only on the client by design.
+ *
+ *   VITE_PLAUSIBLE_DOMAIN  -> Plausible analytics (public site domain; optional
+ *                             VITE_PLAUSIBLE_API_HOST for a self-hosted/proxied host)
  */
 import type { CatalogRow, Movie, Services, TmdbGenre, TmdbService, TmdbTitle } from './types';
 import { createMockTmdb } from './tmdb/mock';
@@ -16,8 +19,11 @@ import { createMockDb } from './db/mock';
 import { createLiveDb } from './db/live';
 import { createMockBilling } from './billing/mock';
 import { createMockAnalytics } from './analytics/mock';
+import { createPlausibleAnalytics } from './analytics/plausible';
+import { imageOrPlaceholder } from './images';
 
 export * from './types';
+export { TITLE_PLACEHOLDER_IMAGE, imageOrPlaceholder } from './images';
 
 const env = import.meta.env;
 const tmdbProxy = (env.VITE_TMDB_PROXY as string | undefined)?.trim();
@@ -26,19 +32,24 @@ const supabaseAnon = (env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim() 
 
 const useLiveTmdb = Boolean(tmdbProxy);
 const useLiveSupabase = Boolean(supabaseUrl);
+const plausibleDomain = (env.VITE_PLAUSIBLE_DOMAIN as string | undefined)?.trim();
+const plausibleApiHost = (env.VITE_PLAUSIBLE_API_HOST as string | undefined)?.trim();
+const useLiveAnalytics = Boolean(plausibleDomain);
 
 export const services: Services = {
   tmdb: useLiveTmdb ? createLiveTmdb(tmdbProxy as string) : createMockTmdb(),
   auth: useLiveSupabase ? createLiveAuth(supabaseUrl as string, supabaseAnon) : createMockAuth(),
   db: useLiveSupabase ? createLiveDb(supabaseUrl as string, supabaseAnon) : createMockDb(),
   billing: createMockBilling(),
-  analytics: createMockAnalytics(),
+  analytics: useLiveAnalytics
+    ? createPlausibleAnalytics({ domain: plausibleDomain as string, apiHost: plausibleApiHost })
+    : createMockAnalytics(),
   mode: {
     tmdb: useLiveTmdb ? 'live' : 'mock',
     auth: useLiveSupabase ? 'live' : 'mock',
     db: useLiveSupabase ? 'live' : 'mock',
     billing: 'mock',
-    analytics: 'mock',
+    analytics: useLiveAnalytics ? 'live' : 'mock',
   },
 };
 
@@ -59,12 +70,13 @@ export function toMovie(t: TmdbTitle, genres: readonly TmdbGenre[], svc: TmdbSer
     mediaType: t.media_type,
     title: t.title ?? t.name ?? 'Untitled',
     year: Number(t.release_date?.slice(0, 4)) || new Date().getFullYear(),
-    rating: t.certification ?? (t.media_type === 'tv' ? 'TV-14' : 'PG-13'),
+    // List payloads carry no certification; show none rather than invent one.
+    rating: t.certification || '',
     match: matchScore(t),
     genres: t.genre_ids.map((id) => genreMap.get(id)).filter((g): g is string => Boolean(g)),
     description: t.overview,
-    poster: svc.imageUrl(t.poster_path, 'w500'),
-    backdrop: svc.imageUrl(t.backdrop_path, 'w1280'),
+    poster: imageOrPlaceholder(svc.imageUrl(t.poster_path, 'w500')),
+    backdrop: imageOrPlaceholder(svc.imageUrl(t.backdrop_path, 'w1280')),
     runtime: t.runtime,
   };
 }

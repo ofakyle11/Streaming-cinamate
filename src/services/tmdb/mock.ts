@@ -1,4 +1,13 @@
-import type { MediaType, TmdbGenre, TmdbImageSize, TmdbPage, TmdbService, TmdbTitle } from '../types';
+import type {
+  MediaType,
+  TmdbGenre,
+  TmdbImageSize,
+  TmdbPage,
+  TmdbService,
+  TmdbTitle,
+  TmdbTitleDetails,
+} from '../types';
+import { sortTitles } from './sort';
 
 /** Real TMDB genre ids so the mock is drop-in compatible with live data. */
 export const MOCK_GENRES: TmdbGenre[] = [
@@ -115,6 +124,7 @@ export const MOCK_TITLES: TmdbTitle[] = SEEDS.map((s, i) => {
     release_date: `${year}-${pad(month)}-${pad(day)}`,
     runtime: isTv ? 42 + (i % 4) * 6 : 88 + ((i * 13) % 61),
     certification: isTv ? CERTS_TV[i % CERTS_TV.length] : CERTS_MOVIE[i % CERTS_MOVIE.length],
+    popularity: Math.round((20 + ((i * 53) % 97) * 4.3) * 10) / 10, // deterministic 20 .. ~437
   };
 });
 
@@ -147,13 +157,52 @@ const latency = () =>
 
 const byType = (t?: MediaType) => (t ? MOCK_TITLES.filter((x) => x.media_type === t) : MOCK_TITLES);
 
+const MOCK_FIRST = ['Ava', 'Rafael', 'Mina', 'Theo', 'Juno', 'Kai', 'Lena', 'Omar', 'Iris', 'Silas'];
+const MOCK_LAST = ['Marlow', 'Okafor', 'Vance', 'Ishikawa', 'Brandt', 'Solis', 'Reyes', 'Lindqvist', 'Adeyemi', 'Hale'];
+const person = (n: number) => `${MOCK_FIRST[n % MOCK_FIRST.length]} ${MOCK_LAST[(n * 3) % MOCK_LAST.length]}`;
+
+/** Fictional credits / related titles so detail views work fully offline. */
+export function mockDetails(t: TmdbTitle): TmdbTitleDetails {
+  const i = t.id - 1000;
+  const related = MOCK_TITLES.filter(
+    (x) => x.id !== t.id && x.genre_ids.some((g) => t.genre_ids.includes(g)),
+  );
+  return {
+    ...t,
+    genres: MOCK_GENRES.filter((g) => t.genre_ids.includes(g.id)),
+    tagline: '',
+    status: 'Released',
+    original_language: 'en',
+    ...(t.media_type === 'tv' ? { number_of_seasons: 1 + (i % 4), number_of_episodes: 8 + (i % 4) * 2 } : {}),
+    credits: {
+      cast: Array.from({ length: 6 }, (_, k) => ({
+        id: 50000 + i * 10 + k,
+        name: person(i + k),
+        character: k === 0 ? 'Lead' : `Supporting ${k}`,
+        profile_path: `/lfp${(i + k) % 40}`,
+        order: k,
+      })),
+      crew: [
+        { id: 60000 + i, name: person(i + 7), job: 'Director', department: 'Directing', profile_path: '' },
+        { id: 61000 + i, name: person(i + 4), job: 'Screenplay', department: 'Writing', profile_path: '' },
+      ],
+    },
+    videos: [],
+    similar: related.slice(0, 10),
+    recommendations: [...related].sort((a, b) => b.vote_average - a.vote_average).slice(0, 10),
+    watchProviders: {},
+  };
+}
+
 export function createMockTmdb(): TmdbService {
   return {
-    async trending(page) {
+    async trending(page, opts) {
       await latency();
       // Deterministic "trending" shuffle: stride through the catalogue.
       const stride = MOCK_TITLES.map((_, i) => MOCK_TITLES[(i * 7) % MOCK_TITLES.length]);
-      return paginate(stride, page);
+      const kind = opts?.mediaType;
+      const windowed = opts?.window === 'week' ? [...stride].reverse() : stride;
+      return paginate(kind && kind !== 'all' ? windowed.filter((t) => t.media_type === kind) : windowed, page);
     },
     async popular(mediaType, page) {
       await latency();
@@ -168,25 +217,57 @@ export function createMockTmdb(): TmdbService {
       const recent = [...byType('movie')].sort((a, b) => b.release_date.localeCompare(a.release_date));
       return paginate(recent, page);
     },
-    async discover({ mediaType, genreId, page } = {}) {
+    async discover({ mediaType, genreId, page, sortBy, yearFrom, yearTo, minRating } = {}) {
       await latency();
-      const items = byType(mediaType).filter((t) => genreId == null || t.genre_ids.includes(genreId));
-      return paginate(items, page);
+      const items = byType(mediaType).filter((t) => {
+        if (genreId != null && !t.genre_ids.includes(genreId)) return false;
+        if (minRating != null && t.vote_average < minRating) return false;
+        if (yearFrom != null || yearTo != null) {
+          const y = Number(t.release_date.slice(0, 4));
+          if (!Number.isFinite(y) || y <= 0) return false;
+          if (yearFrom != null && y < yearFrom) return false;
+          if (yearTo != null && y > yearTo) return false;
+        }
+        return true;
+      });
+      return paginate(sortBy ? sortTitles(items, sortBy) : items, page);
     },
-    async search(query, page) {
+    async search(query, page, filters = {}) {
       await latency();
       const q = query.trim().toLowerCase();
       if (!q) return paginate([], page);
-      const items = MOCK_TITLES.filter((t) => (t.title ?? t.name ?? '').toLowerCase().includes(q));
+      const { mediaType, year, genreId, minRating } = filters;
+      const items = MOCK_TITLES.filter(
+        (t) =>
+          (t.title ?? t.name ?? '').toLowerCase().includes(q) &&
+          (mediaType == null || t.media_type === mediaType) &&
+          (year == null || t.release_date.startsWith(String(year))) &&
+          (genreId == null || t.genre_ids.includes(genreId)) &&
+          (minRating == null || t.vote_average >= minRating),
+      );
       return paginate(items, page);
     },
     async details(mediaType, id) {
       await latency();
-      return MOCK_TITLES.find((t) => t.id === id && t.media_type === mediaType) ?? null;
+      const t = MOCK_TITLES.find((x) => x.id === id && x.media_type === mediaType);
+      return t ? mockDetails(t) : null;
     },
-    async genres() {
-      return MOCK_GENRES;
+    async genres(mediaType) {
+      // Like TMDB's per-type lists: only genres that have titles of that type.
+      if (!mediaType) return MOCK_GENRES;
+      const ids = new Set(byType(mediaType).flatMap((t) => t.genre_ids));
+      return MOCK_GENRES.filter((g) => ids.has(g.id));
     },
     imageUrl: mockImageUrl,
+    async upcoming(page) {
+      await latency();
+      const soonest = [...byType('movie')].sort((a, b) => a.release_date.localeCompare(b.release_date));
+      return paginate(soonest, page);
+    },
+    async byGenre(genreId, { mediaType, page } = {}) {
+      await latency();
+      const items = byType(mediaType).filter((t) => t.genre_ids.includes(genreId));
+      return paginate([...items].sort((a, b) => b.vote_average - a.vote_average), page);
+    },
   };
 }

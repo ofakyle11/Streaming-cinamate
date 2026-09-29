@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Page from './Page';
-import { loadHomeCatalog, type Movie } from '../services';
+import type { MediaType, Movie } from '../services';
+import { loadTitleDetails } from '../services/title';
 
 export default function TitlePage() {
   const { type, id } = useParams();
@@ -9,10 +10,10 @@ export default function TitlePage() {
 
   useEffect(() => {
     let cancelled = false;
-    loadHomeCatalog()
-      .then((c) => {
-        const all = [...c.featured, ...c.rows.flatMap((r) => r.items)];
-        if (!cancelled) setMovie(all.find((m) => String(m.id) === id) ?? null);
+    loadTitleDetails(type as MediaType, Number(id))
+      .then((v) => v?.movie ?? null)
+      .then((m) => {
+        if (!cancelled) setMovie(m);
       })
       .catch(() => {
         if (!cancelled) setMovie(null);
@@ -20,7 +21,7 @@ export default function TitlePage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [type, id]);
 
   if (movie === undefined) {
     return <Page title="Loading…"><p className="muted">Loading…</p></Page>;

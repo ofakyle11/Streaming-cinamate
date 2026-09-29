@@ -43,6 +43,10 @@ Page/component -> hook -> zustand store (user state), or -> `services` (catalogu
 | --- | --- |
 | `VITE_TMDB_PROXY` | Live TMDB through our proxy |
 | `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` | Live auth + db |
+| `VITE_PLAUSIBLE_DOMAIN` (+ optional `VITE_PLAUSIBLE_API_HOST`) | Plausible analytics (`services/analytics/plausible.ts`); else console mock |
+
+Analytics: `usePageViews()` in `AppLayout` sends a page view per route change; custom events
+(`search`, `add-to-list`, `play-trailer`) go through `track()` in `services/analytics/track.ts`.
 
 None are required; with none set the app is fully mocked.
 

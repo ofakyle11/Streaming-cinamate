@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { Movie } from '../services';
+import { AnalyticsEvents, track } from '../services/analytics/track';
 
 interface Props {
   movie: Movie;
@@ -29,13 +30,25 @@ export default function DetailModal({ movie, onClose }: Props) {
           <div className="meta">
             <span className="match">{movie.match}% Match</span>
             <span>{movie.year}</span>
-            <span className="badge">{movie.rating}</span>
+            {movie.rating && <span className="badge">{movie.rating}</span>}
           </div>
           <p>{movie.description}</p>
           <p className="genres">Genres: {movie.genres.join(', ')}</p>
           <div className="actions">
-            <button className="btn primary">▶ Play</button>
-            <button className="btn glass">＋ My List</button>
+            <button
+              className="btn primary"
+              onClick={() => track(AnalyticsEvents.playTrailer, { id: movie.id, mediaType: movie.mediaType, source: 'modal' })}
+            >
+              ▶ Play
+            </button>
+            <button
+              className="btn glass"
+              onClick={() =>
+                track(AnalyticsEvents.addToList, { id: movie.id, mediaType: movie.mediaType, list: 'watchlist', source: 'modal' })
+              }
+            >
+              ＋ My List
+            </button>
           </div>
         </div>
       </div>

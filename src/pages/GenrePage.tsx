@@ -1,11 +1,173 @@
-import { useParams } from 'react-router-dom';
-import Page from './Page';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import DetailModal from '../components/DetailModal';
+import MovieCard from '../components/MovieCard';
+import { Button, Skeleton } from '../components/ui';
+import { type DiscoverSort, type MediaType, type Movie } from '../services';
+import { AnalyticsEvents, track } from '../services/analytics/track';
+import { genreSearch, loadGenrePage, parseGenreQuery, type GenrePageData } from '../services/genre';
+import { DISCOVER_SORTS } from '../services/tmdb/sort';
+import '../styles/genre.css';
+
+type State =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; data: GenrePageData };
+
+/** A settled result tagged with the request it answers; stale results read as loading. */
+type Settled = { key: string } & State;
+
+const SKELETONS = Array.from({ length: 10 }, (_, i) => i);
+
+const MEDIA_TYPES: { id: MediaType; label: string }[] = [
+  { id: 'movie', label: 'Movies' },
+  { id: 'tv', label: 'TV' },
+];
 
 export default function GenrePage() {
   const { id } = useParams();
+  const [params, setParams] = useSearchParams();
+  const { genreId, page, sortBy, type } = parseGenreQuery(id, params);
+  const [settled, setSettled] = useState<Settled | null>(null);
+  const [selected, setSelected] = useState<Movie | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const requestKey = `${genreId}|${page}|${sortBy}|${type ?? ''}|${attempt}`;
+  const state: State = settled?.key === requestKey ? settled : { status: 'loading' };
+
+  useEffect(() => {
+    if (genreId == null) return;
+    let cancelled = false;
+    const key = `${genreId}|${page}|${sortBy}|${type ?? ''}|${attempt}`;
+    loadGenrePage(genreId, page, sortBy, undefined, type)
+      .then((data) => {
+        if (!cancelled) setSettled({ key, status: 'ready', data });
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setSettled({ key, status: 'error', message: e instanceof Error ? e.message : 'Could not load this genre.' });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [genreId, page, sortBy, type, attempt]);
+
+  // Last loaded data for this genre, kept while a new page/sort/type loads so
+  // the Movies/TV control does not flicker away.
+  const known = settled?.status === 'ready' && settled.data.genre?.id === genreId ? settled.data : null;
+  const availableTypes = known?.availableTypes ?? [];
+  const defaultType = known?.defaultType;
+  const activeType: MediaType | undefined =
+    type && availableTypes.includes(type) ? type : defaultType;
+
+  const go = (nextPage: number, nextSort: DiscoverSort, nextType: MediaType | undefined = type) => {
+    setParams(new URLSearchParams(genreSearch(nextPage, nextSort, nextType, defaultType)));
+    // Optional call: jsdom lacks Element.scrollTo; browsers have it.
+    document.scrollingElement?.scrollTo?.({ top: 0 });
+  };
+
+  const close = useCallback(() => setSelected(null), []);
+  const select = (m: Movie) => {
+    track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'genre', genreId, page, sortBy });
+    setSelected(m);
+  };
+
+  const data = state.status === 'ready' ? state.data : null;
+  const notFound = genreId == null || (data !== null && data.genre === null);
+
+  if (notFound) {
+    return (
+      <main className="page">
+        <section className="page-card glass">
+          <h1>Genre not found</h1>
+          <p className="muted">We couldn’t find that genre.</p>
+          <Link className="page-link" to="/">Back to Home</Link>
+        </section>
+      </main>
+    );
+  }
+
+  const totalPages = data?.totalPages ?? 0;
+
   return (
-    <Page title={`Genre: ${id ?? ''}`}>
-      <p className="muted">Titles in this genre will appear here.</p>
-    </Page>
+    <main className="page genre-page">
+      <section className="genre-shell">
+        <header className="genre-head glass">
+          <div>
+            <p className="genre-eyebrow">Genre</p>
+            <h1>{data?.genre?.name ?? <Skeleton variant="text" width={180} />}</h1>
+            {data && (
+              <p className="muted genre-count" aria-live="polite">
+                {data.totalResults} {data.totalResults === 1 ? 'title' : 'titles'}
+              </p>
+            )}
+          </div>
+          <div className="genre-controls">
+            {availableTypes.length > 1 && (
+              <div className="genre-sort genre-type" role="group" aria-label="Media type">
+                {MEDIA_TYPES.filter((t) => availableTypes.includes(t.id)).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`genre-sort-btn${t.id === activeType ? ' active' : ''}`}
+                    aria-pressed={t.id === activeType}
+                    onClick={() => t.id !== activeType && go(1, sortBy, t.id)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="genre-sort" role="group" aria-label="Sort titles">
+              {DISCOVER_SORTS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`genre-sort-btn${s.id === sortBy ? ' active' : ''}`}
+                  aria-pressed={s.id === sortBy}
+                  onClick={() => s.id !== sortBy && go(1, s.id)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </header>
+
+        {state.status === 'error' ? (
+          <div className="genre-empty glass" role="alert">
+            <p>{state.message}</p>
+            <Button variant="glass" size="sm" onClick={() => setAttempt((n) => n + 1)}>Retry</Button>
+          </div>
+        ) : (
+          <div className="genre-grid" aria-busy={state.status === 'loading'}>
+            {data
+              ? data.items.map((m, i) => (
+                  <MovieCard key={m.id} movie={m} delay={Math.min(i, 12) * 40} onSelect={select} />
+                ))
+              : SKELETONS.map((i) => <Skeleton key={i} variant="card" className="genre-skel" />)}
+          </div>
+        )}
+
+        {data && data.items.length === 0 && (
+          <p className="muted genre-empty-text">No titles in this genre yet.</p>
+        )}
+
+        {totalPages > 1 && data && (
+          <nav className="genre-pager" aria-label="Pagination">
+            <Button variant="glass" size="sm" disabled={data.page <= 1} onClick={() => go(data.page - 1, sortBy)}>
+              ‹ Prev
+            </Button>
+            <span className="muted" aria-current="page">
+              Page {data.page} of {totalPages}
+            </span>
+            <Button variant="glass" size="sm" disabled={data.page >= totalPages} onClick={() => go(data.page + 1, sortBy)}>
+              Next ›
+            </Button>
+          </nav>
+        )}
+      </section>
+      {selected && <DetailModal movie={selected} onClose={close} />}
+    </main>
   );
 }
