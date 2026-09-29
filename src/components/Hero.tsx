@@ -10,11 +10,13 @@ export default function Hero({ featured, onMore }: Props) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    if (featured.length < 2) return;
     const t = setInterval(() => setIndex((i) => (i + 1) % featured.length), 7000);
     return () => clearInterval(t);
   }, [featured.length]);
 
-  const movie = featured[index];
+  const movie = featured[index] ?? featured[0];
+  if (!movie) return null;
 
   return (
     <header className="hero">
