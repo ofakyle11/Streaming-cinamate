@@ -1,4 +1,5 @@
-node_modules
 dist
+node_modules
 coverage
+package-lock.json
 tsconfig.tsbuildinfo
