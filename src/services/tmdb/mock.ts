@@ -168,16 +168,29 @@ export function createMockTmdb(): TmdbService {
       const recent = [...byType('movie')].sort((a, b) => b.release_date.localeCompare(a.release_date));
       return paginate(recent, page);
     },
+    async upcoming(page) {
+      await latency();
+      const recent = [...byType('movie')].sort((a, b) => b.release_date.localeCompare(a.release_date));
+      return paginate(recent, page);
+    },
+    async byGenre(mediaType, genreId, page) {
+      await latency();
+      return paginate(byType(mediaType).filter((t) => t.genre_ids.includes(genreId)), page);
+    },
     async discover({ mediaType, genreId, page } = {}) {
       await latency();
       const items = byType(mediaType).filter((t) => genreId == null || t.genre_ids.includes(genreId));
       return paginate(items, page);
     },
-    async search(query, page) {
+    async search(query, page, filters = {}) {
       await latency();
       const q = query.trim().toLowerCase();
       if (!q) return paginate([], page);
-      const items = MOCK_TITLES.filter((t) => (t.title ?? t.name ?? '').toLowerCase().includes(q));
+      const items = byType(filters.mediaType).filter(
+        (t) =>
+          (t.title ?? t.name ?? '').toLowerCase().includes(q) &&
+          (filters.year == null || t.release_date.startsWith(String(filters.year))),
+      );
       return paginate(items, page);
     },
     async details(mediaType, id) {

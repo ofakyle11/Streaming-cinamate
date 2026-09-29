@@ -40,14 +40,62 @@ export interface TmdbPage<T> {
 
 export type TmdbImageSize = 'w342' | 'w500' | 'w780' | 'w1280' | 'original';
 
+export interface TmdbSearchFilters {
+  /** Restrict to one media type; omitted = multi search. */
+  mediaType?: MediaType;
+  year?: number;
+  includeAdult?: boolean;
+}
+
+export interface TmdbCastMember {
+  id: number;
+  name: string;
+  character?: string;
+  profile_path: string | null;
+}
+
+export interface TmdbVideo {
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+}
+
+export interface TmdbProvider {
+  id: number;
+  name: string;
+  logo_path: string | null;
+}
+
+export interface TmdbRegionProviders {
+  link?: string;
+  flatrate: TmdbProvider[];
+  rent: TmdbProvider[];
+  buy: TmdbProvider[];
+}
+
+/** Details payload: a title plus optional appended sub-resources (live only). */
+export interface TmdbTitleDetails extends TmdbTitle {
+  tagline?: string;
+  cast?: TmdbCastMember[];
+  directors?: string[];
+  videos?: TmdbVideo[];
+  similar?: TmdbTitle[];
+  recommendations?: TmdbTitle[];
+  /** Region code -> providers. */
+  providers?: Record<string, TmdbRegionProviders>;
+}
+
 export interface TmdbService {
-  trending(page?: number): Promise<TmdbPage<TmdbTitle>>;
+  trending(page?: number, mediaType?: 'all' | MediaType, window?: 'day' | 'week'): Promise<TmdbPage<TmdbTitle>>;
+  upcoming(page?: number): Promise<TmdbPage<TmdbTitle>>;
+  byGenre(mediaType: MediaType, genreId: number, page?: number): Promise<TmdbPage<TmdbTitle>>;
   popular(mediaType: MediaType, page?: number): Promise<TmdbPage<TmdbTitle>>;
   topRated(mediaType: MediaType, page?: number): Promise<TmdbPage<TmdbTitle>>;
   nowPlaying(page?: number): Promise<TmdbPage<TmdbTitle>>;
   discover(opts: { mediaType?: MediaType; genreId?: number; page?: number }): Promise<TmdbPage<TmdbTitle>>;
-  search(query: string, page?: number): Promise<TmdbPage<TmdbTitle>>;
-  details(mediaType: MediaType, id: number): Promise<TmdbTitle | null>;
+  search(query: string, page?: number, filters?: TmdbSearchFilters): Promise<TmdbPage<TmdbTitle>>;
+  details(mediaType: MediaType, id: number): Promise<TmdbTitleDetails | null>;
   genres(): Promise<TmdbGenre[]>;
   /** Resolve a TMDB `*_path` to a fully qualified image URL. */
   imageUrl(path: string, size?: TmdbImageSize): string;
