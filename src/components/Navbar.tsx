@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
+import ProfileMenu from '../features/profiles/ProfileMenu';
 
 const links = [
   { to: '/', label: 'Home' },
@@ -32,7 +33,7 @@ export default function Navbar() {
       </ul>
       <div className="nav-right">
         <input className="search glass" placeholder="Search" />
-        <Link to="/profiles" className="avatar" aria-label="Profiles" />
+        <ProfileMenu />
       </div>
     </nav>
   );
