@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 
 const links = [
   { to: '/', label: 'Home' },
@@ -11,6 +11,8 @@ const links = [
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [q, setQ] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -31,7 +33,15 @@ export default function Navbar() {
         ))}
       </ul>
       <div className="nav-right">
-        <input className="search glass" placeholder="Search" />
+        <form
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (q.trim()) navigate(`/search?q=${encodeURIComponent(q.trim())}`);
+          }}
+        >
+          <input className="search glass" placeholder="Search" aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} />
+        </form>
         <Link to="/profiles" className="avatar" aria-label="Profiles" />
       </div>
     </nav>

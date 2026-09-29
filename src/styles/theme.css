@@ -202,3 +202,18 @@ a.avatar { display: block; }
 .row-skeleton h2 .skeleton { display: inline-block; }
 .row-skeleton .track { display: flex; gap: 10px; overflow: hidden; }
 .home-error { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+
+/* ---------- search ---------- */
+.search-page { display: flex; flex-direction: column; gap: 16px; }
+.search-input { width: 100%; padding: 14px 20px; border-radius: var(--radius, 16px); color: var(--text); font-size: 1.1rem; outline: none; }
+.search-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.search-filters .chip { padding: 6px 14px; border-radius: 999px; color: var(--text); font-size: 0.9rem; transition: transform 0.25s ease, background 0.25s ease; }
+.search-filters .chip.active { background: rgba(255, 255, 255, 0.2); }
+.search-filters .chip:hover { transform: translateY(-2px); }
+.search-filters .year { width: 110px; }
+.search-filters option { color: #000; }
+.search-error { display: flex; align-items: center; gap: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .search-filters .chip { transition: none; }
+  .search-filters .chip:hover { transform: none; }
+}
