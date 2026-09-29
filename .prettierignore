@@ -1,5 +1,5 @@
-node_modules
 dist
-.claude/worktrees/
+node_modules
 coverage
+package-lock.json
 tsconfig.tsbuildinfo
