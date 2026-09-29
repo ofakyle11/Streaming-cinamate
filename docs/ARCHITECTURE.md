@@ -15,9 +15,10 @@ src/
   app/
     router.tsx        Route table; pages are lazy-loaded (code split per page)
     AppLayout.tsx     Shell: skip link, Navbar, #main > ErrorBoundary > Suspense > <Outlet/>,
-                      OfflineBanner, footer
+                      OfflineBanner, RouteAnnouncer, footer
   pages/              Route components (Home, Search, Genre, Title, MyList, Profiles, Account, Plans, NotFound)
   components/         Feature components (Hero, Row, MovieCard, DetailModal, Navbar)
+    a11y/             RouteAnnouncer (route-change announcement + focus reset)
     brand/            LogoMark (LF glass monogram, SVG paths, token colours)
     errors/           ErrorBoundary, RouteError, ErrorCard, OfflineBanner
     ui/               Primitives: Button, IconButton, Skeleton, Toast (barrel: ui/index.ts)
@@ -37,7 +38,8 @@ src/
     theme.css         Imports tokens + primitives; app styles; prefers-reduced-motion overrides
     brand.css         LogoMark styles (imported by LogoMark.tsx)
     errors.css        Error card + offline banner (imported by errors/ components)
-    a11y.css          Skip link, focus rings, main target (imported by AppLayout.tsx)
+    a11y.css          Skip link, focus rings, main target, .sr-only (imported by AppLayout.tsx)
+    nav.css           Mobile primary nav toggle + glass dropdown (imported by Navbar.tsx)
   test/               Vitest setup and integration tests
 netlify/functions/    Serverless functions (health.ts); served at /api/* via netlify.toml
 public/               favicon.svg, favicon-32.png, mask-icon.svg, apple-touch-icon.png,
@@ -71,7 +73,7 @@ value and how to set it in Netlify: [KEYS.md](KEYS.md).
 ## Styling conventions
 
 Feature styles live in their own file under `src/styles/` and are imported by the component
-that needs them (`brand.css`, `errors.css`, `a11y.css`), which keeps `theme.css` small. Use
+that needs them (`brand.css`, `errors.css`, `a11y.css`, `nav.css`), which keeps `theme.css` small. Use
 the tokens in `tokens.css`, not literal colours. Glass surfaces use the `.glass` class with
 translucent backgrounds and `backdrop-filter` blur. The global `prefers-reduced-motion` block
 in `theme.css` switches off animations and transitions everywhere, so new motion only needs
@@ -130,6 +132,23 @@ Details and the contrast numbers are in [A11Y.md](A11Y.md). In short:
   dialogs (`DetailModal`), closes on `Esc` and returns focus to the opener.
 - `AppLayout` renders a **Skip to content** link that focuses `#main` (`tabIndex=-1`), plus
   ARIA landmarks. `a11y.css` holds the skip link and focus-visible styles.
+
+- `.sr-only` (in `a11y.css`) hides content visually while keeping it available to screen
+  readers.
+
+**SPA navigation a11y.** `RouteAnnouncer` (`components/a11y/`, mounted in `AppLayout` next
+to `OfflineBanner`) reacts to `pathname` changes only, skipping the initial render. After a
+route change it moves focus to `#main` and announces "Navigated to <title>" in a visually
+hidden polite live region. If the lazily loaded page hasn't set `document.title` yet, a
+`MutationObserver` on `<head>` waits for the new title, capped at 1.5s (`TITLE_WAIT_MS`),
+then announces anyway. While an `[aria-modal="true"]` dialog is open it still announces but
+doesn't move focus.
+
+**Mobile nav.** At <=760px `theme.css` hides `.nav-links`, and `Navbar` shows a menu toggle
+(`aria-expanded`, `aria-controls` pointing at the links list). Opening it shows the same list
+as a glass dropdown under the navbar (`nav.css`, 44px tap targets, reduced-motion safe). It
+closes on Escape or an outside click, returning focus to the toggle, and on any route change.
+At 480px and below only the logo mark is shown so everything fits on one line at 375px.
 
 Use these for any new modal, menu or card rail rather than hand-rolling focus logic.
 
