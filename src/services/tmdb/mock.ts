@@ -242,8 +242,11 @@ export function createMockTmdb(): TmdbService {
       const t = MOCK_TITLES.find((x) => x.id === id && x.media_type === mediaType);
       return t ? mockDetails(t) : null;
     },
-    async genres() {
-      return MOCK_GENRES;
+    async genres(mediaType) {
+      // Like TMDB's per-type lists: only genres that have titles of that type.
+      if (!mediaType) return MOCK_GENRES;
+      const ids = new Set(byType(mediaType).flatMap((t) => t.genre_ids));
+      return MOCK_GENRES.filter((g) => ids.has(g.id));
     },
     imageUrl: mockImageUrl,
     async upcoming(page) {

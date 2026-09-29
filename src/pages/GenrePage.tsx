@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import DetailModal from '../components/DetailModal';
 import MovieCard from '../components/MovieCard';
 import { Button, Skeleton } from '../components/ui';
-import { analytics, type DiscoverSort, type Movie } from '../services';
+import { analytics, type DiscoverSort, type MediaType, type Movie } from '../services';
 import { genreSearch, loadGenrePage, parseGenreQuery, type GenrePageData } from '../services/genre';
 import { DISCOVER_SORTS } from '../services/tmdb/sort';
 import '../styles/genre.css';
@@ -18,22 +18,27 @@ type Settled = { key: string } & State;
 
 const SKELETONS = Array.from({ length: 10 }, (_, i) => i);
 
+const MEDIA_TYPES: { id: MediaType; label: string }[] = [
+  { id: 'movie', label: 'Movies' },
+  { id: 'tv', label: 'TV' },
+];
+
 export default function GenrePage() {
   const { id } = useParams();
   const [params, setParams] = useSearchParams();
-  const { genreId, page, sortBy } = parseGenreQuery(id, params);
+  const { genreId, page, sortBy, type } = parseGenreQuery(id, params);
   const [settled, setSettled] = useState<Settled | null>(null);
   const [selected, setSelected] = useState<Movie | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const requestKey = `${genreId}|${page}|${sortBy}|${attempt}`;
+  const requestKey = `${genreId}|${page}|${sortBy}|${type ?? ''}|${attempt}`;
   const state: State = settled?.key === requestKey ? settled : { status: 'loading' };
 
   useEffect(() => {
     if (genreId == null) return;
     let cancelled = false;
-    const key = `${genreId}|${page}|${sortBy}|${attempt}`;
-    analytics.page('genre', { genreId, page, sortBy });
-    loadGenrePage(genreId, page, sortBy)
+    const key = `${genreId}|${page}|${sortBy}|${type ?? ''}|${attempt}`;
+    analytics.page('genre', { genreId, page, sortBy, ...(type ? { mediaType: type } : {}) });
+    loadGenrePage(genreId, page, sortBy, undefined, type)
       .then((data) => {
         if (!cancelled) setSettled({ key, status: 'ready', data });
       })
@@ -45,10 +50,18 @@ export default function GenrePage() {
     return () => {
       cancelled = true;
     };
-  }, [genreId, page, sortBy, attempt]);
+  }, [genreId, page, sortBy, type, attempt]);
 
-  const go = (nextPage: number, nextSort: DiscoverSort) => {
-    setParams(new URLSearchParams(genreSearch(nextPage, nextSort)));
+  // Last loaded data for this genre, kept while a new page/sort/type loads so
+  // the Movies/TV control does not flicker away.
+  const known = settled?.status === 'ready' && settled.data.genre?.id === genreId ? settled.data : null;
+  const availableTypes = known?.availableTypes ?? [];
+  const defaultType = known?.defaultType;
+  const activeType: MediaType | undefined =
+    type && availableTypes.includes(type) ? type : defaultType;
+
+  const go = (nextPage: number, nextSort: DiscoverSort, nextType: MediaType | undefined = type) => {
+    setParams(new URLSearchParams(genreSearch(nextPage, nextSort, nextType, defaultType)));
     // Optional call: jsdom lacks Element.scrollTo; browsers have it.
     document.scrollingElement?.scrollTo?.({ top: 0 });
   };
@@ -89,18 +102,35 @@ export default function GenrePage() {
               </p>
             )}
           </div>
-          <div className="genre-sort" role="group" aria-label="Sort titles">
-            {DISCOVER_SORTS.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                className={`genre-sort-btn${s.id === sortBy ? ' active' : ''}`}
-                aria-pressed={s.id === sortBy}
-                onClick={() => s.id !== sortBy && go(1, s.id)}
-              >
-                {s.label}
-              </button>
-            ))}
+          <div className="genre-controls">
+            {availableTypes.length > 1 && (
+              <div className="genre-sort genre-type" role="group" aria-label="Media type">
+                {MEDIA_TYPES.filter((t) => availableTypes.includes(t.id)).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`genre-sort-btn${t.id === activeType ? ' active' : ''}`}
+                    aria-pressed={t.id === activeType}
+                    onClick={() => t.id !== activeType && go(1, sortBy, t.id)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="genre-sort" role="group" aria-label="Sort titles">
+              {DISCOVER_SORTS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`genre-sort-btn${s.id === sortBy ? ' active' : ''}`}
+                  aria-pressed={s.id === sortBy}
+                  onClick={() => s.id !== sortBy && go(1, s.id)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
           </div>
         </header>
 

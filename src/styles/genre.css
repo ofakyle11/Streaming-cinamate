@@ -32,6 +32,9 @@
 .genre-eyebrow { color: var(--color-muted); text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; margin-bottom: 4px; }
 .genre-count { margin-top: 6px; font-size: 0.9rem; color: var(--color-muted); }
 
+.genre-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.genre-type { animation: genre-pop var(--dur-medium) var(--ease-out) both; }
+
 .genre-sort {
   display: inline-flex; gap: 4px; padding: 4px; border-radius: var(--radius-pill);
   background: var(--glass-bg-faint); border: 1px solid var(--glass-border);
@@ -69,6 +72,7 @@
 @media (max-width: 760px) {
   .genre-page { padding-left: 16px; padding-right: 16px; }
   .genre-head { padding: 18px; }
+  .genre-controls { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
   .genre-sort { width: 100%; }
   .genre-sort-btn { flex: 1; padding: 6px 8px; }
   .genre-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
@@ -77,6 +81,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .genre-chips li, .genre-grid .card, .genre-head { animation: none !important; }
+  .genre-chips li, .genre-grid .card, .genre-head, .genre-type { animation: none !important; }
+  .genre-sort-btn { transition: none !important; }
   .genre-chip:hover, .genre-grid .card:hover { transform: none !important; }
 }
