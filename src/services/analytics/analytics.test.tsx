@@ -162,6 +162,32 @@ describe('title-open events', () => {
   });
 });
 
+describe('title-open from New & Popular', () => {
+  it('records exactly one typed title-open with source "new" through the mock adapter', async () => {
+    vi.resetModules();
+    const svc = await import('../index');
+    const mock = svc.analytics as ReturnType<typeof createMockAnalytics>;
+    const { default: NewPopularPage } = await import('../../pages/NewPopularPage');
+    const { createMockTmdb: freshMockTmdb } = await import('../tmdb/mock');
+    render(
+      <MemoryRouter initialEntries={['/new']}>
+        <Routes>
+          <Route path="/new" element={<NewPopularPage svc={freshMockTmdb()} />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getAllByRole('button').some((b) => b.classList.contains('card'))).toBe(true), T);
+    const card = screen.getAllByRole('button').find((b) => b.classList.contains('card'));
+    fireEvent.click(card as HTMLElement);
+    const tracks = mock.events().filter((e) => e.type === 'track');
+    const opens = tracks.filter((e) => e.name === AnalyticsEvents.titleOpen);
+    expect(opens).toHaveLength(1);
+    expect(opens[0].props).toMatchObject({ id: expect.any(Number), mediaType: expect.any(String), source: 'new' });
+    expect(opens[0].props).not.toHaveProperty('from');
+    expect(tracks.some((e) => e.name === 'title_open')).toBe(false);
+  });
+});
+
 describe('DetailModal events', () => {
   const movie: Movie = {
     id: 42,

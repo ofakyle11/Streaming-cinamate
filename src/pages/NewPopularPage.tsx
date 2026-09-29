@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Row from '../components/Row';
 import DetailModal from '../components/DetailModal';
 import { Button, Skeleton } from '../components/ui';
-import { analytics, tmdb as defaultTmdb, type CatalogRow, type Movie, type TmdbService } from '../services';
+import { tmdb as defaultTmdb, type CatalogRow, type Movie, type TmdbService } from '../services';
+import { AnalyticsEvents, track, trackPage } from '../services/analytics/track';
 import { loadNewPopular } from '../services/discovery';
 import '../styles/discovery.css';
 
@@ -29,7 +30,7 @@ export default function NewPopularPage({ svc = defaultTmdb }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    analytics.page('new_popular');
+    trackPage('new_popular');
     loadNewPopular(svc)
       .then((rows) => {
         if (!cancelled) setSettled({ attempt, status: 'ready', rows });
@@ -50,7 +51,7 @@ export default function NewPopularPage({ svc = defaultTmdb }: Props) {
 
   const close = useCallback(() => setSelected(null), []);
   const select = (m: Movie) => {
-    analytics.track('title_open', { id: m.id, mediaType: m.mediaType, from: 'new_popular' });
+    track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'new' });
     setSelected(m);
   };
 
