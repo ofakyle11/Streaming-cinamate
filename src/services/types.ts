@@ -51,6 +51,61 @@ export interface TmdbService {
   genres(): Promise<TmdbGenre[]>;
   /** Resolve a TMDB `*_path` to a fully qualified image URL. */
   imageUrl(path: string, size?: TmdbImageSize): string;
+  /** Top-billed cast for a title (TMDB /credits `cast`, ordered by billing). */
+  credits(mediaType: MediaType, id: number): Promise<TmdbCastMember[]>;
+  /** Titles similar to the given one (TMDB /similar). Never includes the title itself. */
+  similar(mediaType: MediaType, id: number, page?: number): Promise<TmdbPage<TmdbTitle>>;
+  /** Trailers, teasers and clips (TMDB /videos). */
+  videos(mediaType: MediaType, id: number): Promise<TmdbVideo[]>;
+  /** Where-to-watch offers for one region (TMDB /watch/providers, data by JustWatch). */
+  watchProviders(mediaType: MediaType, id: number, region: WatchRegion): Promise<TmdbWatchProviders | null>;
+}
+
+/* ------------------------------------------------- TMDB title extras (w1) */
+
+export interface TmdbCastMember {
+  id: number;
+  name: string;
+  character: string;
+  /** May be null when TMDB has no headshot. */
+  profile_path: string | null;
+  /** Billing order, 0 = top billed. */
+  order: number;
+}
+
+export interface TmdbVideo {
+  id: string;
+  /** Provider-specific id (e.g. a YouTube video id). */
+  key: string;
+  name: string;
+  /** Upstream values are 'YouTube' | 'Vimeo'; mocks use 'Mock' (no embeddable video). */
+  site: string;
+  /** 'Trailer' | 'Teaser' | 'Clip' | 'Featurette' | ... */
+  type: string;
+  official: boolean;
+}
+
+/** Regions the Where-to-watch panel supports. */
+export type WatchRegion = 'US' | 'CA';
+
+export interface TmdbWatchProvider {
+  provider_id: number;
+  provider_name: string;
+  /** May be empty; the UI falls back to a monogram. */
+  logo_path: string;
+  display_priority: number;
+}
+
+/** One region's offers. Upstream data is supplied by JustWatch and must be attributed. */
+export interface TmdbWatchProviders {
+  region: WatchRegion;
+  /** TMDB watch page for this title/region; empty when unknown. */
+  link: string;
+  flatrate?: TmdbWatchProvider[];
+  free?: TmdbWatchProvider[];
+  ads?: TmdbWatchProvider[];
+  rent?: TmdbWatchProvider[];
+  buy?: TmdbWatchProvider[];
 }
 
 /* ---------------------------------------------------------------- UI model */
