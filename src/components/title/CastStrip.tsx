@@ -16,7 +16,7 @@ export default function CastStrip({ cast, svc = defaultTmdb }: Props) {
         {cast.map((c, i) => (
           <li key={c.id} className="cast-card glass" style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}>
             {c.profile_path ? (
-              <img className="cast-photo" src={svc.imageUrl(c.profile_path, 'w342')} alt="" loading="lazy" />
+              <img className="cast-photo" src={svc.imageUrl(c.profile_path, 'w342')} alt="" loading="lazy" decoding="async" />
             ) : (
               <span className="cast-photo cast-monogram" aria-hidden>
                 {initials(c.name)}

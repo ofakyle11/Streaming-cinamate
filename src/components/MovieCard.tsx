@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { prefetchTitleRoute } from '../app/prefetch';
 import type { Movie } from '../services';
 import type { RovingItemProps } from '../hooks/useRovingFocus';
 import { titlePath } from '../pages/homeRows';
@@ -34,9 +35,10 @@ export default function MovieCard({ movie, delay, onSelect, listToggle = true, l
         className="card-link"
         aria-label={`${movie.title} (${movie.year})`}
         onClick={onSelect ? () => onSelect(movie) : undefined}
+        onPointerEnter={prefetchTitleRoute}
         {...rovingProps}
       >
-        <img src={movie.poster} alt="" loading="lazy" />
+        <img src={movie.poster} alt="" loading="lazy" decoding="async" width={342} height={513} />
         <div className="card-info glass" aria-hidden="true">
           <strong>{movie.title}</strong>
           <span>
