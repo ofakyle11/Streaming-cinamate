@@ -110,8 +110,12 @@ describe('fetchSearchPage (mock adapter)', () => {
 
   it('uses discover for an empty query and paginates', async () => {
     const p1 = await fetchSearchPage(svc, '  ', EMPTY_FILTERS, 1);
-    expect(p1.results).toHaveLength(20);
-    expect(p1.totalPages).toBe(3);
+    // No type: movie + TV discover pages are merged (20 + 20), total_pages = max of the two.
+    expect(p1.results).toHaveLength(40);
+    expect(p1.totalPages).toBe(2);
+    const p2 = await fetchSearchPage(svc, '', EMPTY_FILTERS, 2);
+    expect(p2.results).toHaveLength(20);
+    expect(p2.results.every((t) => t.media_type === 'movie')).toBe(true);
     const genre = await fetchSearchPage(svc, '', { ...EMPTY_FILTERS, genreId: 99 }, 1);
     expect(genre.results.every((t) => t.genre_ids.includes(99))).toBe(true);
   });

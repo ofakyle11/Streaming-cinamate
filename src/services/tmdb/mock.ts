@@ -217,9 +217,19 @@ export function createMockTmdb(): TmdbService {
       const recent = [...byType('movie')].sort((a, b) => b.release_date.localeCompare(a.release_date));
       return paginate(recent, page);
     },
-    async discover({ mediaType, genreId, page, sortBy } = {}) {
+    async discover({ mediaType, genreId, page, sortBy, yearFrom, yearTo, minRating } = {}) {
       await latency();
-      const items = byType(mediaType).filter((t) => genreId == null || t.genre_ids.includes(genreId));
+      const items = byType(mediaType).filter((t) => {
+        if (genreId != null && !t.genre_ids.includes(genreId)) return false;
+        if (minRating != null && t.vote_average < minRating) return false;
+        if (yearFrom != null || yearTo != null) {
+          const y = Number(t.release_date.slice(0, 4));
+          if (!Number.isFinite(y) || y <= 0) return false;
+          if (yearFrom != null && y < yearFrom) return false;
+          if (yearTo != null && y > yearTo) return false;
+        }
+        return true;
+      });
       return paginate(sortBy ? sortTitles(items, sortBy) : items, page);
     },
     async search(query, page, filters = {}) {

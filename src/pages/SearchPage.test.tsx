@@ -99,7 +99,8 @@ describe('SearchPage', () => {
     }
     globalThis.IntersectionObserver = CapturingIO as unknown as typeof IntersectionObserver;
     renderAt('/search');
-    await waitFor(() => expect(cards()).toHaveLength(20), T);
+    // Browse merges movie + TV discover pages: 20 + 20 on page 1.
+    await waitFor(() => expect(cards()).toHaveLength(40), T);
     await waitFor(() => expect(screen.getByTestId('search-sentinel')).toBeInTheDocument(), T);
     act(() => {
       callbacks[callbacks.length - 1](
@@ -107,15 +108,13 @@ describe('SearchPage', () => {
         {} as IntersectionObserver,
       );
     });
-    await waitFor(() => expect(cards()).toHaveLength(40), T);
+    await waitFor(() => expect(cards()).toHaveLength(60), T);
   });
 
   it('falls back to a Load more button without IntersectionObserver', async () => {
     // Simulate an environment without IntersectionObserver.
     (globalThis as { IntersectionObserver?: unknown }).IntersectionObserver = undefined;
     renderAt('/search');
-    await waitFor(() => expect(cards()).toHaveLength(20), T);
-    fireEvent.click(await screen.findByRole('button', { name: 'Load more' }, T));
     await waitFor(() => expect(cards()).toHaveLength(40), T);
     fireEvent.click(await screen.findByRole('button', { name: 'Load more' }, T));
     await waitFor(() => expect(cards()).toHaveLength(60), T);
