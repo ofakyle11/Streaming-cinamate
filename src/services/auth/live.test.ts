@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { SYNC_TABLES } from '../db/live';
 import { createLiveAuth, DELETION_REQUESTS_TABLE, toUser, type SupabaseLike } from './live';
 
 const sbUser = (over: Partial<SupabaseUser> = {}): SupabaseUser =>
@@ -16,7 +17,15 @@ const sbUser = (over: Partial<SupabaseUser> = {}): SupabaseUser =>
 function fakeClient(session: { user: SupabaseUser } | null = null) {
   let listener: ((event: string, s: { user: SupabaseUser } | null) => void) | null = null;
   const unsubscribe = vi.fn();
-  const insert = vi.fn().mockResolvedValue({ error: null });
+  // Call log shared by delete + insert so tests can assert ordering.
+  const calls: string[] = [];
+  const insert = vi.fn<(row: unknown) => Promise<{ error: null }>>(async () => {
+    calls.push('insert');
+    return { error: null };
+  });
+  const deleteErrors: Record<string, unknown> = {};
+  const eq = vi.fn();
+  const del = vi.fn();
   const auth = {
     getSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
     signInWithOtp: vi.fn().mockResolvedValue({ data: {}, error: null }),
@@ -29,9 +38,21 @@ function fakeClient(session: { user: SupabaseUser } | null = null) {
       return { data: { subscription: { unsubscribe } } };
     }),
   };
-  const from = vi.fn(() => ({ insert }));
+  const from = vi.fn((table: string) => ({
+    insert,
+    delete: (...args: unknown[]) => {
+      del(table, ...args);
+      return {
+        eq: async (col: string, val: unknown) => {
+          eq(table, col, val);
+          calls.push(`delete:${table}`);
+          return { error: deleteErrors[table] ?? null };
+        },
+      };
+    },
+  }));
   const client = { auth, from } as unknown as SupabaseLike;
-  return { client, auth, from, insert, unsubscribe, emit: (s: { user: SupabaseUser } | null) => listener?.('X', s) };
+  return { client, auth, from, insert, del, eq, calls, deleteErrors, unsubscribe, emit: (s: { user: SupabaseUser } | null) => listener?.('X', s) };
 }
 
 const make = (fake: ReturnType<typeof fakeClient>) =>
@@ -105,9 +126,41 @@ describe('live auth adapter (Supabase)', () => {
     expect(fake.auth.signOut).toHaveBeenCalled();
   });
 
+  it('hard-deletes every cloud sync table for the user before queuing the request', async () => {
+    const fake = fakeClient({ user: sbUser() });
+    await make(fake).requestDataDeletion();
+    expect(SYNC_TABLES).toEqual(['profiles', 'watchlist', 'history', 'ratings']);
+    for (const table of SYNC_TABLES) {
+      expect(fake.from).toHaveBeenCalledWith(table);
+      expect(fake.del).toHaveBeenCalledWith(table);
+      expect(fake.eq).toHaveBeenCalledWith(table, 'user_id', 'uuid-1');
+    }
+    expect(fake.eq).toHaveBeenCalledTimes(SYNC_TABLES.length);
+    expect(fake.calls.at(-1)).toBe('insert');
+    expect(fake.calls.slice(0, -1).sort()).toEqual(SYNC_TABLES.map((t) => `delete:${t}`).sort());
+    expect(fake.auth.signOut.mock.invocationCallOrder[0]).toBeGreaterThan(
+      fake.insert.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('rejects without queuing or signing out when a cloud delete fails', async () => {
+    const fake = fakeClient({ user: sbUser() });
+    fake.deleteErrors.history = { message: 'permission denied for table history' };
+    await expect(make(fake).requestDataDeletion()).rejects.toThrow('permission denied for table history');
+    expect(fake.insert).not.toHaveBeenCalled();
+    expect(fake.auth.signOut).not.toHaveBeenCalled();
+
+    const fallback = fakeClient({ user: sbUser() });
+    fallback.deleteErrors.ratings = {};
+    await expect(make(fallback).requestDataDeletion()).rejects.toThrow('Could not delete your cloud data.');
+    expect(fallback.insert).not.toHaveBeenCalled();
+    expect(fallback.auth.signOut).not.toHaveBeenCalled();
+  });
+
   it('refuses deletion when signed out', async () => {
     const fake = fakeClient(null);
     await expect(make(fake).requestDataDeletion()).rejects.toThrow(/Sign in/);
+    expect(fake.del).not.toHaveBeenCalled();
     expect(fake.insert).not.toHaveBeenCalled();
   });
 

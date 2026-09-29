@@ -1,5 +1,6 @@
 import type { SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
 import { NotConfiguredError, type AuthService, type User } from '../types';
+import { SYNC_TABLES } from '../db/live';
 import { authRedirectUrl, requireEmail, requirePassword } from './validate';
 
 /** Table that queues server-side erasure (see supabase/migrations). */
@@ -139,9 +140,17 @@ export function createLiveAuth(supabaseUrl: string, anonKey: string, opts: LiveA
       const { data, error: sessionError } = await sb.auth.getSession();
       const userId = data.session?.user.id;
       if (sessionError || !userId) throw new Error('Sign in to delete your account data.');
-      // Erasing auth users needs the service role, which never ships to the
-      // client. Queue a request (RLS: users can only insert their own row) and
-      // let the backend job perform the deletion.
+      // Erase the synced rows right away (RLS delete-own policies), so the next
+      // sign-in cannot pull them back into the device. If any delete fails we
+      // stop here: no request, no sign-out, local data stays intact.
+      const results = await Promise.all(
+        SYNC_TABLES.map((table) => sb.from(table).delete().eq('user_id', userId)),
+      );
+      const failed = results.find((r) => r.error);
+      if (failed) throw asError(failed.error, 'Could not delete your cloud data.');
+      // Erasing the auth user needs the service role, which never ships to the
+      // client. Queue a request (RLS: users can only insert their own row);
+      // lf_process_account_deletions() (service role / pg_cron) removes it.
       const { error } = await sb.from(DELETION_REQUESTS_TABLE).insert({ user_id: userId });
       if (error) throw asError(error, 'Could not request data deletion.');
       const { error: signOutError } = await sb.auth.signOut();
