@@ -6,6 +6,9 @@
  *   VITE_SUPABASE_URL      -> live Auth + DB (needs VITE_SUPABASE_ANON_KEY too)
  *
  * Billing and analytics are mock-only on the client by design.
+ *
+ *   VITE_PLAUSIBLE_DOMAIN  -> Plausible analytics (public site domain; optional
+ *                             VITE_PLAUSIBLE_API_HOST for a self-hosted/proxied host)
  */
 import type { CatalogRow, Movie, Services, TmdbGenre, TmdbService, TmdbTitle } from './types';
 import { createMockTmdb } from './tmdb/mock';
@@ -16,6 +19,7 @@ import { createMockDb } from './db/mock';
 import { createLiveDb } from './db/live';
 import { createMockBilling } from './billing/mock';
 import { createMockAnalytics } from './analytics/mock';
+import { createPlausibleAnalytics } from './analytics/plausible';
 
 export * from './types';
 
@@ -26,19 +30,24 @@ const supabaseAnon = (env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim() 
 
 const useLiveTmdb = Boolean(tmdbProxy);
 const useLiveSupabase = Boolean(supabaseUrl);
+const plausibleDomain = (env.VITE_PLAUSIBLE_DOMAIN as string | undefined)?.trim();
+const plausibleApiHost = (env.VITE_PLAUSIBLE_API_HOST as string | undefined)?.trim();
+const useLiveAnalytics = Boolean(plausibleDomain);
 
 export const services: Services = {
   tmdb: useLiveTmdb ? createLiveTmdb(tmdbProxy as string) : createMockTmdb(),
   auth: useLiveSupabase ? createLiveAuth(supabaseUrl as string, supabaseAnon) : createMockAuth(),
   db: useLiveSupabase ? createLiveDb(supabaseUrl as string, supabaseAnon) : createMockDb(),
   billing: createMockBilling(),
-  analytics: createMockAnalytics(),
+  analytics: useLiveAnalytics
+    ? createPlausibleAnalytics({ domain: plausibleDomain as string, apiHost: plausibleApiHost })
+    : createMockAnalytics(),
   mode: {
     tmdb: useLiveTmdb ? 'live' : 'mock',
     auth: useLiveSupabase ? 'live' : 'mock',
     db: useLiveSupabase ? 'live' : 'mock',
     billing: 'mock',
-    analytics: 'mock',
+    analytics: useLiveAnalytics ? 'live' : 'mock',
   },
 };
 

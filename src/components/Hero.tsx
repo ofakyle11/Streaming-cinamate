@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Movie } from '../services';
+import { AnalyticsEvents, track } from '../services/analytics/track';
 
 interface Props {
   featured: Movie[];
@@ -36,7 +37,12 @@ export default function Hero({ featured, onMore }: Props) {
         </div>
         <p>{movie.description}</p>
         <div className="actions">
-          <button className="btn primary">▶ Play</button>
+          <button
+            className="btn primary"
+            onClick={() => track(AnalyticsEvents.playTrailer, { id: movie.id, mediaType: movie.mediaType, source: 'hero' })}
+          >
+            ▶ Play
+          </button>
           <button className="btn glass" onClick={() => onMore(movie)}>ⓘ More Info</button>
         </div>
       </div>

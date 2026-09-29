@@ -14,6 +14,7 @@ import {
   type SearchFilters,
 } from '../features/search/filters';
 import { useInfiniteSearch } from '../features/search/useInfiniteSearch';
+import { AnalyticsEvents, track } from '../services/analytics/track';
 import '../styles/search.css';
 
 export const SEARCH_DEBOUNCE_MS = 300;
@@ -90,6 +91,11 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
   useEffect(() => {
     analytics.page('search');
   }, []);
+
+  useEffect(() => {
+    const trimmed = q.trim();
+    if (trimmed) track(AnalyticsEvents.search, { query: trimmed.slice(0, 100), length: trimmed.length });
+  }, [q]);
 
   /* ------------------------------------------------------------ results */
   const query = q.trim();

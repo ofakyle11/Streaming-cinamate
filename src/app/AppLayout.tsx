@@ -1,8 +1,10 @@
 import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { usePageViews } from '../hooks/usePageViews';
 
 export default function AppLayout() {
+  usePageViews();
   return (
     <>
       <div className="aurora" aria-hidden>
