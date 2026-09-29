@@ -35,9 +35,43 @@
 }
 @keyframes hero-controls-in { from { opacity: 0; transform: translateY(8px); } }
 
+/* Actions: Play / My List / More Info wrap instead of overflowing the card. */
+.hero-card .actions { flex-wrap: wrap; }
+.hero-card .actions .btn { display: inline-flex; align-items: center; gap: 6px; }
+.hero-card .hero-list-btn.is-listed { border-color: var(--color-success); }
+.hero-card .btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Dots + slideshow pause control share one row (overrides the bare .hero-dots placement). */
+.hero-nav {
+  position: absolute; z-index: 3; right: 5vw; bottom: 18vh;
+  display: flex; align-items: center; gap: 12px;
+}
+.hero-nav .hero-dots { position: static; }
+.hero-nav .hero-dots button:focus-visible,
+.hero-nav .icon-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.hero-pause { color: var(--color-text); font-size: 0.7rem; letter-spacing: -1px; }
+.hero-pause[aria-pressed="true"] { background: var(--glass-bg-strong); border-color: var(--glass-border-strong); }
+
 @media (max-width: 760px) {
   /* Card spans the width on phones; park the controls top-right under the navbar. */
   .hero-trailer-controls { top: 84px; right: 16px; bottom: auto; }
+
+  /* Stack: card, then the dots/pause row, both clear of the rows that overlap
+     the hero's bottom 10vh (.rows { margin-top: -10vh }). */
+  .hero-nav { left: 16px; right: 16px; bottom: calc(10vh + 12px); justify-content: center; }
+  .hero-card { bottom: calc(10vh + 60px); }
+  .hero-card p {
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
+    margin: 8px 0 14px;
+  }
+  .hero-card .actions { gap: 8px; }
+  .hero-card .actions .btn { flex: 1 1 auto; justify-content: center; padding: 10px 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
