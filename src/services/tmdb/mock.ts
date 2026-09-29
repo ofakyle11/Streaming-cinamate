@@ -7,6 +7,7 @@ import type {
   TmdbTitle,
   TmdbTitleDetails,
 } from '../types';
+import { sortTitles } from './sort';
 
 /** Real TMDB genre ids so the mock is drop-in compatible with live data. */
 export const MOCK_GENRES: TmdbGenre[] = [
@@ -123,6 +124,7 @@ export const MOCK_TITLES: TmdbTitle[] = SEEDS.map((s, i) => {
     release_date: `${year}-${pad(month)}-${pad(day)}`,
     runtime: isTv ? 42 + (i % 4) * 6 : 88 + ((i * 13) % 61),
     certification: isTv ? CERTS_TV[i % CERTS_TV.length] : CERTS_MOVIE[i % CERTS_MOVIE.length],
+    popularity: Math.round((20 + ((i * 53) % 97) * 4.3) * 10) / 10, // deterministic 20 .. ~437
   };
 });
 
@@ -215,10 +217,10 @@ export function createMockTmdb(): TmdbService {
       const recent = [...byType('movie')].sort((a, b) => b.release_date.localeCompare(a.release_date));
       return paginate(recent, page);
     },
-    async discover({ mediaType, genreId, page } = {}) {
+    async discover({ mediaType, genreId, page, sortBy } = {}) {
       await latency();
       const items = byType(mediaType).filter((t) => genreId == null || t.genre_ids.includes(genreId));
-      return paginate(items, page);
+      return paginate(sortBy ? sortTitles(items, sortBy) : items, page);
     },
     async search(query, page, filters = {}) {
       await latency();

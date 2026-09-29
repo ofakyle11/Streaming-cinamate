@@ -24,6 +24,8 @@ export interface TmdbTitle {
   runtime: number;
   /** Content rating (e.g. PG-13, TV-MA). Not in base TMDB payloads; mocks supply it. */
   certification?: string;
+  /** TMDB popularity score (higher = more popular). Optional; mocks supply it. */
+  popularity?: number;
 }
 
 export interface TmdbGenre {
@@ -38,6 +40,9 @@ export interface TmdbPage<T> {
   total_results: number;
 }
 
+/** Sort orders supported by `TmdbService.discover`. Always descending. */
+export type DiscoverSort = 'popularity' | 'rating' | 'date';
+
 export type TmdbImageSize = 'w342' | 'w500' | 'w780' | 'w1280' | 'original' | 'w92' | 'w154' | 'w185' | 'w300' | 'h632';
 
 export interface TmdbService {
@@ -45,7 +50,7 @@ export interface TmdbService {
   popular(mediaType: MediaType, page?: number): Promise<TmdbPage<TmdbTitle>>;
   topRated(mediaType: MediaType, page?: number): Promise<TmdbPage<TmdbTitle>>;
   nowPlaying(page?: number): Promise<TmdbPage<TmdbTitle>>;
-  discover(opts: { mediaType?: MediaType; genreId?: number; page?: number }): Promise<TmdbPage<TmdbTitle>>;
+  discover(opts: { mediaType?: MediaType; genreId?: number; page?: number; sortBy?: DiscoverSort }): Promise<TmdbPage<TmdbTitle>>;
   search(query: string, page?: number, filters?: TmdbSearchFilters): Promise<TmdbPage<TmdbTitle>>;
   /** Full record incl. credits, videos, similar, recommendations and watch providers when available. */
   details(mediaType: MediaType, id: number): Promise<TmdbTitleDetails | null>;

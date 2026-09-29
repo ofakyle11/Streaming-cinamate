@@ -1,4 +1,5 @@
 import type {
+  DiscoverSort,
   MediaType,
   TmdbGenre,
   TmdbImageSize,
@@ -13,6 +14,25 @@ import type {
   TmdbTrendingOptions,
   TmdbVideo,
 } from '../types';
+import { toTmdbSortParam } from './sort';
+
+/**
+ * Builds the proxy path for a `/discover` call. The proxy forwards query params
+ * to TMDB and injects the API key server-side.
+ */
+export function buildDiscoverPath(opts: {
+  mediaType?: MediaType;
+  genreId?: number;
+  page?: number;
+  sortBy?: DiscoverSort;
+}): string {
+  const type = opts.mediaType ?? 'movie';
+  const q = new URLSearchParams();
+  if (opts.genreId != null) q.set('with_genres', String(opts.genreId));
+  q.set('page', String(Math.max(1, Math.floor(opts.page ?? 1))));
+  if (opts.sortBy) q.set('sort_by', toTmdbSortParam(opts.sortBy, type));
+  return `/discover/${type}?${q.toString()}`;
+}
 
 /**
  * Live TMDB adapter. Talks to OUR proxy (VITE_TMDB_PROXY), never to TMDB directly,
@@ -245,11 +265,16 @@ export function createLiveTmdb(
     return p;
   }
 
-  const discover: TmdbService['discover'] = ({ mediaType = 'movie', genreId, page = 1 } = {}) =>
+  const discover: TmdbService['discover'] = ({
+    mediaType = 'movie',
+    genreId,
+    page = 1,
+    sortBy,
+  } = {}) =>
     list(`/discover/${mediaType}`, mediaType, {
       page,
       with_genres: genreId,
-      sort_by: 'popularity.desc',
+      sort_by: sortBy ? toTmdbSortParam(sortBy, mediaType) : 'popularity.desc',
       include_adult: false,
     });
 
