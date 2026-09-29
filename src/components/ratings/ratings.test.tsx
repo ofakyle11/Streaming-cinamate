@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Movie } from '../../services/types';
@@ -69,5 +69,31 @@ describe('ratings controls', () => {
     expect(selectThumbFor(1000)(state())).toBe('up');
     fireEvent.click(screen.getByRole('radio', { name: '5 out of 5' }));
     expect(selectRatingFor(1000)(state())).toBe(5);
+  });
+});
+
+describe('ratings controls title identity', () => {
+  beforeEach(() => {
+    useLastFrameStore.setState({ ratings: {}, thumbs: {} });
+  });
+
+  it('a thumb or stars on the movie do not light up the series with the same id', () => {
+    render(
+      <>
+        <ThumbsControl titleId={1000} mediaType="movie" title="Film" />
+        <ThumbsControl titleId={1000} mediaType="tv" title="Show" />
+        <StarRating titleId={1000} mediaType="movie" title="Film" />
+        <StarRating titleId={1000} mediaType="tv" title="Show" />
+      </>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'I like Film' }));
+    expect(screen.getByRole('button', { name: 'I like Film' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'I like Show' })).toHaveAttribute('aria-pressed', 'false');
+
+    const tvStars = screen.getByRole('radiogroup', { name: 'Stars for Show' });
+    const movieStars = screen.getByRole('radiogroup', { name: 'Stars for Film' });
+    fireEvent.click(within(tvStars).getByRole('radio', { name: '4 out of 5' }));
+    expect(within(tvStars).getByRole('radio', { name: '4 out of 5' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(movieStars).getByRole('radio', { name: '4 out of 5' })).toHaveAttribute('aria-checked', 'false');
   });
 });

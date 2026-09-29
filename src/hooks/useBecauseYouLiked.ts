@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { tmdb, toMovie } from '../services';
 import type { MediaType, Movie, TmdbService } from '../services/types';
 import { selectRatings, selectThumbs, useLastFrameStore } from '../state/store';
-import { becauseYouLikedTitle, dedupeRecommendationRows, likedSeeds, ratedTitleIds } from '../lib/ratings';
+import { becauseYouLikedTitle, dedupeRecommendationRows, likedSeeds, ratedTitleKeys } from '../lib/ratings';
 
 export interface BecauseYouLikedRow {
   /** Stable row id, e.g. `byl-movie-1000`. */
@@ -69,7 +69,7 @@ export function useBecauseYouLiked(svc: TmdbService = tmdb, seedCount = BYL_SEED
     };
   }, [seedsKey, svc]);
 
-  const exclude = useMemo(() => ratedTitleIds(ratings, thumbs), [ratings, thumbs]);
+  const exclude = useMemo(() => ratedTitleKeys(ratings, thumbs), [ratings, thumbs]);
 
   return useMemo(() => {
     // Keep showing previously loaded rows whose seed is still liked while new seeds load.

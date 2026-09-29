@@ -12,6 +12,9 @@ interface Props {
   onSelect?: (m: Movie) => void;
 }
 
+/** Progress-map key for history entries saved before they carried a media type. */
+const legacyProgressKey = (id: number) => `any:${id}`;
+
 type HistoryRowName = 'Continue Watching' | 'Recently Viewed';
 
 /** Whole-number playback percentage (0-100), or null when the duration is unknown. */
@@ -30,9 +33,15 @@ export default function HistoryRows({ onSelect }: Props) {
   const { toast } = useOptionalToast();
 
   const entriesByKey = useMemo(() => new Map(views.map((e) => [e.key, e])), [views]);
-  const progressById = useMemo(() => {
-    const map = new Map<number, HistoryEntry>();
-    for (const p of playback) if (!p.completed && !map.has(p.titleId)) map.set(p.titleId, p);
+  // Keyed by viewKey when the entry knows its media type, so movie and TV ids never collide;
+  // legacy entries without one fall back to an id-only key that matches either type.
+  const progressByKey = useMemo(() => {
+    const map = new Map<string, HistoryEntry>();
+    for (const p of playback) {
+      if (p.completed) continue;
+      const key = p.mediaType ? viewKey({ mediaType: p.mediaType, id: p.titleId }) : legacyProgressKey(p.titleId);
+      if (!map.has(key)) map.set(key, p);
+    }
     return map;
   }, [playback]);
 
@@ -64,7 +73,7 @@ export default function HistoryRows({ onSelect }: Props) {
   );
 
   const continueExtra = (m: Movie) => {
-    const pct = progressPercent(progressById.get(m.id));
+    const pct = progressPercent(progressByKey.get(viewKey(m)) ?? progressByKey.get(legacyProgressKey(m.id)));
     const trailer = entriesByKey.get(viewKey(m))?.trailerPlayedAt !== undefined;
     return (
       <>

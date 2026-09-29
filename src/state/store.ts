@@ -32,6 +32,8 @@ export interface HistoryEntry {
   duration: number;
   lastWatchedAt: number;
   completed: boolean;
+  /** Movie or series, so movie and TV ids cannot collide. Absent on entries saved before fu2. */
+  mediaType?: MediaType;
 }
 
 export type Rating = 1 | 2 | 3 | 4 | 5;
@@ -76,21 +78,23 @@ export interface ProfilesSlice {
 export interface WatchlistSlice {
   watchlist: PerProfile<WatchlistEntry[]>;
   addToWatchlist: (titleId: TitleId, mediaType?: MediaType) => void;
-  removeFromWatchlist: (titleId: TitleId) => void;
+  /** With `mediaType`, only that title (plus legacy untyped entries for the id) is removed. */
+  removeFromWatchlist: (titleId: TitleId, mediaType?: MediaType) => void;
   toggleWatchlist: (titleId: TitleId, mediaType?: MediaType) => void;
 }
 
 export interface HistorySlice {
   history: PerProfile<HistoryEntry[]>;
-  recordProgress: (titleId: TitleId, position: number, duration: number) => void;
-  markCompleted: (titleId: TitleId) => void;
+  recordProgress: (titleId: TitleId, position: number, duration: number, mediaType?: MediaType) => void;
+  markCompleted: (titleId: TitleId, mediaType?: MediaType) => void;
   clearHistory: () => void;
 }
 
 export interface RatingsSlice {
   ratings: PerProfile<RatingEntry[]>;
-  rateTitle: (titleId: TitleId, rating: Rating, meta?: RatedTitleMeta) => void;
-  clearRating: (titleId: TitleId) => void;
+  /** With `mediaType`, a movie and a series sharing an id keep separate ratings. */
+  rateTitle: (titleId: TitleId, rating: Rating, meta?: RatedTitleMeta, mediaType?: MediaType) => void;
+  clearRating: (titleId: TitleId, mediaType?: MediaType) => void;
 }
 
 /** Viewed titles (title page opens / trailer plays) with timestamps; feeds Continue Watching + Recently Viewed. */
@@ -104,7 +108,7 @@ export interface ViewsSlice {
 export interface ThumbsSlice {
   thumbs: PerProfile<ThumbEntry[]>;
   /** Sets the active profile's thumb for a title; `null` clears it. */
-  setThumb: (titleId: TitleId, thumb: Thumb | null, meta?: RatedTitleMeta) => void;
+  setThumb: (titleId: TitleId, thumb: Thumb | null, meta?: RatedTitleMeta, mediaType?: MediaType) => void;
 }
 
 export type LastFrameState = ProfilesSlice & WatchlistSlice & HistorySlice & RatingsSlice & ViewsSlice & ThumbsSlice;
@@ -160,6 +164,19 @@ function safeStorage(): Storage {
       mem.set(k, v);
     },
   };
+}
+
+/**
+ * Per-title identity (fu2): TMDB movie and TV ids overlap, so entries match on
+ * id AND media type. Entries saved without a media type (legacy) match either
+ * type, and callers that pass no media type keep the old id-only behaviour.
+ */
+export function matchesTitle(
+  entry: { titleId: TitleId; mediaType?: MediaType },
+  titleId: TitleId,
+  mediaType?: MediaType,
+): boolean {
+  return entry.titleId === titleId && (mediaType === undefined || entry.mediaType === undefined || entry.mediaType === mediaType);
 }
 
 // Stable empty references so selectors don't trigger re-renders on missing keys.
@@ -224,46 +241,48 @@ export const useLastFrameStore = create<LastFrameState>()(
           const pid = s.activeProfileId;
           if (!pid) return {};
           const list = s.watchlist[pid] ?? [];
-          if (list.some((e) => e.titleId === titleId)) return {};
+          if (list.some((e) => matchesTitle(e, titleId, mediaType))) return {};
           const entry: WatchlistEntry = mediaType ? { titleId, addedAt: Date.now(), mediaType } : { titleId, addedAt: Date.now() };
           return { watchlist: { ...s.watchlist, [pid]: [entry, ...list] } };
         }),
 
-      removeFromWatchlist: (titleId) =>
+      removeFromWatchlist: (titleId, mediaType) =>
         set((s) => {
           const pid = s.activeProfileId;
           if (!pid) return {};
           const list = s.watchlist[pid] ?? [];
-          return { watchlist: { ...s.watchlist, [pid]: list.filter((e) => e.titleId !== titleId) } };
+          return { watchlist: { ...s.watchlist, [pid]: list.filter((e) => !matchesTitle(e, titleId, mediaType)) } };
         }),
 
       toggleWatchlist: (titleId, mediaType) => {
         const { activeProfileId, watchlist, addToWatchlist, removeFromWatchlist } = get();
         if (!activeProfileId) return;
-        const has = (watchlist[activeProfileId] ?? []).some((e) => e.titleId === titleId);
-        if (has) removeFromWatchlist(titleId);
+        const has = (watchlist[activeProfileId] ?? []).some((e) => matchesTitle(e, titleId, mediaType));
+        if (has) removeFromWatchlist(titleId, mediaType);
         else addToWatchlist(titleId, mediaType);
       },
 
       // ---- history ----
       history: {},
 
-      recordProgress: (titleId, position, duration) =>
+      recordProgress: (titleId, position, duration, mediaType) =>
         set((s) => {
           const pid = s.activeProfileId;
           if (!pid) return {};
-          const rest = (s.history[pid] ?? []).filter((e) => e.titleId !== titleId);
+          const rest = (s.history[pid] ?? []).filter((e) => !matchesTitle(e, titleId, mediaType));
           const completed = duration > 0 && position / duration >= 0.9;
           const entry: HistoryEntry = { titleId, position, duration, lastWatchedAt: Date.now(), completed };
+          if (mediaType) entry.mediaType = mediaType;
           return { history: { ...s.history, [pid]: [entry, ...rest] } };
         }),
 
-      markCompleted: (titleId) =>
+      markCompleted: (titleId, mediaType) =>
         set((s) => {
           const pid = s.activeProfileId;
           if (!pid) return {};
           const list = s.history[pid] ?? [];
-          const existing = list.find((e) => e.titleId === titleId);
+          const existing = list.find((e) => matchesTitle(e, titleId, mediaType));
+          const type = mediaType ?? existing?.mediaType;
           const entry: HistoryEntry = {
             titleId,
             position: existing?.duration ?? 0,
@@ -271,7 +290,8 @@ export const useLastFrameStore = create<LastFrameState>()(
             lastWatchedAt: Date.now(),
             completed: true,
           };
-          return { history: { ...s.history, [pid]: [entry, ...list.filter((e) => e.titleId !== titleId)] } };
+          if (type) entry.mediaType = type;
+          return { history: { ...s.history, [pid]: [entry, ...list.filter((e) => !matchesTitle(e, titleId, mediaType))] } };
         }),
 
       clearHistory: () =>
@@ -280,24 +300,25 @@ export const useLastFrameStore = create<LastFrameState>()(
       // ---- ratings ----
       ratings: {},
 
-      rateTitle: (titleId, rating, meta) =>
+      rateTitle: (titleId, rating, meta, mediaType) =>
         set((s) => {
           const pid = s.activeProfileId;
           if (!pid) return {};
           const list = s.ratings[pid] ?? [];
-          const prev = list.find((e) => e.titleId === titleId);
-          const rest = list.filter((e) => e.titleId !== titleId);
+          const prev = list.find((e) => matchesTitle(e, titleId, mediaType));
+          const rest = list.filter((e) => !matchesTitle(e, titleId, mediaType));
           const known = meta ?? (prev?.mediaType && prev.title ? { mediaType: prev.mediaType, title: prev.title } : null);
           const entry: RatingEntry = { titleId, rating, ratedAt: Date.now(), ...(known ?? {}) };
+          if (mediaType && !entry.mediaType) entry.mediaType = mediaType;
           return { ratings: { ...s.ratings, [pid]: [entry, ...rest] } };
         }),
 
-      clearRating: (titleId) =>
+      clearRating: (titleId, mediaType) =>
         set((s) => {
           const pid = s.activeProfileId;
           if (!pid) return {};
           const list = s.ratings[pid] ?? [];
-          return { ratings: { ...s.ratings, [pid]: list.filter((e) => e.titleId !== titleId) } };
+          return { ratings: { ...s.ratings, [pid]: list.filter((e) => !matchesTitle(e, titleId, mediaType)) } };
         }),
 
       // ---- viewed titles ----
@@ -323,13 +344,14 @@ export const useLastFrameStore = create<LastFrameState>()(
       // ---- thumbs (w2-ratings) ----
       thumbs: {},
 
-      setThumb: (titleId, thumb, meta) =>
+      setThumb: (titleId, thumb, meta, mediaType) =>
         set((s) => {
           const pid = s.activeProfileId;
           if (!pid) return {};
-          const rest = (s.thumbs[pid] ?? []).filter((e) => e.titleId !== titleId);
+          const rest = (s.thumbs[pid] ?? []).filter((e) => !matchesTitle(e, titleId, mediaType));
           if (!thumb) return { thumbs: { ...s.thumbs, [pid]: rest } };
           const entry: ThumbEntry = { titleId, thumb, ratedAt: Date.now(), ...(meta ?? {}) };
+          if (mediaType && !entry.mediaType) entry.mediaType = mediaType;
           return { thumbs: { ...s.thumbs, [pid]: [entry, ...rest] } };
         }),
     }),
@@ -416,3 +438,18 @@ export const selectThumbs = (s: LastFrameState): ThumbEntry[] =>
 
 export const selectThumbFor = (titleId: TitleId) => (s: LastFrameState): Thumb | null =>
   selectThumbs(s).find((e) => e.titleId === titleId)?.thumb ?? null;
+
+// ---- media-type-aware selectors (fu2) ----
+// Movie 1399 and TV 1399 are different titles; legacy entries without a media type match both.
+
+export const selectIsInWatchlistFor = (titleId: TitleId, mediaType: MediaType) => (s: LastFrameState): boolean =>
+  selectWatchlist(s).some((e) => matchesTitle(e, titleId, mediaType));
+
+export const selectThumbForTitle = (titleId: TitleId, mediaType: MediaType) => (s: LastFrameState): Thumb | null =>
+  selectThumbs(s).find((e) => matchesTitle(e, titleId, mediaType))?.thumb ?? null;
+
+export const selectRatingForTitle = (titleId: TitleId, mediaType: MediaType) => (s: LastFrameState): Rating | null =>
+  selectRatings(s).find((e) => matchesTitle(e, titleId, mediaType))?.rating ?? null;
+
+export const selectHistoryForTitle = (titleId: TitleId, mediaType: MediaType) => (s: LastFrameState): HistoryEntry | null =>
+  selectHistory(s).find((e) => matchesTitle(e, titleId, mediaType)) ?? null;
