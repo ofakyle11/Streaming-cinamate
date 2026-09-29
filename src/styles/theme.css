@@ -1,17 +1,5 @@
-:root {
-  --bg: #0b0b12;
-  --text: #f4f4f8;
-  --muted: #a9a9bb;
-  --accent: #e50914;
-  --violet: #7c3aed;
-  --cyan: #06b6d4;
-  --glass-bg: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-blur: blur(18px) saturate(160%);
-  --radius: 16px;
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
+@import './tokens.css';
+@import './primitives.css';
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {

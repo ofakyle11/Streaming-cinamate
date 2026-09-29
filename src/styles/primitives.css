@@ -1,0 +1,93 @@
+/* UI primitives: Button, IconButton, Skeleton, Toast.
+   Built on tokens.css; .btn / .btn.primary / .btn.glass keep their original look. */
+
+/* ---------- Button ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 22px; border-radius: var(--radius-sm); font-weight: 700;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-base);
+}
+.btn:hover { transform: translateY(-2px); }
+.btn.primary { background: var(--text); color: var(--color-on-light); }
+.btn.primary:hover { box-shadow: var(--glow-light); }
+.btn.accent { background: var(--accent); color: var(--text); }
+.btn.accent:hover { box-shadow: var(--glow-accent); }
+.btn.ghost { color: var(--muted); }
+.btn.ghost:hover { color: var(--text); }
+.btn.sm { padding: 6px 14px; font-size: 0.85rem; }
+.btn.lg { padding: 14px 28px; font-size: 1.05rem; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn.loading { position: relative; color: transparent !important; pointer-events: none; }
+.btn.loading::after {
+  content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--text); border-top-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+.btn.primary.loading::after { border-color: var(--color-on-light); border-top-color: transparent; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- IconButton ---------- */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 50%; line-height: 1;
+  transition: transform var(--dur-base) var(--ease), background var(--dur-fast);
+}
+.icon-btn:hover { transform: scale(1.08); }
+.icon-btn.sm { width: 30px; height: 30px; font-size: 0.9rem; }
+.icon-btn.lg { width: 44px; height: 44px; font-size: 1.4rem; }
+.icon-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ---------- Skeleton ---------- */
+.skeleton {
+  position: relative; overflow: hidden; display: block;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+.skeleton::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: shimmer 1.6s var(--ease-in-out) infinite;
+}
+.skeleton.text { height: 1em; border-radius: var(--radius-xs); }
+.skeleton.circle { border-radius: 50%; }
+.skeleton.card { width: 170px; aspect-ratio: 2 / 3; flex: 0 0 auto; }
+@keyframes shimmer { to { transform: translateX(100%); } }
+
+/* ---------- Toast ---------- */
+.toast-region {
+  position: fixed; bottom: 24px; right: 24px; z-index: 200;
+  display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+  max-width: min(360px, calc(100vw - 32px));
+}
+.toast {
+  pointer-events: auto; display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: var(--radius-lg); font-size: 0.9rem;
+  border-left: 3px solid var(--glass-border-strong);
+  animation: toast-in var(--dur-medium) var(--ease);
+}
+.toast.leaving { animation: toast-out var(--dur-base) var(--ease) forwards; }
+.toast.success { border-left-color: var(--color-success); }
+.toast.error { border-left-color: var(--color-danger); }
+.toast.info { border-left-color: var(--cyan); }
+.toast-msg { flex: 1; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(16px) scale(0.96); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(8px) scale(0.96); } }
+
+@media (max-width: 760px) {
+  .skeleton.card { width: 120px; }
+  .toast-region { left: 16px; right: 16px; bottom: 16px; max-width: none; }
+}
+
+/* ---------- focus-visible rings ---------- */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 calc(var(--focus-ring-width) + var(--focus-ring-offset) + 2px) var(--focus-ring-glow);
+}
+:focus:not(:focus-visible) { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after, .btn.loading::after { animation: none; }
+  .toast, .toast.leaving { animation: none; }
+  .btn:hover, .icon-btn:hover { transform: none; }
+}
