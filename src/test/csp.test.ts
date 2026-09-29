@@ -21,6 +21,7 @@ function parseCsp(csp: string): Map<string, string[]> {
 
 describe('netlify.toml CSP', () => {
   const csp = parseCsp(readCsp(netlifyToml));
+  const connectSrc = csp.get('connect-src') ?? [];
 
   it.each(['script-src', 'connect-src'])('%s allows the default Plausible host', (directive) => {
     expect(csp.get(directive)).toContain(DEFAULT_PLAUSIBLE_HOST);
@@ -32,9 +33,26 @@ describe('netlify.toml CSP', () => {
     }
   });
 
+  it('allows Supabase REST/auth (https) and realtime (wss) in connect-src', () => {
+    expect(connectSrc).toContain('https://*.supabase.co');
+    expect(connectSrc).toContain('wss://*.supabase.co');
+  });
+
+  it('keeps self, TMDB API and TMDB images in connect-src (PWA image caching relies on image.tmdb.org)', () => {
+    expect(connectSrc).toContain("'self'");
+    expect(connectSrc).toContain('https://api.themoviedb.org');
+    expect(connectSrc).toContain('https://image.tmdb.org');
+  });
+
+  it('keeps TMDB images and YouTube allowed', () => {
+    expect(csp.get('img-src')).toContain('https://image.tmdb.org');
+    expect(csp.get('frame-src')).toContain('https://www.youtube-nocookie.com');
+  });
+
   it('keeps the existing lockdown directives', () => {
     expect(csp.get('default-src')).toEqual(["'self'"]);
     expect(csp.get('object-src')).toEqual(["'none'"]);
     expect(csp.get('frame-ancestors')).toEqual(["'none'"]);
+    expect(csp.get('form-action')).toEqual(["'self'"]);
   });
 });

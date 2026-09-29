@@ -13,6 +13,7 @@
   --color-cyan: #06b6d4;
   --color-success: #46d369;
   --color-danger: #e50914;
+  --color-danger-soft: #ff8a8f;
   --color-on-light: #000;
   --color-surface: rgba(20, 20, 32, 0.6);
   --color-surface-solid: rgb(20, 20, 32);
@@ -61,6 +62,16 @@
   --shadow-card-hover: 0 0 0 1px rgba(255, 255, 255, 0.25), 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(124, 58, 237, 0.45);
   --glow-accent: 0 0 18px rgba(229, 9, 20, 0.6);
   --glow-light: 0 0 24px rgba(255, 255, 255, 0.45);
+
+  /* ---------- profile avatar gradients ---------- */
+  --avatar-aurora: linear-gradient(135deg, #e50914, #7c3aed);
+  --avatar-lagoon: linear-gradient(135deg, #06b6d4, #3b82f6);
+  --avatar-dusk: linear-gradient(135deg, #7c3aed, #ec4899);
+  --avatar-ember: linear-gradient(135deg, #f97316, #e50914);
+  --avatar-meadow: linear-gradient(135deg, #22c55e, #06b6d4);
+  --avatar-gold: linear-gradient(135deg, #facc15, #f97316);
+  --avatar-nebula: linear-gradient(135deg, #312e81, #06b6d4);
+  --avatar-rose: linear-gradient(135deg, #fb7185, #f59e0b);
 
   /* ---------- legacy aliases (do not remove) ---------- */
   --bg: var(--color-bg);

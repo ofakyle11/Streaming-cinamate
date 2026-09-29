@@ -5,6 +5,11 @@ export function useActiveProfile() {
   return useLastFrameStore(selectActiveProfile);
 }
 
+/** True when the active profile is a kids profile (catalogue should be filtered). */
+export function useIsKidsProfile() {
+  return useLastFrameStore((s) => selectActiveProfile(s)?.kid ?? false);
+}
+
 export function useProfiles() {
   return useLastFrameStore((s) => s.profiles);
 }

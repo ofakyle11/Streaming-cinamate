@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
+import ProfileMenu from '../features/profiles/ProfileMenu';
 
 const links = [
   { to: '/', label: 'Home' },
@@ -70,7 +71,7 @@ export default function Navbar() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </form>
-        <Link to="/profiles" className="avatar" aria-label="Profiles" />
+        <ProfileMenu />
       </div>
     </nav>
   );
