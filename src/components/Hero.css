@@ -1,0 +1,46 @@
+/* Hero trailer preview: muted YouTube embed faded in behind the glass card.
+   Layering inside .hero: .hero-bg -> .hero-trailer -> .hero-fade -> .hero-card / controls. */
+
+.hero-trailer {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  container-type: size;
+  opacity: 0;
+  transition: opacity var(--dur-hero) var(--ease-out);
+}
+/* Small extra delay hides YouTube's initial black frame / spinner. */
+.hero-trailer.ready { opacity: 1; transition-delay: var(--dur-slow); }
+
+/* 16:9 "object-fit: cover" for the iframe, slightly over-scaled to crop YouTube chrome. */
+.hero-trailer iframe {
+  position: absolute; top: 50%; left: 50%;
+  width: max(100cqw, 177.78cqh); height: max(100cqh, 56.25cqw);
+  transform: translate(-50%, -50%) scale(1.2);
+  border: 0; pointer-events: none;
+}
+
+/* Keep the backdrop from Ken-Burns-zooming behind a playing trailer. */
+.hero.has-trailer .hero-bg.active { animation-play-state: paused; }
+
+.hero-trailer-controls {
+  position: absolute; z-index: 3; right: 5vw; bottom: calc(18vh + 28px);
+  display: flex; gap: 10px;
+  animation: hero-controls-in var(--dur-medium) var(--ease-out);
+}
+.hero-trailer-controls .icon-btn { color: var(--color-text); }
+.hero-trailer-controls .icon-btn[aria-pressed="true"] { background: var(--glass-bg-strong); border-color: var(--glass-border-strong); }
+.hero-trailer-controls .icon-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 6px var(--focus-ring-glow);
+}
+@keyframes hero-controls-in { from { opacity: 0; transform: translateY(8px); } }
+
+@media (max-width: 760px) {
+  /* Card spans the width on phones; park the controls top-right under the navbar. */
+  .hero-trailer-controls { top: 84px; right: 16px; bottom: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-trailer, .hero-trailer.ready { transition: none; }
+  .hero-trailer-controls { animation: none; }
+}
