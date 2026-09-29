@@ -15,6 +15,7 @@ src/
   pages/              Route components (Home, Search, Genre, Title, MyList, Profiles, Account, Plans, NotFound)
   components/         Feature components (Hero, Row, MovieCard, DetailModal, Navbar)
     ui/               Primitives: Button, IconButton, Skeleton, Toast (barrel: ui/index.ts)
+  auth/               AuthProvider + useAuth (guest mode default), clearLocalData (delete-my-data)
   state/store.ts      Zustand store: profiles, watchlist, history, ratings slices
   hooks/              Thin hooks over the store (useProfiles, useWatchlist, useHistory, useRatings)
   services/
@@ -29,6 +30,7 @@ src/
     theme.css         Imports tokens + primitives; app styles; prefers-reduced-motion overrides
   test/               Vitest setup and integration tests
 netlify/functions/    Serverless functions (health.ts)
+supabase/migrations/  SQL (RLS on every table, policies keyed on auth.uid())
 docs/                 AGENTS.md (team rules), ARCHITECTURE.md (this file)
 ```
 
@@ -42,7 +44,7 @@ Page/component -> hook -> zustand store (user state), or -> `services` (catalogu
 | Var | Effect |
 | --- | --- |
 | `VITE_TMDB_PROXY` | Live TMDB through our proxy |
-| `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` | Live auth + db |
+| `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` | Live auth + db (both required; Supabase SDK is lazy-loaded). Auth: magic link + Google OAuth; add `<origin>/account` to Supabase redirect URLs |
 
 None are required; with none set the app is fully mocked.
 
