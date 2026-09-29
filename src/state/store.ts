@@ -159,6 +159,8 @@ export const useLastFrameStore = create<LastFrameState>()(
 
       removeProfile: (id) =>
         set((s) => {
+          // At least one profile must always exist.
+          if (s.profiles.length <= 1 || !s.profiles.some((p) => p.id === id)) return {};
           const profiles = s.profiles.filter((p) => p.id !== id);
           const activeProfileId =
             s.activeProfileId === id ? (profiles[0]?.id ?? null) : s.activeProfileId;

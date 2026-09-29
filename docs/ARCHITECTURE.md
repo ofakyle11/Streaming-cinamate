@@ -15,6 +15,7 @@ src/
   pages/              Route components (Home, Search, Genre, Title, MyList, Profiles, Account, Plans, NotFound)
   components/         Feature components (Hero, Row, MovieCard, DetailModal, Navbar)
     ui/               Primitives: Button, IconButton, Skeleton, Toast (barrel: ui/index.ts)
+  features/profiles/  Gradient avatars, name/kids rules, ProfileAvatar, ProfileEditor dialog, navbar ProfileMenu
   state/store.ts      Zustand store: profiles, watchlist, history, ratings slices
   hooks/              Thin hooks over the store (useProfiles, useWatchlist, useHistory, useRatings)
   services/
