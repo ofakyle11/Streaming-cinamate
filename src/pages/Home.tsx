@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Hero from '../components/Hero';
 import Row from '../components/Row';
-import DetailModal from '../components/DetailModal';
-import { Link } from 'react-router-dom';
+import { Skeleton } from '../components/ui';
 import {
   analytics,
   loadHomeCatalog,
@@ -17,10 +17,34 @@ interface Catalog {
   rows: CatalogRow[];
 }
 
+const SKELETON_ROWS = 8;
+const SKELETON_CARDS = 7;
+
+function SkeletonRows() {
+  return (
+    <main className="rows" aria-busy="true">
+      <p role="status" className="home-status">Loading the catalogue…</p>
+      {Array.from({ length: SKELETON_ROWS }, (_, r) => (
+        <section key={r} className="row in row-skeleton" aria-hidden>
+          <h2>
+            <Skeleton variant="text" width={180} />
+          </h2>
+          <div className="track">
+            {Array.from({ length: SKELETON_CARDS }, (_, i) => (
+              <Skeleton key={i} variant="card" />
+            ))}
+          </div>
+        </section>
+      ))}
+    </main>
+  );
+}
+
 export default function Home() {
-  const [selected, setSelected] = useState<Movie | null>(null);
+  const navigate = useNavigate();
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [genres, setGenres] = useState<TmdbGenre[]>([]);
 
   useEffect(() => {
@@ -37,8 +61,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
     analytics.page('home');
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     loadHomeCatalog()
       .then((c) => {
         if (!cancelled) setCatalog(c);
@@ -49,41 +76,51 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
-  const select = (m: Movie) => {
-    analytics.track('title_open', { id: m.id, mediaType: m.mediaType });
-    setSelected(m);
+  const retry = () => {
+    setError(null);
+    setCatalog(null);
+    setAttempt((n) => n + 1);
   };
+  const track =(m: Movie) => analytics.track('title_open', { id: m.id, mediaType: m.mediaType });
+  const openTitle = (m: Movie) => {
+    track(m);
+    navigate(`/title/${m.mediaType}/${m.id}`);
+  };
+
+  if (error) {
+    return (
+      <main className="rows">
+        <div className="hero-card glass home-error" role="alert">
+          <p>We couldn't load the catalogue. {error}</p>
+          <button type="button" className="btn primary" onClick={retry}>
+            Retry
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (!catalog) return <SkeletonRows />;
 
   return (
     <>
-      {catalog ? (
-        <>
-          <Hero featured={catalog.featured} onMore={select} />
-          <main className="rows">
-            {genres.length > 0 && (
-              <nav className="genre-chips" aria-label="Browse by genre">
-                {genres.map((g) => (
-                  <Link key={g.id} className="chip glass" to={`/genre/${g.id}`}>
-                    {g.name}
-                  </Link>
-                ))}
-              </nav>
-            )}
-            {catalog.rows.map((r) => (
-              <Row key={r.title} title={r.title} items={r.items} onSelect={select} />
+      <Hero featured={catalog.featured} onMore={openTitle} />
+      <main className="rows">
+        {genres.length > 0 && (
+          <nav className="genre-chips" aria-label="Browse by genre">
+            {genres.map((g) => (
+              <Link key={g.id} className="chip glass" to={`/genre/${g.id}`}>
+                {g.name}
+              </Link>
             ))}
-          </main>
-        </>
-      ) : (
-        <main className="rows" aria-busy={!error}>
-          <div className="hero-card glass" role="status">
-            {error ? <p>{error}</p> : <p>Loading the catalogue…</p>}
-          </div>
-        </main>
-      )}
-      {selected && <DetailModal movie={selected} onClose={() => setSelected(null)} />}
+          </nav>
+        )}
+        {catalog.rows.map((r) => (
+          <Row key={r.title} title={r.title} items={r.items} onSelect={track} />
+        ))}
+      </main>
     </>
   );
 }

@@ -5,7 +5,7 @@ import MovieCard from './MovieCard';
 interface Props {
   title: string;
   items: Movie[];
-  onSelect: (m: Movie) => void;
+  onSelect?: (m: Movie) => void;
 }
 
 export default function Row({ title, items, onSelect }: Props) {

@@ -75,21 +75,32 @@ export async function loadHomeCatalog(svc: TmdbService = tmdb): Promise<{ featur
   const genres = await svc.genres();
   const map = (page: { results: TmdbTitle[] }) => page.results.map((t) => toMovie(t, genres, svc));
 
-  const [trending, topPicks, newReleases, sciFi] = await Promise.all([
+  const genreRows = [
+    { id: 28, title: 'Action' },
+    { id: 35, title: 'Comedy' },
+    { id: 878, title: 'Sci-Fi' },
+  ];
+
+  const [trending, popMovies, popTv, topRated, upcoming, ...genrePages] = await Promise.all([
     svc.trending(),
+    svc.popular('movie'),
     svc.popular('tv'),
-    svc.nowPlaying(),
-    svc.discover({ genreId: 878 }),
+    svc.topRated('movie'),
+    svc.upcoming(),
+    ...genreRows.map((g) => svc.discover({ genreId: g.id })),
   ]);
 
   const trendingMovies = map(trending);
+  const rows: CatalogRow[] = [
+    { title: 'Trending', items: trendingMovies.slice(0, 10) },
+    { title: 'Popular Movies', items: map(popMovies).slice(0, 10) },
+    { title: 'Popular TV', items: map(popTv).slice(0, 10) },
+    { title: 'Top Rated', items: map(topRated).slice(0, 10) },
+    { title: 'New & Upcoming', items: map(upcoming).slice(0, 10) },
+    ...genreRows.map((g, i) => ({ title: g.title, items: map(genrePages[i]).slice(0, 10) })),
+  ];
   return {
     featured: trendingMovies.slice(0, 5),
-    rows: [
-      { title: 'Trending Now', items: trendingMovies.slice(0, 10) },
-      { title: 'Top Picks for You', items: map(topPicks).slice(0, 10) },
-      { title: 'New Releases', items: map(newReleases).slice(0, 10) },
-      { title: 'Sci-Fi & Beyond', items: map(sciFi).slice(0, 10) },
-    ],
+    rows: rows.filter((r) => r.items.length > 0),
   };
 }
