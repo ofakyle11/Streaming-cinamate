@@ -142,8 +142,11 @@ export function createLiveTmdb(
     byGenre(mediaType, genreId, page = 1) {
       return list(`/discover/${mediaType}`, { with_genres: genreId, sort_by: 'popularity.desc', page }, mediaType);
     },
-    discover({ mediaType = 'movie', genreId, page = 1 } = {}) {
-      return list(`/discover/${mediaType}`, { with_genres: genreId, sort_by: 'popularity.desc', page }, mediaType);
+    discover({ mediaType = 'movie', genreId, page = 1, sortBy = 'popularity' } = {}) {
+      const dateKey = mediaType === 'tv' ? 'first_air_date' : 'primary_release_date';
+      const sort_by =
+        sortBy === 'rating' ? 'vote_average.desc' : sortBy === 'date' ? `${dateKey}.desc` : 'popularity.desc';
+      return list(`/discover/${mediaType}`, { with_genres: genreId, sort_by, page }, mediaType);
     },
     async search(query, page = 1, filters = {}) {
       const q = query.trim();

@@ -40,6 +40,8 @@ export interface TmdbPage<T> {
   total_results: number;
 }
 
+export type DiscoverSort = 'popularity' | 'rating' | 'date';
+
 export type TmdbImageSize = 'w342' | 'w500' | 'w780' | 'w1280' | 'original';
 
 export interface TmdbSearchFilters {
@@ -95,7 +97,12 @@ export interface TmdbService {
   popular(mediaType: MediaType, page?: number): Promise<TmdbPage<TmdbTitle>>;
   topRated(mediaType: MediaType, page?: number): Promise<TmdbPage<TmdbTitle>>;
   nowPlaying(page?: number): Promise<TmdbPage<TmdbTitle>>;
-  discover(opts: { mediaType?: MediaType; genreId?: number; page?: number }): Promise<TmdbPage<TmdbTitle>>;
+  discover(opts: {
+    mediaType?: MediaType;
+    genreId?: number;
+    page?: number;
+    sortBy?: DiscoverSort;
+  }): Promise<TmdbPage<TmdbTitle>>;
   search(query: string, page?: number, filters?: TmdbSearchFilters): Promise<TmdbPage<TmdbTitle>>;
   details(mediaType: MediaType, id: number): Promise<TmdbTitleDetails | null>;
   genres(): Promise<TmdbGenre[]>;
@@ -182,7 +189,12 @@ export interface DbService {
   getProfile(userId: string): Promise<UserProfile | null>;
   upsertProfile(profile: UserProfile): Promise<UserProfile>;
   listEntries(userId: string, kind: ListKind): Promise<ListEntry[]>;
-  addToList(userId: string, kind: ListKind, titleId: number, mediaType: MediaType): Promise<ListEntry>;
+  addToList(
+    userId: string,
+    kind: ListKind,
+    titleId: number,
+    mediaType: MediaType,
+  ): Promise<ListEntry>;
   removeFromList(userId: string, kind: ListKind, titleId: number): Promise<void>;
   getProgress(userId: string, titleId: number): Promise<WatchProgress | null>;
   setProgress(progress: WatchProgress): Promise<WatchProgress>;

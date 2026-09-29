@@ -182,9 +182,11 @@ export function createMockTmdb(): TmdbService {
       await latency();
       return paginate(byType(mediaType).filter((t) => t.genre_ids.includes(genreId)), page);
     },
-    async discover({ mediaType, genreId, page } = {}) {
+    async discover({ mediaType, genreId, page, sortBy } = {}) {
       await latency();
       const items = byType(mediaType).filter((t) => genreId == null || t.genre_ids.includes(genreId));
+      if (sortBy === 'rating') items.sort((a, b) => b.vote_average - a.vote_average);
+      else if (sortBy === 'date') items.sort((a, b) => b.release_date.localeCompare(a.release_date));
       return paginate(items, page);
     },
     async search(query, page, filters = {}) {
