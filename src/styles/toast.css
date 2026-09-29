@@ -1,0 +1,15 @@
+/* Toast live regions (additive to the base .toast rules in primitives.css).
+   The region holds two always-mounted stacks: polite (info/success) and
+   assertive (error). They share the region's position so they read as one list. */
+.toast-region {
+  gap: 0;
+}
+.toast-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast-stack:not(:empty) + .toast-stack:not(:empty) {
+  margin-top: 10px;
+}
