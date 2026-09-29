@@ -3,3 +3,5 @@ dist
 .claude/worktrees/
 coverage
 tsconfig.tsbuildinfo
+test-results/
+playwright-report/
