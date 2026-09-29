@@ -16,6 +16,16 @@ Last Frame runs fully mocked with **no** env vars. Live services are opt-in.
 | `TMDB_API_KEY` | Netlify env (functions only) | Yes | TMDB v3 API key **or** v4 read access token, used by `netlify/functions/tmdb.ts` |
 | `VITE_TMDB_PROXY` | Client build env | No | Base URL of the proxy, e.g. `/api/tmdb`. Setting it switches the client TMDB adapter to live |
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Client build env | No (anon key is public by design; RLS protects data) | Live auth + db |
+| `VITE_PLAUSIBLE_DOMAIN` | Client build env | No | Site domain as registered in Plausible, e.g. `lastframe.tv`. Setting it switches the analytics adapter to Plausible |
+| `VITE_PLAUSIBLE_API_HOST` | Client build env | No | Optional self-hosted or proxied Plausible host (default `https://plausible.io`). Only used when `VITE_PLAUSIBLE_DOMAIN` is set |
+
+## Analytics
+
+- **Mock by default.** With no env set, `src/services/analytics/mock.ts` is used: events are kept in memory and logged to the console in dev. Nothing leaves the browser.
+- **Plausible** (`src/services/analytics/plausible.ts`) is picked by `src/services/index.ts` only when `VITE_PLAUSIBLE_DOMAIN` is set. It injects `<host>/js/script.manual.js` and sends page views on route change.
+- `identify()` is a deliberate no-op in the Plausible adapter: Plausible is cookieless and anonymous, so user ids and traits are never sent.
+- Event names (see `AnalyticsEvents` in `src/services/analytics/types.ts`; keep them stable, goals key off them): `search`, `add-to-list`, `play-trailer`. Page views are sent as `pageview`.
+- **CSP.** `netlify.toml` allows `https://plausible.io` in `script-src` and `connect-src` (a test in `src/test/csp.test.ts` keeps this in sync with `DEFAULT_PLAUSIBLE_HOST`). If you set a custom `VITE_PLAUSIBLE_API_HOST` on another origin, add that origin to both directives too, or the browser will block the script and the `/api/event` beacons. Alternatively proxy Plausible same-origin through a `netlify.toml` redirect under `/api` (e.g. `/api/plausible/*`, placed before the `/api/*` functions redirect) and point `VITE_PLAUSIBLE_API_HOST` at your own site; same-origin requests are covered by `'self'` and need no CSP change.
 
 ## TMDB proxy (`netlify/functions/tmdb.ts`)
 
