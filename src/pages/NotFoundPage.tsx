@@ -3,7 +3,7 @@ import Page from './Page';
 import { useMeta } from '../hooks/useMeta';
 
 export default function NotFoundPage() {
-  useMeta({ title: 'Page not found' });
+  useMeta({ title: 'Page not found', noindex: true });
   return (
     <Page title="404 — Lost the frame">
       <p className="muted">That page doesn't exist.</p>

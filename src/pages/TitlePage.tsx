@@ -27,6 +27,7 @@ export default function TitlePage() {
     description: movie?.description,
     image: movie?.poster,
     type: type === 'tv' ? 'video.tv_show' : 'video.movie',
+    noindex: movie === null,
   });
 
   if (movie === undefined) {
