@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Page from './Page';
+import { useMeta } from '../hooks/useMeta';
 import { loadHomeCatalog, type Movie } from '../services';
 
 export default function TitlePage() {
@@ -21,6 +22,12 @@ export default function TitlePage() {
       cancelled = true;
     };
   }, [id]);
+  useMeta({
+    title: movie ? movie.title : movie === null ? 'Title not found' : 'Loading…',
+    description: movie?.description,
+    image: movie?.poster,
+    type: type === 'tv' ? 'video.tv_show' : 'video.movie',
+  });
 
   if (movie === undefined) {
     return <Page title="Loading…"><p className="muted">Loading…</p></Page>;
