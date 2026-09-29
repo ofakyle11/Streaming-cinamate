@@ -4,3 +4,4 @@ export * from './useHistory';
 export * from './useRatings';
 export * from './useFocusTrap';
 export * from './useRovingFocus';
+export * from './useMeta';

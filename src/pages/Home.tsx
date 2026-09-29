@@ -3,6 +3,7 @@ import Hero from '../components/Hero';
 import Row from '../components/Row';
 import DetailModal from '../components/DetailModal';
 import { analytics, loadHomeCatalog, type CatalogRow, type Movie } from '../services';
+import { useMeta } from '../hooks/useMeta';
 
 interface Catalog {
   featured: Movie[];
@@ -13,6 +14,7 @@ export default function Home() {
   const [selected, setSelected] = useState<Movie | null>(null);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useMeta();
 
   useEffect(() => {
     let cancelled = false;
