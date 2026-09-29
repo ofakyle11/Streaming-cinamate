@@ -1,0 +1,178 @@
+/* Error boundary card + offline banner (glass-motion). */
+
+.error-page {
+  align-items: flex-start;
+}
+
+.error-card {
+  width: 100%;
+  max-width: 560px;
+  padding: 32px;
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  text-align: center;
+  animation: error-card-in var(--dur-slow) var(--ease-spring) both;
+}
+
+.error-card-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-text);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--glow-accent);
+}
+
+.error-card h1 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+}
+
+.error-card h1:focus {
+  outline: none;
+}
+
+.error-card h1:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+
+.error-card-message {
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.error-card-actions {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.error-card-actions .btn {
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.error-card-actions .btn.primary {
+  color: var(--color-on-light);
+}
+
+@keyframes error-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- offline banner ---------- */
+.offline-region {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.offline-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+  pointer-events: auto;
+  animation: offline-in var(--dur-medium) var(--ease-out) both;
+}
+
+.offline-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: var(--glow-accent);
+  animation: offline-pulse 1.6s var(--ease-in-out) infinite;
+}
+
+.offline-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes offline-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes offline-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (max-width: 480px) {
+  .error-card {
+    padding: 24px 18px;
+  }
+
+  .error-card-actions .btn {
+    flex: 1 1 100%;
+  }
+
+  .offline-region {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .offline-banner {
+    border-radius: var(--radius-lg);
+    font-size: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .error-card,
+  .offline-banner,
+  .offline-dot {
+    animation: none;
+  }
+}
