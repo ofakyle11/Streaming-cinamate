@@ -31,6 +31,30 @@ describe('GenrePage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Drama' })).toBeInTheDocument();
   });
 
+  it('switches between movie and TV results via the media type control', async () => {
+    renderAt('/genre/878');
+    await screen.findByRole('heading', { level: 1, name: 'Science Fiction' });
+    // Neon Drift is a sci-fi movie; Signal Lost is a sci-fi series.
+    expect(await screen.findByText('Neon Drift')).toBeInTheDocument();
+    expect(screen.queryByText('Signal Lost')).not.toBeInTheDocument();
+    const group = await screen.findByRole('group', { name: /media type/i });
+    expect(within(group).getByRole('button', { name: 'Movies' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(group).getByRole('button', { name: 'TV' }));
+    expect(await screen.findByText('Signal Lost')).toBeInTheDocument();
+    expect(screen.queryByText('Neon Drift')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('group', { name: /media type/i })).getByRole('button', { name: 'TV' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('hides the media type control for single-type genres', async () => {
+    renderAt('/genre/99');
+    await screen.findByRole('heading', { level: 1, name: 'Documentary' });
+    await screen.findByText('Deep Field');
+    expect(screen.queryByRole('group', { name: /media type/i })).not.toBeInTheDocument();
+  });
+
   it('shows not found for unknown genres', async () => {
     renderAt('/genre/999999');
     expect(await screen.findByRole('heading', { name: /genre not found/i })).toBeInTheDocument();
