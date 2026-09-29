@@ -2,6 +2,17 @@ import type { TmdbVideo, TmdbWatchProviders } from '../../services';
 
 const SAFE_KEY = /^[\w-]{1,64}$/;
 
+/** Everything keyboard-reachable inside a dialog, in DOM order (used by the trailer modal's focus trap). */
+export const FOCUSABLE_SELECTOR = [
+  'button:not([disabled])',
+  'a[href]',
+  'iframe',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  "[tabindex]:not([tabindex='-1'])",
+].join(', ');
+
 /** Embeddable player URL for a TMDB video, or null when the site/key is not supported. */
 export function trailerEmbedUrl(video: TmdbVideo, autoplay = true): string | null {
   if (!SAFE_KEY.test(video.key)) return null;

@@ -175,7 +175,14 @@ function TitleView({ data }: { data: TitleDetails }) {
       </div>
 
       {trailerOpen && trailer && (
-        <TrailerModal video={trailer} title={movie.title} poster={movie.backdrop} onClose={closeTrailer} />
+        <TrailerModal
+          video={trailer}
+          title={movie.title}
+          poster={movie.backdrop}
+          onClose={closeTrailer}
+          movie={movie}
+          onThumbChange={onThumb}
+        />
       )}
     </main>
   );
