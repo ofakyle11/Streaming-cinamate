@@ -1,17 +1,10 @@
-import { STORAGE_KEY, useLastFrameStore, type Profile } from '../state/store';
+import { STORAGE_KEY, useLastFrameStore } from '../state/store';
+import { freshGuestState } from '../services/db/sync';
+import { clearSyncOwner } from '../services/db/syncEngine';
 
 /** localStorage keys owned by Last Frame: the zustand store and every `lf.*` key. */
 export function isLastFrameKey(key: string): boolean {
   return key === STORAGE_KEY || key.startsWith(`${STORAGE_KEY}.`) || key.startsWith('lf.');
-}
-
-function newProfileId(): string {
-  try {
-    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
-  } catch {
-    /* fall through */
-  }
-  return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 /**
@@ -34,13 +27,17 @@ export function clearLocalData(): number {
     /* storage unavailable: only the in-memory reset below applies */
   }
 
-  const profile: Profile = { id: newProfileId(), name: 'Me', avatar: '🎬', kid: false, createdAt: Date.now() };
-  useLastFrameStore.setState({
-    profiles: [profile],
-    activeProfileId: profile.id,
-    watchlist: {},
-    history: {},
-    ratings: {},
-  });
+  useLastFrameStore.setState(freshGuestState());
   return removed;
+}
+
+/**
+ * After sign-out: reset the synced store data (profiles, watchlist, history,
+ * ratings) to a fresh guest and mark it as guest data again. The account's
+ * copy stays in the cloud, and its unsent-edit queue stays under its own key
+ * for the next sign-in. Other preferences are kept.
+ */
+export function resetSyncedData(): void {
+  useLastFrameStore.setState(freshGuestState());
+  clearSyncOwner();
 }
