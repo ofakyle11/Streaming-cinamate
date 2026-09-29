@@ -66,6 +66,7 @@ export function toMovie(t: TmdbTitle, genres: readonly TmdbGenre[], svc: TmdbSer
     poster: svc.imageUrl(t.poster_path, 'w500'),
     backdrop: svc.imageUrl(t.backdrop_path, 'w1280'),
     runtime: t.runtime,
+    ...(t.trailer_key ? { trailerKey: t.trailer_key } : {}),
   };
 }
 
