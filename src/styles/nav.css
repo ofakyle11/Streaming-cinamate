@@ -1,0 +1,90 @@
+/* Mobile primary navigation (<= 760px).
+   theme.css hides `.nav-links` at this width; the menu toggle reveals the same
+   list as a glass dropdown under the navbar. Desktop layout is untouched. */
+
+.navbar .nav-toggle {
+  display: none;
+  flex-shrink: 0;
+  color: var(--color-text);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .navbar {
+    gap: 12px;
+    padding: 10px 14px;
+  }
+  .navbar .nav-right {
+    gap: 10px;
+  }
+
+  .navbar .nav-toggle {
+    display: inline-flex;
+  }
+
+  /* Overrides theme.css `.nav-links { display: none }` while open. */
+  .navbar .nav-links.is-open {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 8px;
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg-legible);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
+    font-size: 1rem;
+    color: var(--color-text-soft);
+    animation: nav-menu-in var(--dur-base) var(--ease-out);
+  }
+
+  .navbar .nav-links.is-open a {
+    display: block;
+    min-height: 44px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+  }
+
+  .navbar .nav-links.is-open a:hover,
+  .navbar .nav-links.is-open a.active {
+    color: var(--color-text);
+    background: var(--glass-bg);
+  }
+}
+
+/* Narrow phones (375px): show only the logo mark so the toggle, search and
+   avatar fit on one line. The link keeps its name via aria-label. */
+@media (max-width: 480px) {
+  .navbar .logo.logo--with-mark {
+    font-size: 0;
+    letter-spacing: 0;
+    gap: 0;
+  }
+}
+
+@keyframes nav-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar .nav-links.is-open {
+    animation: none;
+  }
+  .navbar .nav-toggle:hover {
+    transform: none;
+  }
+}
