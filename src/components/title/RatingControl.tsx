@@ -1,18 +1,21 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useRatingActions, useRatingFor } from '../../hooks';
+import type { MediaType } from '../../services/types';
 import type { Rating } from '../../state/store';
 import { Button, useToast } from '../ui';
 
 interface Props {
   titleId: number;
   title: string;
+  /** Stored with the rating so "Because you liked X" can fetch similar titles. */
+  mediaType?: MediaType;
 }
 
 const STARS: Rating[] = [1, 2, 3, 4, 5];
 const LABELS: Record<Rating, string> = { 1: 'Not for me', 2: 'Meh', 3: 'Good', 4: 'Great', 5: 'Loved it' };
 
 /** "Rate" action: opens a glass popover with a 1–5 star radio group. */
-export default function RatingControl({ titleId, title }: Props) {
+export default function RatingControl({ titleId, title, mediaType }: Props) {
   const rating = useRatingFor(titleId);
   const { rate, clear } = useRatingActions();
   const { toast } = useToast();
@@ -37,7 +40,7 @@ export default function RatingControl({ titleId, title }: Props) {
   }, [open]);
 
   const choose = (r: Rating) => {
-    rate(titleId, r);
+    rate(titleId, r, mediaType ? { mediaType, title } : undefined);
     setOpen(false);
     toast(`Rated ${title} ${r}/5 — ${LABELS[r]}`, { kind: 'success' });
   };

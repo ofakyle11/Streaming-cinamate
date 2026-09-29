@@ -2,17 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Row from '../components/Row';
 import CastStrip from '../components/title/CastStrip';
+import ThumbsControl from '../components/ratings/ThumbsControl';
 import RatingControl from '../components/title/RatingControl';
 import TitleBackdrop from '../components/title/TitleBackdrop';
 import TitleSkeleton from '../components/title/TitleSkeleton';
 import TrailerModal from '../components/title/TrailerModal';
 import WhereToWatch from '../components/title/WhereToWatch';
 import '../components/title/title.css';
-import { Button } from '../components/ui';
+import { Button, useToast } from '../components/ui';
 import { useViewActions } from '../hooks';
 import { useMyListToggle } from '../hooks/useMyListToggle';
 import { formatRuntime, useTitleDetails, type TitleDetails } from '../hooks/useTitleDetails';
 import { analytics, type Movie } from '../services';
+import type { Thumb } from '../state/store';
 
 function TitleNotFound({ type, id }: { type?: string; id?: string }) {
   useEffect(() => {
@@ -67,6 +69,7 @@ function TitleView({ data }: { data: TitleDetails }) {
   const { inList, toggle: toggleList } = useMyListToggle(movie, 'title');
   const [trailerOpen, setTrailerOpen] = useState(false);
   const { recordView } = useViewActions();
+  const { toast } = useToast();
   const closeTrailer = useCallback(() => setTrailerOpen(false), []);
 
   useEffect(() => {
@@ -85,6 +88,13 @@ function TitleView({ data }: { data: TitleDetails }) {
 
   const runtime = formatRuntime(movie.runtime);
   const score = Number.isFinite(raw.vote_average) && raw.vote_average > 0 ? raw.vote_average.toFixed(1) : null;
+
+  const onThumb = (thumb: Thumb | null) => {
+    analytics.track(thumb ? `thumb_${thumb}` : 'thumb_clear', { id: movie.id, mediaType: movie.mediaType });
+    if (thumb === 'up') toast(`Glad you liked ${movie.title}`, { kind: 'success' });
+    else if (thumb === 'down') toast(`Got it — we’ll show fewer titles like ${movie.title}`);
+    else toast(`Removed your thumb for ${movie.title}`);
+  };
 
   const openTrailer = () => {
     analytics.track('trailer_open', { id: movie.id, mediaType: movie.mediaType });
@@ -148,7 +158,8 @@ function TitleView({ data }: { data: TitleDetails }) {
             <Button variant="glass" onClick={toggleList} aria-pressed={inList} className={inList ? 'is-listed' : undefined}>
               <span aria-hidden>{inList ? '✓' : '＋'}</span> My List
             </Button>
-            <RatingControl titleId={movie.id} title={movie.title} />
+            <ThumbsControl titleId={movie.id} mediaType={movie.mediaType} title={movie.title} onChange={onThumb} />
+            <RatingControl titleId={movie.id} title={movie.title} mediaType={movie.mediaType} />
           </div>
         </article>
 

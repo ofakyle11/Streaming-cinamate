@@ -56,7 +56,7 @@ describe('My List toggles', () => {
         <MovieCard movie={MOVIE} delay={0} listToggle={false} />
       </MemoryRouter>,
     );
-    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByRole('button', { name: /my list/i })).toBeNull();
     rerender(
       <MemoryRouter>
         <MovieCard movie={MOVIE} delay={0} />

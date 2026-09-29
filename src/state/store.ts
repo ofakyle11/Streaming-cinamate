@@ -40,6 +40,26 @@ export interface RatingEntry {
   titleId: TitleId;
   rating: Rating;
   ratedAt: number;
+  /** Optional title metadata (w2-ratings) so recommendations can fetch similar titles. */
+  mediaType?: 'movie' | 'tv';
+  title?: string;
+}
+
+/** Thumbs up/down (w2-ratings). Independent of the optional 1–5 star rating. */
+export type Thumb = 'up' | 'down';
+
+/** Metadata stored alongside a rating/thumb so "Because you liked X" can be built offline. */
+export interface RatedTitleMeta {
+  mediaType: 'movie' | 'tv';
+  title: string;
+}
+
+export interface ThumbEntry {
+  titleId: TitleId;
+  thumb: Thumb;
+  ratedAt: number;
+  mediaType?: 'movie' | 'tv';
+  title?: string;
 }
 
 type PerProfile<T> = Record<ProfileId, T>;
@@ -69,7 +89,7 @@ export interface HistorySlice {
 
 export interface RatingsSlice {
   ratings: PerProfile<RatingEntry[]>;
-  rateTitle: (titleId: TitleId, rating: Rating) => void;
+  rateTitle: (titleId: TitleId, rating: Rating, meta?: RatedTitleMeta) => void;
   clearRating: (titleId: TitleId) => void;
 }
 
@@ -81,7 +101,13 @@ export interface ViewsSlice {
   clearViews: () => void;
 }
 
-export type LastFrameState = ProfilesSlice & WatchlistSlice & HistorySlice & RatingsSlice & ViewsSlice;
+export interface ThumbsSlice {
+  thumbs: PerProfile<ThumbEntry[]>;
+  /** Sets the active profile's thumb for a title; `null` clears it. */
+  setThumb: (titleId: TitleId, thumb: Thumb | null, meta?: RatedTitleMeta) => void;
+}
+
+export type LastFrameState = ProfilesSlice & WatchlistSlice & HistorySlice & RatingsSlice & ViewsSlice & ThumbsSlice;
 
 export const STORAGE_KEY = 'lastframe';
 export const STORAGE_VERSION = 1;
@@ -141,6 +167,7 @@ const EMPTY_WATCHLIST: WatchlistEntry[] = [];
 const EMPTY_HISTORY: HistoryEntry[] = [];
 const EMPTY_RATINGS: RatingEntry[] = [];
 const EMPTY_VIEWS: ViewEntry[] = [];
+const EMPTY_THUMBS: ThumbEntry[] = [];
 
 const defaultProfile = createDefaultProfile();
 
@@ -182,6 +209,7 @@ export const useLastFrameStore = create<LastFrameState>()(
             history: omitKey(s.history, id),
             ratings: omitKey(s.ratings, id),
             views: omitKey(s.views, id),
+            thumbs: omitKey(s.thumbs, id),
           };
         }),
 
@@ -252,12 +280,16 @@ export const useLastFrameStore = create<LastFrameState>()(
       // ---- ratings ----
       ratings: {},
 
-      rateTitle: (titleId, rating) =>
+      rateTitle: (titleId, rating, meta) =>
         set((s) => {
           const pid = s.activeProfileId;
           if (!pid) return {};
-          const rest = (s.ratings[pid] ?? []).filter((e) => e.titleId !== titleId);
-          return { ratings: { ...s.ratings, [pid]: [{ titleId, rating, ratedAt: Date.now() }, ...rest] } };
+          const list = s.ratings[pid] ?? [];
+          const prev = list.find((e) => e.titleId === titleId);
+          const rest = list.filter((e) => e.titleId !== titleId);
+          const known = meta ?? (prev?.mediaType && prev.title ? { mediaType: prev.mediaType, title: prev.title } : null);
+          const entry: RatingEntry = { titleId, rating, ratedAt: Date.now(), ...(known ?? {}) };
+          return { ratings: { ...s.ratings, [pid]: [entry, ...rest] } };
         }),
 
       clearRating: (titleId) =>
@@ -287,6 +319,19 @@ export const useLastFrameStore = create<LastFrameState>()(
 
       clearViews: () =>
         set((s) => (s.activeProfileId ? { views: { ...s.views, [s.activeProfileId]: [] } } : {})),
+
+      // ---- thumbs (w2-ratings) ----
+      thumbs: {},
+
+      setThumb: (titleId, thumb, meta) =>
+        set((s) => {
+          const pid = s.activeProfileId;
+          if (!pid) return {};
+          const rest = (s.thumbs[pid] ?? []).filter((e) => e.titleId !== titleId);
+          if (!thumb) return { thumbs: { ...s.thumbs, [pid]: rest } };
+          const entry: ThumbEntry = { titleId, thumb, ratedAt: Date.now(), ...(meta ?? {}) };
+          return { thumbs: { ...s.thumbs, [pid]: [entry, ...rest] } };
+        }),
     }),
     {
       name: STORAGE_KEY,
@@ -300,6 +345,7 @@ export const useLastFrameStore = create<LastFrameState>()(
         history: s.history,
         ratings: s.ratings,
         views: s.views,
+        thumbs: s.thumbs,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<LastFrameState>;
@@ -316,6 +362,7 @@ export const useLastFrameStore = create<LastFrameState>()(
           history: p.history ?? {},
           ratings: p.ratings ?? {},
           views: sanitizeViews(p.views),
+          thumbs: p.thumbs ?? {},
         };
       },
     },
@@ -361,3 +408,11 @@ function sanitizeViews(raw: unknown): PerProfile<ViewEntry[]> {
   }
   return out;
 }
+
+// ---- thumbs selectors (w2-ratings) ----
+
+export const selectThumbs = (s: LastFrameState): ThumbEntry[] =>
+  s.activeProfileId ? s.thumbs[s.activeProfileId] ?? EMPTY_THUMBS : EMPTY_THUMBS;
+
+export const selectThumbFor = (titleId: TitleId) => (s: LastFrameState): Thumb | null =>
+  selectThumbs(s).find((e) => e.titleId === titleId)?.thumb ?? null;

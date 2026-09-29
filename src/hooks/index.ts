@@ -5,3 +5,4 @@ export * from './useRatings';
 export * from './useViewHistory';
 export * from './useMyListToggle';
 export * from './useMyListTitles';
+export * from './useThumbs';

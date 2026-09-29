@@ -3,6 +3,7 @@ import type { Movie } from '../services';
 import { titlePath } from '../pages/homeRows';
 import { useMyListToggle, type MyListSource } from '../hooks/useMyListToggle';
 import { IconButton } from './ui';
+import CardRating from './ratings/CardRating';
 import './MovieCard.css';
 
 interface Props {
@@ -35,6 +36,7 @@ export default function MovieCard({ movie, delay, onSelect, listToggle = true, l
         </div>
       </Link>
       {listToggle && <CardListToggle movie={movie} source={listSource} />}
+      <CardRating movie={movie} />
     </div>
   );
 }
