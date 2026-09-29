@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useOptionalToast } from '../components/ui/Toast';
 import { analytics as defaultAnalytics, type AnalyticsService, type MediaType } from '../services';
-import { selectIsInWatchlist, useLastFrameStore } from '../state/store';
+import { selectIsInWatchlistFor, useLastFrameStore } from '../state/store';
 
 /** The minimum a surface needs to know about a title to add it to My List. */
 export interface ListableTitle {
@@ -26,14 +26,14 @@ export function useMyListToggle(
   source: MyListSource,
   analytics: AnalyticsService = defaultAnalytics,
 ) {
-  const inList = useLastFrameStore(selectIsInWatchlist(item.id));
+  const inList = useLastFrameStore(selectIsInWatchlistFor(item.id, item.mediaType));
   const toggleWatchlist = useLastFrameStore((s) => s.toggleWatchlist);
   const { toast } = useOptionalToast();
   const { id, mediaType, title } = item;
 
   const toggle = useCallback(() => {
     // Read fresh state so rapid double-clicks cannot desync the toast from the store.
-    const wasIn = selectIsInWatchlist(id)(useLastFrameStore.getState());
+    const wasIn = selectIsInWatchlistFor(id, mediaType)(useLastFrameStore.getState());
     toggleWatchlist(id, mediaType);
     analytics.track(wasIn ? 'watchlist_remove' : 'watchlist_add', { id, mediaType, source });
     toast(myListToastMessage(title, !wasIn), { kind: wasIn ? 'info' : 'success' });

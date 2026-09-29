@@ -16,12 +16,12 @@ const STARS: Rating[] = [1, 2, 3, 4, 5];
  * Choosing the current value again clears the rating.
  */
 export default function StarRating({ titleId, mediaType, title }: Props) {
-  const rating = useRatingFor(titleId);
+  const rating = useRatingFor(titleId, mediaType);
   const { rate, clear } = useRatingActions();
 
   const choose = (s: Rating) => {
-    if (rating === s) clear(titleId);
-    else rate(titleId, s, { mediaType, title });
+    if (rating === s) clear(titleId, mediaType);
+    else rate(titleId, s, { mediaType, title }, mediaType);
   };
 
   return (

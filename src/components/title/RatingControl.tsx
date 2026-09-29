@@ -16,7 +16,7 @@ const LABELS: Record<Rating, string> = { 1: 'Not for me', 2: 'Meh', 3: 'Good', 4
 
 /** "Rate" action: opens a glass popover with a 1–5 star radio group. */
 export default function RatingControl({ titleId, title, mediaType }: Props) {
-  const rating = useRatingFor(titleId);
+  const rating = useRatingFor(titleId, mediaType);
   const { rate, clear } = useRatingActions();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -40,13 +40,13 @@ export default function RatingControl({ titleId, title, mediaType }: Props) {
   }, [open]);
 
   const choose = (r: Rating) => {
-    rate(titleId, r, mediaType ? { mediaType, title } : undefined);
+    rate(titleId, r, mediaType ? { mediaType, title } : undefined, mediaType);
     setOpen(false);
     toast(`Rated ${title} ${r}/5 — ${LABELS[r]}`, { kind: 'success' });
   };
 
   const reset = () => {
-    clear(titleId);
+    clear(titleId, mediaType);
     setOpen(false);
     toast(`Removed your rating for ${title}`);
   };
