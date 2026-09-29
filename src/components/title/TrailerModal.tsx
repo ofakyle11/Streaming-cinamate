@@ -6,7 +6,7 @@ import { trailerEmbedUrl } from './titleUtils';
 interface Props {
   video: TmdbVideo;
   title: string;
-  /** Shown behind the "demo" placeholder when the video cannot be embedded. */
+  /** Shown behind the fallback card when the video cannot be embedded (unknown site / unsafe key). */
   poster: string;
   onClose: () => void;
 }
@@ -86,7 +86,7 @@ export default function TrailerModal({ video, title, poster, onClose }: Props) {
                 <span className="trailer-placeholder-icon" aria-hidden>
                   ▶
                 </span>
-                <p>Trailer preview isn’t available in demo mode.</p>
+                <p>This trailer can’t be played here.</p>
               </div>
             </div>
           )}

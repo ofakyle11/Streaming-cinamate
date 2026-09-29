@@ -38,6 +38,17 @@ export interface TmdbPage<T> {
   total_results: number;
 }
 
+/** TMDB `/{type}/{id}/videos` result entry (subset). */
+export interface TmdbVideo {
+  id: string;
+  /** Provider video id, e.g. the YouTube video key. */
+  key: string;
+  name: string;
+  site: 'YouTube' | 'Vimeo' | string;
+  type: 'Trailer' | 'Teaser' | 'Clip' | 'Featurette' | string;
+  official?: boolean;
+}
+
 export type TmdbImageSize = 'w342' | 'w500' | 'w780' | 'w1280' | 'original';
 
 export interface TmdbService {
@@ -49,14 +60,14 @@ export interface TmdbService {
   search(query: string, page?: number): Promise<TmdbPage<TmdbTitle>>;
   details(mediaType: MediaType, id: number): Promise<TmdbTitle | null>;
   genres(): Promise<TmdbGenre[]>;
+  /** Videos (trailers, teasers, ...) attached to a title. Empty when none. */
+  videos(mediaType: MediaType, id: number): Promise<TmdbVideo[]>;
   /** Resolve a TMDB `*_path` to a fully qualified image URL. */
   imageUrl(path: string, size?: TmdbImageSize): string;
   /** Top-billed cast for a title (TMDB /credits `cast`, ordered by billing). */
   credits(mediaType: MediaType, id: number): Promise<TmdbCastMember[]>;
   /** Titles similar to the given one (TMDB /similar). Never includes the title itself. */
   similar(mediaType: MediaType, id: number, page?: number): Promise<TmdbPage<TmdbTitle>>;
-  /** Trailers, teasers and clips (TMDB /videos). */
-  videos(mediaType: MediaType, id: number): Promise<TmdbVideo[]>;
   /** Where-to-watch offers for one region (TMDB /watch/providers, data by JustWatch). */
   watchProviders(mediaType: MediaType, id: number, region: WatchRegion): Promise<TmdbWatchProviders | null>;
 }
@@ -71,18 +82,6 @@ export interface TmdbCastMember {
   profile_path: string | null;
   /** Billing order, 0 = top billed. */
   order: number;
-}
-
-export interface TmdbVideo {
-  id: string;
-  /** Provider-specific id (e.g. a YouTube video id). */
-  key: string;
-  name: string;
-  /** Upstream values are 'YouTube' | 'Vimeo'; mocks use 'Mock' (no embeddable video). */
-  site: string;
-  /** 'Trailer' | 'Teaser' | 'Clip' | 'Featurette' | ... */
-  type: string;
-  official: boolean;
 }
 
 /** Regions the Where-to-watch panel supports. */

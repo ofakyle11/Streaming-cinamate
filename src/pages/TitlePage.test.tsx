@@ -80,6 +80,10 @@ describe('TitlePage', () => {
     fireEvent.click(screen.getByRole('button', { name: /play trailer/i }));
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent(/official trailer/i);
+    expect(within(dialog).getByTitle('Neon Drift trailer')).toHaveAttribute(
+      'src',
+      expect.stringMatching(/^https:\/\/www\.youtube-nocookie\.com\/embed\/aqz-KE-bpKQ\?/),
+    );
     expect(screen.getByRole('button', { name: /close trailer/i })).toHaveFocus();
     act(() => {
       fireEvent.keyDown(document, { key: 'Escape' });
@@ -88,9 +92,9 @@ describe('TitlePage', () => {
   });
 
   it('disables Play trailer when the title has none', async () => {
-    // Mock title #4 (id 1004, "Silent Orbit") has no videos.
-    renderAt('/title/movie/1004');
-    await screen.findByRole('heading', { level: 1, name: 'Silent Orbit' }, T);
+    // Mock title id 1028 ("Overcast") has no entry in the MOCK_VIDEOS fixtures.
+    renderAt('/title/movie/1028');
+    await screen.findByRole('heading', { level: 1, name: 'Overcast' }, T);
     expect(screen.getByRole('button', { name: /no trailer/i })).toBeDisabled();
   });
 

@@ -26,10 +26,11 @@ describe('mock TMDB title extras', () => {
     expect((await svc.similar('movie', 424242)).results).toEqual([]);
   });
 
-  it('videos: most titles have a trailer, every fifth has none', async () => {
-    expect((await svc.videos('movie', 1000)).some((v) => v.type === 'Trailer')).toBe(true);
-    const noTrailer = MOCK_TITLES[4];
-    expect(await svc.videos(noTrailer.media_type, noTrailer.id)).toEqual([]);
+  it('videos: fixture titles have a YouTube trailer, others (e.g. 1028) have none', async () => {
+    const withTrailer = await svc.videos('movie', 1000);
+    expect(withTrailer.some((v) => v.type === 'Trailer' && v.site === 'YouTube')).toBe(true);
+    expect(await svc.videos('movie', 1028)).toEqual([]);
+    expect(await svc.videos('tv', 1000)).toEqual([]);
   });
 
   it('watch providers differ by region and can be empty in CA', async () => {

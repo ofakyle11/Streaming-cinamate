@@ -130,6 +130,38 @@ export const MOCK_TITLES: TmdbTitle[] = SEEDS.map((s, i) => {
   };
 });
 
+/**
+ * Trailer fixtures. Our titles are fictional, so the mock points at openly licensed
+ * Blender Foundation shorts on YouTube. Some titles (e.g. 1028, the 5th trending
+ * slide) deliberately have no trailer so the "no preview" path is exercised.
+ */
+const TRAILER_KEYS: Array<[titleId: number, key: string, name: string]> = [
+  [1000, 'aqz-KE-bpKQ', 'Official Trailer'],
+  [1007, 'eRsGyueVLvQ', 'Official Trailer'],
+  [1014, 'R6MlUcmOul8', 'Teaser'],
+  [1021, 'TLkA0RELQ1g', 'Official Trailer'],
+  [1035, 'Y-rmzh0PI3c', 'Official Trailer'],
+  [1042, 'WhWc3b3KhnY', 'Official Trailer'],
+  [1049, 'mN0zPOpADL4', 'Official Trailer'],
+];
+
+export const MOCK_VIDEOS: Record<number, TmdbVideo[]> = Object.fromEntries(
+  TRAILER_KEYS.map(([titleId, key, name]) => [
+    titleId,
+    [
+      { id: `v${titleId}-bts`, key: `lf-bts-${titleId}`, name: 'Behind the scenes', site: 'Vimeo', type: 'Featurette' },
+      {
+        id: `v${titleId}`,
+        key,
+        name,
+        site: 'YouTube',
+        type: name === 'Teaser' ? 'Teaser' : 'Trailer',
+        official: true,
+      },
+    ],
+  ]),
+);
+
 const PAGE_SIZE = 20;
 
 /** Picsum seeds so mock art is stable across reloads. Sizes follow TMDB naming. */
@@ -199,6 +231,11 @@ export function createMockTmdb(): TmdbService {
     async genres() {
       return MOCK_GENRES;
     },
+    async videos(mediaType, id) {
+      await latency();
+      const exists = MOCK_TITLES.some((t) => t.id === id && t.media_type === mediaType);
+      return exists ? (MOCK_VIDEOS[id] ?? []) : [];
+    },
     imageUrl: mockImageUrl,
     async credits(mediaType, id) {
       await latency();
@@ -208,11 +245,6 @@ export function createMockTmdb(): TmdbService {
       await latency();
       const t = findMock(mediaType, id);
       return paginate(t ? mockSimilar(t) : [], page);
-    },
-    async videos(mediaType, id) {
-      await latency();
-      const t = findMock(mediaType, id);
-      return t ? mockVideos(t) : [];
     },
     async watchProviders(mediaType, id, region) {
       await latency();
@@ -264,17 +296,6 @@ export function mockSimilar(t: TmdbTitle): TmdbTitle[] {
   return MOCK_TITLES.filter((x) => x.id !== t.id && overlap(x) > 0).sort(
     (a, b) => overlap(b) - overlap(a) || b.vote_average - a.vote_average || a.id - b.id,
   );
-}
-
-/** One trailer for most titles; every fifth title has none so the empty state is exercised. */
-export function mockVideos(t: TmdbTitle): TmdbVideo[] {
-  const seed = t.id - 1000;
-  if (seed % 5 === 4) return [];
-  const name = t.title ?? t.name ?? 'Untitled';
-  return [
-    { id: `mv-${t.id}-t`, key: `lf-${t.id}`, name: `${name} — Official Trailer`, site: 'Mock', type: 'Trailer', official: true },
-    { id: `mv-${t.id}-c`, key: `lf-${t.id}-clip`, name: `${name} — Clip`, site: 'Mock', type: 'Clip', official: true },
-  ];
 }
 
 /** Fictional services; logos intentionally empty so the UI renders monograms. */

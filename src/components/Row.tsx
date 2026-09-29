@@ -5,7 +5,7 @@ import MovieCard from './MovieCard';
 interface Props {
   title: string;
   items: Movie[];
-  onSelect: (m: Movie) => void;
+  onSelect?: (m: Movie) => void;
 }
 
 export default function Row({ title, items, onSelect }: Props) {
@@ -41,7 +41,7 @@ export default function Row({ title, items, onSelect }: Props) {
         <button className="arrow left glass" onClick={() => scroll(-1)} aria-label="Scroll left">‹</button>
         <div className="track" ref={trackRef}>
           {items.map((m, i) => (
-            <MovieCard key={`${title}-${m.id}`} movie={m} delay={i * 60} onSelect={onSelect} />
+            <MovieCard key={`${m.mediaType}-${m.id}`} movie={m} delay={i * 60} onSelect={onSelect} />
           ))}
         </div>
         <button className="arrow right glass" onClick={() => scroll(1)} aria-label="Scroll right">›</button>

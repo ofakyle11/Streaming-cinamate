@@ -32,6 +32,13 @@ export function createLiveTmdb(proxyUrl: string): TmdbService {
     search: async () => notReady(),
     details: async () => notReady(),
     genres: async () => notReady(),
+    async videos(mediaType, id) {
+      // Proxy mirrors TMDB: GET {proxy}/{movie|tv}/{id}/videos -> { results: TmdbVideo[] }
+      const res = await fetch(`${base}/${mediaType}/${encodeURIComponent(String(id))}/videos`);
+      if (!res.ok) throw new Error(`TMDB videos request failed (${res.status})`);
+      const body = (await res.json()) as { results?: TmdbVideo[] };
+      return Array.isArray(body.results) ? body.results : [];
+    },
     imageUrl(path: string, size: TmdbImageSize = 'w500') {
       return `https://image.tmdb.org/t/p/${size}${path}`;
     },
@@ -51,10 +58,6 @@ export function createLiveTmdb(proxyUrl: string): TmdbService {
         ...res,
         results: (res.results ?? []).filter((t) => t.id !== id).map((t) => normaliseTitle(t, mediaType)),
       };
-    },
-    async videos(mediaType, id) {
-      const res = await proxyGet<{ results?: TmdbVideo[] }>(base, `/${mediaType}/${id}/videos`);
-      return res.results ?? [];
     },
     async watchProviders(mediaType, id, region) {
       const res = await proxyGet<{ results?: Record<string, RawProviders | undefined> }>(
