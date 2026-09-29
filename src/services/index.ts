@@ -108,4 +108,5 @@ export const billingAdapter: BillingAdapter = fromBillingService(billing);
 /* ------------------------------------------------------- Cloud sync */
 
 export { startCloudSync, pendingStorageKey } from './db/syncEngine';
+export { readSyncOwner, clearSyncOwner, SYNC_OWNER_KEY } from './db/syncEngine';
 export type { CloudSync, CloudSyncOptions, StopOptions, SyncStatus } from './db/syncEngine';

@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { SyncChange, SyncSnapshot } from '../types';
-import { diffStates, mergeSnapshots, rowKey, rowsFromState, stateFromRows, type SyncableState } from './sync';
+import {
+  adoptSnapshot,
+  diffStates,
+  freshGuestState,
+  mergeSnapshots,
+  rowKey,
+  rowsFromState,
+  stateFromRows,
+  type SyncableState,
+} from './sync';
 
 const profile = (id: string, name = 'Ada', createdAt = 100) => ({ id, name, avatar: 'aurora', kid: false, createdAt });
 
@@ -180,5 +189,54 @@ describe('mergeSnapshots (last write wins)', () => {
     const { state, push } = mergeSnapshots(local, remote, new Map(), 20_000);
     expect(state.profiles.map((p) => p.id)).toEqual(['p1']);
     expect(push).toEqual([{ table: 'profiles', row: expect.objectContaining({ profileId: 'p1', deleted: false, updatedAt: 20_000 }) }]);
+  });
+});
+
+describe('freshGuestState / adoptSnapshot', () => {
+  const remoteProfile = (profileId: string) => ({
+    profileId,
+    name: 'Bea',
+    avatar: 'meadow',
+    kid: false,
+    createdAt: 5,
+    updatedAt: 5,
+    deleted: false,
+  });
+  const snapshot = (over: Partial<SyncSnapshot> = {}): SyncSnapshot => ({
+    profiles: [],
+    watchlist: [],
+    history: [],
+    ratings: [],
+    ...over,
+  });
+
+  it('creates one untouched default profile with no lists', () => {
+    const s = freshGuestState(42);
+    expect(s.profiles).toEqual([expect.objectContaining({ name: 'Me', createdAt: 42, kid: false })]);
+    expect(s.activeProfileId).toBe(s.profiles[0].id);
+    expect([s.watchlist, s.history, s.ratings]).toEqual([{}, {}, {}]);
+    expect(freshGuestState().profiles[0].id).not.toBe(s.profiles[0].id);
+  });
+
+  it("takes the account's snapshot as-is and pushes nothing when it has profiles", () => {
+    const remote = snapshot({
+      profiles: [remoteProfile('pb')],
+      watchlist: [{ profileId: 'pb', titleId: 7, addedAt: 9, updatedAt: 9, deleted: false }],
+    });
+    const { state, push } = adoptSnapshot(remote, new Map(), 1_000);
+    expect(push).toEqual([]);
+    expect(state.profiles.map((p) => p.id)).toEqual(['pb']);
+    expect(state.watchlist).toEqual({ pb: [{ titleId: 7, addedAt: 9 }] });
+  });
+
+  it('keeps the own pending queue and gives an empty account a default profile', () => {
+    const own: SyncChange = { table: 'profiles', row: { ...remoteProfile('pnew'), name: 'Offline', updatedAt: 50 } };
+    const withOwn = adoptSnapshot(snapshot({ profiles: [remoteProfile('pb')] }), new Map([[rowKey(own), own]]), 60);
+    expect(withOwn.push).toEqual([own]);
+    expect(withOwn.state.profiles.map((p) => p.id).sort()).toEqual(['pb', 'pnew']);
+
+    const empty = adoptSnapshot(snapshot(), new Map(), 60);
+    expect(empty.state.profiles).toHaveLength(1);
+    expect(empty.push.map(rowKey)).toEqual([`profiles:${empty.state.profiles[0].id}`]);
   });
 });

@@ -6,8 +6,13 @@
 -- captures the email at http://localhost:54324). No password is set.
 -- Requires supabase/schema.sql (or its migration) to have been applied.
 
+-- GoTrue scans the token/email-change columns into non-nullable strings, so
+-- they must be '' rather than NULL or looking the user up fails with
+-- "Database error finding user".
 insert into auth.users (
   instance_id, id, aud, role, email, email_confirmed_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change,
+  email_change_token_current,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at
 )
 values (
@@ -17,12 +22,33 @@ values (
   'authenticated',
   'demo@lastframe.local',
   now(),
+  '',
+  '',
+  '',
+  '',
+  '',
   '{"provider":"email","providers":["email"]}',
   '{"display_name":"Demo Viewer"}',
   now(),
   now()
 )
 on conflict (id) do nothing;
+
+-- Email users need a matching identity (provider_id = user id for 'email').
+insert into auth.identities (
+  id, user_id, provider_id, provider, identity_data, last_sign_in_at, created_at, updated_at
+)
+values (
+  '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',
+  'email',
+  '{"sub":"11111111-1111-4111-8111-111111111111","email":"demo@lastframe.local","email_verified":true}',
+  now(),
+  now(),
+  now()
+)
+on conflict do nothing;
 
 insert into public.profiles (user_id, id, name, avatar, kid, created_at, updated_at)
 values

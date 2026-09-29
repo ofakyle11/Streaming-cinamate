@@ -14,8 +14,6 @@ function fakeAuth(user: User | null): AuthService {
     signInWithOAuth: vi.fn(),
     requestDataDeletion: vi.fn(),
     signOut: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    requestDataDeletion: vi.fn(),
     onAuthStateChange: () => () => {},
   };
 }

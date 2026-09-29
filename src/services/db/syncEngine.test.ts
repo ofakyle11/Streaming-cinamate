@@ -3,7 +3,14 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { SyncChange, SyncSnapshot } from '../types';
 import { createMockDb } from './mock';
 import { rowKey, type SyncableState } from './sync';
-import { pendingStorageKey, startCloudSync, type SyncStatus } from './syncEngine';
+import {
+  clearSyncOwner,
+  pendingStorageKey,
+  readSyncOwner,
+  startCloudSync,
+  SYNC_OWNER_KEY,
+  type SyncStatus,
+} from './syncEngine';
 
 const initial = (): SyncableState => ({
   activeProfileId: 'p1',
@@ -219,5 +226,102 @@ describe('cloud sync engine', () => {
     expect(storage.map.has(pendingStorageKey('user-1'))).toBe(false);
     store.setState(initial());
     expect(storage.map.has(pendingStorageKey('user-1'))).toBe(false);
+  });
+});
+
+describe('cloud sync engine: data ownership', () => {
+  const remoteOf = (profileId: string, name: string, titleId: number): SyncSnapshot => ({
+    profiles: [{ profileId, name, avatar: 'aurora', kid: false, createdAt: 10, updatedAt: 10, deleted: false }],
+    watchlist: [{ profileId, titleId, addedAt: 20, updatedAt: 20, deleted: false }],
+    history: [],
+    ratings: [],
+  });
+
+  it('records the owner after merging guest data into the first account', async () => {
+    const { sync, storage, db } = setup();
+    expect(sync.linked).toBe(false);
+    await sync.ready;
+    await vi.runAllTimersAsync();
+    expect(sync.linked).toBe(true);
+    expect(storage.map.get(SYNC_OWNER_KEY)).toBe('user-1');
+    expect(readSyncOwner(storage)).toBe('user-1');
+    // Guest data (no owner recorded) is merged and uploaded as before.
+    expect(pushedKeys(db, 0)).toEqual(['profiles:p1']);
+  });
+
+  it("replaces another account's local data with the server snapshot and uploads none of it", async () => {
+    const storage = memoryStorage();
+    storage.setItem(SYNC_OWNER_KEY, 'user-A');
+    const db = fakeDb(remoteOf('pB', 'Bea', 77));
+    const { store, sync } = setup(db, storage);
+    // The store still holds user-A's data: profile p1 "Ada", plus history.
+    store.setState({ history: { p1: [{ titleId: 5, position: 1, duration: 2, lastWatchedAt: 3, completed: false }] } });
+
+    await sync.ready;
+    await vi.runAllTimersAsync();
+    expect(db.pushChanges).not.toHaveBeenCalled();
+    const state = store.getState();
+    expect(state.profiles.map((p) => p.id)).toEqual(['pB']);
+    expect(state.activeProfileId).toBe('pB');
+    expect(state.watchlist).toEqual({ pB: [{ titleId: 77, addedAt: 20 }] });
+    expect(state.history).toEqual({});
+    expect(storage.map.get(SYNC_OWNER_KEY)).toBe('user-1');
+    expect(sync.status).toBe('synced');
+  });
+
+  it('gives a new account a fresh default profile instead of the previous account data', async () => {
+    const storage = memoryStorage();
+    storage.setItem(SYNC_OWNER_KEY, 'user-A');
+    const { store, sync, db } = setup(fakeDb(emptyRemote()), storage);
+    await sync.ready;
+    await vi.runAllTimersAsync();
+    const state = store.getState();
+    expect(state.profiles).toHaveLength(1);
+    expect(state.profiles[0].id).not.toBe('p1');
+    expect(state.profiles[0].name).toBe('Me');
+    const pushed = db.pushChanges.mock.calls.flatMap((c) => c[1]);
+    expect(pushed.map(rowKey)).toEqual([`profiles:${state.profiles[0].id}`]);
+  });
+
+  it("keeps the account's own persisted queue but drops edits made over another account's data", async () => {
+    const storage = memoryStorage();
+    storage.setItem(SYNC_OWNER_KEY, 'user-A');
+    const own: SyncChange = {
+      table: 'watchlist',
+      row: { profileId: 'pB', titleId: 9, addedAt: 500, updatedAt: 500, deleted: false },
+    };
+    storage.setItem(pendingStorageKey('user-1'), JSON.stringify([own]));
+    let release: (v: SyncSnapshot) => void = () => {};
+    const db = fakeDb();
+    db.pullSnapshot.mockImplementation(() => new Promise<SyncSnapshot>((r) => (release = r)));
+    const { store, sync } = setup(db, storage);
+
+    addToWatchlist(store, 123, 600); // made on user-A's profile p1 before the pull finished
+    release(remoteOf('pB', 'Bea', 77));
+    await sync.ready;
+    await vi.runAllTimersAsync();
+
+    const pushed = db.pushChanges.mock.calls.flatMap((c) => c[1]);
+    expect(pushed).toEqual([own]);
+    expect(store.getState().watchlist.pB?.map((e) => e.titleId)).toEqual([9, 77]);
+    expect(store.getState().watchlist.p1).toBeUndefined();
+  });
+
+  it('merges normally when the recorded owner is the same account', async () => {
+    const storage = memoryStorage();
+    storage.setItem(SYNC_OWNER_KEY, 'user-1');
+    const { store, sync, db } = setup(fakeDb(remoteOf('pB', 'Bea', 77)), storage);
+    await sync.ready;
+    await vi.runAllTimersAsync();
+    expect(store.getState().profiles.map((p) => p.id).sort()).toEqual(['p1', 'pB']);
+    expect(pushedKeys(db, 0)).toEqual(['profiles:p1']);
+  });
+
+  it('clearSyncOwner marks local data as guest data again', () => {
+    const storage = memoryStorage();
+    storage.setItem(SYNC_OWNER_KEY, 'user-A');
+    clearSyncOwner(storage);
+    expect(readSyncOwner(storage)).toBeNull();
+    expect(readSyncOwner(null)).toBeNull();
   });
 });

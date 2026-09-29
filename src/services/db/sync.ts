@@ -24,7 +24,31 @@ export type SyncableState = Pick<LastFrameState, 'activeProfileId' | 'profiles' 
 /** Name the store gives a freshly created, untouched profile. */
 export const DEFAULT_PROFILE_NAME = 'Me';
 
+/** Avatar the store gives a freshly created profile. */
+export const DEFAULT_PROFILE_AVATAR = '🎬';
+
 export type SyncRowMap = Map<string, SyncChange>;
+
+function newProfileId(): string {
+  try {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  } catch {
+    /* fall through */
+  }
+  return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Store data for a brand-new guest: one untouched default profile, no lists. */
+export function freshGuestState(now: number = Date.now()): SyncableState {
+  const profile: Profile = {
+    id: newProfileId(),
+    name: DEFAULT_PROFILE_NAME,
+    avatar: DEFAULT_PROFILE_AVATAR,
+    kid: false,
+    createdAt: now,
+  };
+  return { profiles: [profile], activeProfileId: profile.id, watchlist: {}, history: {}, ratings: {} };
+}
 
 /** Stable identity of a row: table + primary key (user id is implicit). */
 export function rowKey(change: SyncChange): string {
@@ -303,4 +327,22 @@ export function mergeSnapshots(
   }
 
   return { state, push };
+}
+
+/**
+ * Replace the local data with the account's server snapshot instead of merging.
+ * Used when the store holds data that belongs to a different account (someone
+ * else signed in on this device before), so none of it may be uploaded.
+ *
+ * `ownPending` must only contain this account's own unsent edits (its
+ * persisted queue). A fresh default profile stands in for the local side, so a
+ * brand-new account still ends up with one profile while an account that
+ * already has profiles gets exactly its own.
+ */
+export function adoptSnapshot(
+  remote: SyncSnapshot,
+  ownPending: ReadonlyMap<string, SyncChange> = new Map(),
+  now: number = Date.now(),
+): MergeResult {
+  return mergeSnapshots(freshGuestState(now), remote, ownPending, now);
 }

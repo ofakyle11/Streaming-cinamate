@@ -9,7 +9,7 @@
  * itself off, so guests and mock mode never touch the network.
  */
 import type { DbService, SyncChange } from '../types';
-import { diffStates, mergeSnapshots, rowKey, type SyncableState } from './sync';
+import { adoptSnapshot, diffStates, mergeSnapshots, rowKey, type SyncableState } from './sync';
 
 export type SyncStatus = 'idle' | 'pulling' | 'synced' | 'pending' | 'pushing' | 'error' | 'disabled' | 'stopped';
 
@@ -46,6 +46,12 @@ export interface StopOptions {
 
 export interface CloudSync {
   readonly status: SyncStatus;
+  /**
+   * True once the store holds this account's cloud data (the initial merge has
+   * been applied). The caller should reset the local data on sign-out then, so
+   * it never lingers on the device as guest data.
+   */
+  readonly linked: boolean;
   /** Resolves once the initial pull + merge has finished (or sync turned off). */
   readonly ready: Promise<void>;
   /** Upload pending edits now. */
@@ -58,6 +64,40 @@ export const DEFAULT_RETRY_DELAYS_MS = [2_000, 5_000, 15_000, 60_000] as const;
 
 /** localStorage key for a user's unsent edits (the `lf.` prefix is wiped by "delete my data"). */
 export const pendingStorageKey = (userId: string) => `lf.sync.pending.${userId}`;
+
+/**
+ * localStorage key naming the account whose cloud data the local store holds.
+ * Unset means the local data is guest data, which may be merged into the first
+ * account that signs in. When it names another account, that account's data
+ * is replaced by the server snapshot and never uploaded.
+ */
+export const SYNC_OWNER_KEY = 'lf.sync.owner';
+
+/** The account the local store data belongs to, or null for guest data / unknown. */
+export function readSyncOwner(storage: KeyValueStorage | null = defaultStorage()): string | null {
+  try {
+    return storage?.getItem(SYNC_OWNER_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Mark the local store data as guest data again (after it was reset). */
+export function clearSyncOwner(storage: KeyValueStorage | null = defaultStorage()): void {
+  try {
+    storage?.removeItem(SYNC_OWNER_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function writeSyncOwner(storage: KeyValueStorage | null, userId: string): void {
+  try {
+    storage?.setItem(SYNC_OWNER_KEY, userId);
+  } catch {
+    /* storage unavailable: sign-out still resets the store via `linked` */
+  }
+}
 
 function defaultStorage(): KeyValueStorage | null {
   try {
@@ -107,6 +147,10 @@ export function startCloudSync<S extends SyncableState>(userId: string, opts: Cl
   const storageKey = pendingStorageKey(userId);
 
   let pending = loadPending(storage, storageKey);
+  // This account's own unsent edits from earlier sessions. Edits made before
+  // the initial pull are made over whatever the store held, which may be
+  // another account's data, so only these survive an ownership change.
+  const restoredPending: ReadonlyMap<string, SyncChange> = new Map(pending);
   let status: SyncStatus = 'idle';
   let stopped = false;
   let merged = false; // initial pull applied; pushes are allowed
@@ -250,7 +294,11 @@ export function startCloudSync<S extends SyncableState>(userId: string, opts: Cl
       return;
     }
     failures = 0;
-    const result = mergeSnapshots(store.getState(), remote, pending, now());
+    const owner = readSyncOwner(storage);
+    const result =
+      owner !== null && owner !== userId
+        ? adoptSnapshot(remote, restoredPending, now())
+        : mergeSnapshots(store.getState(), remote, pending, now());
     applying = true;
     try {
       store.setState(result.state as Partial<S>);
@@ -259,6 +307,7 @@ export function startCloudSync<S extends SyncableState>(userId: string, opts: Cl
     }
     pending = new Map(result.push.map((c) => [rowKey(c), c]));
     persist();
+    writeSyncOwner(storage, userId);
     merged = true;
     resolveReady();
     if (pending.size > 0) await flush();
@@ -270,6 +319,9 @@ export function startCloudSync<S extends SyncableState>(userId: string, opts: Cl
   return {
     get status() {
       return status;
+    },
+    get linked() {
+      return merged;
     },
     ready,
     flush,

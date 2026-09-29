@@ -54,6 +54,11 @@ It pulls all rows (tombstones included), merges them with the local store (newer
 unsent local edits are kept in `lf.sync.pending.<userId>`), then upserts local edits after a quiet
 period (debounced, retried with backoff, flushed on sign-out/page hide). The mock DB returns `null`
 from `pullSnapshot`, which switches sync off, so guests and mock mode stay fully local.
+After the first merge the account that owns the local data is recorded in `lf.sync.owner`. Guest
+data (no owner) is merged into the first account that signs in; if a different account signs in
+while another account's data is still on the device, the store is replaced by that account's
+server snapshot and nothing local is uploaded. Signing out stops sync and resets the synced store
+data (profiles, lists, history, ratings) to a fresh guest, since the cloud holds the account's copy.
 
 ## Environment
 

@@ -1,9 +1,9 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { services, startCloudSync, type CloudSync } from '../services';
+import { readSyncOwner, services, startCloudSync, type CloudSync } from '../services';
 import { useLastFrameStore } from '../state/store';
 import type { AdapterMode, AuthService, OAuthProvider, User } from '../services/types';
 import { AuthContext, type AuthContextValue, type AuthStatus } from './context';
-import { clearLocalData } from './localData';
+import { clearLocalData, resetSyncedData } from './localData';
 
 export interface AuthProviderProps {
   children?: ReactNode;
@@ -17,6 +17,12 @@ export interface AuthProviderProps {
    * disables sync). The default is a no-op against the mock DB adapter.
    */
   startSync?: ((userId: string) => CloudSync) | null;
+  /**
+   * Resets the account's synced data on this device after sign-out (tests).
+   * Only runs when the store holds cloud data, so it never leaks to the next
+   * guest or account; with the mock DB (no cloud copy) local data is kept.
+   */
+  resetSynced?: () => void;
 }
 
 /** Default: sync the app store through the active DB adapter. */
@@ -34,6 +40,7 @@ export default function AuthProvider({
   mode = services.mode.auth,
   clearLocal = clearLocalData,
   startSync = defaultStartSync,
+  resetSynced = resetSyncedData,
 }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
@@ -92,12 +99,25 @@ export default function AuthProvider({
   const signInWithOAuth = useCallback((p: OAuthProvider) => service.signInWithOAuth(p), [service]);
 
   const signOut = useCallback(async () => {
-    // Upload unsent edits while the session is still valid.
-    await syncRef.current?.flush().catch(() => undefined);
-    await service.signOut();
+    const sync = syncRef.current;
+    syncRef.current = null;
+    // Upload unsent edits while the session is still valid, then stop syncing
+    // so resetting the local data below is not uploaded as deletions.
+    await sync?.flush().catch(() => undefined);
+    await sync?.stop({ flush: false }).catch(() => undefined);
+    const holdsCloudData = !!sync?.linked || (!!userId && readSyncOwner() === userId);
+    try {
+      await service.signOut();
+    } catch (err) {
+      if (sync) setSyncEpoch((n) => n + 1); // still signed in: resume syncing
+      throw err;
+    }
+    // The account's data lives in the cloud; drop the device copy so the next
+    // guest or account never sees (or uploads) it.
+    if (holdsCloudData) resetSynced();
     setUser(null);
     setStatus('guest');
-  }, [service]);
+  }, [service, userId, resetSynced]);
 
   const deleteData = useCallback(async () => {
     // Stop sync and forget its queue first: nothing more should be uploaded for
