@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, clearLocalData, isLastFrameKey } from '../auth';
 import { createMockAuth } from '../services/auth/mock';
 import type { AuthService } from '../services/types';
@@ -89,6 +89,73 @@ describe('AccountPage + AuthProvider', () => {
     } as AuthService;
     renderPage(broken);
     expect(await screen.findByText('Guest mode')).toBeInTheDocument();
+  });
+});
+
+describe('Delete my data clears the PWA image cache', () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function confirmDelete() {
+    fireEvent.click(await screen.findByRole('button', { name: /delete my data/i }));
+    fireEvent.click(screen.getByRole('button', { name: /yes, delete everything/i }));
+  }
+
+  it('deletes the lf-images cache in guest/mock mode', async () => {
+    const del = vi.fn(async () => true);
+    vi.stubGlobal('caches', { delete: del });
+    const { clearLocal } = renderPage();
+
+    await confirmDelete();
+
+    await waitFor(() => expect(del).toHaveBeenCalledWith('lf-images'));
+    expect(del).toHaveBeenCalledTimes(1);
+    expect(clearLocal).toHaveBeenCalledTimes(1);
+    expect(clearLocal.mock.invocationCallOrder[0]).toBeLessThan(del.mock.invocationCallOrder[0]);
+    expect(await screen.findByRole('status')).toHaveTextContent(/deleted/i);
+  });
+
+  it('still clears local data when Cache Storage is unavailable', async () => {
+    vi.stubGlobal('caches', undefined);
+    localStorage.setItem('lf.mock.db', '{}');
+    useLastFrameStore.getState().addToWatchlist(7);
+    renderPage(createMockAuth(), vi.fn(() => void clearLocalData()));
+
+    await confirmDelete();
+
+    await waitFor(() => expect(localStorage.getItem('lf.mock.db')).toBeNull());
+    expect(useLastFrameStore.getState().watchlist).toEqual({});
+    expect(await screen.findByRole('status')).toHaveTextContent(/deleted/i);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('still resolves and signs out when deleting the cache rejects', async () => {
+    const del = vi.fn(() => Promise.reject(new Error('SecurityError')));
+    vi.stubGlobal('caches', { delete: del });
+    const service = createMockAuth();
+    await service.signInWithMagicLink('ada@example.com');
+    const { clearLocal } = renderPage(service);
+
+    await confirmDelete();
+
+    await waitFor(() => expect(del).toHaveBeenCalledWith('lf-images'));
+    expect(clearLocal).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Guest mode')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('does not touch the cache when server deletion fails', async () => {
+    const del = vi.fn(async () => true);
+    vi.stubGlobal('caches', { delete: del });
+    const service = createMockAuth();
+    await service.signInWithMagicLink('ada@example.com');
+    vi.spyOn(service, 'requestDataDeletion').mockRejectedValue(new Error('Network down'));
+    renderPage(service);
+
+    await confirmDelete();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Network down');
+    expect(del).not.toHaveBeenCalled();
   });
 });
 
