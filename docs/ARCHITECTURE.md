@@ -16,7 +16,7 @@ src/
   components/         Feature components (Hero, Row, MovieCard, DetailModal, Navbar)
     ui/               Primitives: Button, IconButton, Skeleton, Toast (barrel: ui/index.ts)
   features/profiles/  Gradient avatars, name/kids rules, ProfileAvatar, ProfileEditor dialog, navbar ProfileMenu
-  auth/               AuthProvider + useAuth (guest mode default), clearLocalData (delete-my-data)
+  auth/               AuthProvider + useAuth (guest mode default), clearLocalData (delete-my-data wipes local data, then clears the lf-images PWA image cache)
   state/store.ts      Zustand store: profiles, watchlist, history, ratings slices
   hooks/              Thin hooks over the store (useProfiles, useWatchlist, useHistory, useRatings)
   services/
@@ -27,7 +27,7 @@ src/
     billing/types.ts  BillingAdapter (getPlans, getSubscription, startCheckout), plan feature table, price/URL helpers;
                       exposed as `billingAdapter` from services/index.ts and used by /plans
   data/movies.ts      Static catalogue helpers
-  pwa/                config.ts (manifest + workbox image caching), install.ts (install prompt controller/hook)
+  pwa/                config.ts (manifest + workbox image caching), install.ts (install prompt controller/hook), imageCache.ts (clearImageCache for delete-my-data)
   styles/
     tokens.css        Design tokens (color, radius, blur, motion)
     primitives.css    Styles for ui/ primitives

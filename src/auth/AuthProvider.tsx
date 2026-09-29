@@ -4,6 +4,7 @@ import { useLastFrameStore } from '../state/store';
 import type { AdapterMode, AuthService, OAuthProvider, User } from '../services/types';
 import { AuthContext, type AuthContextValue, type AuthStatus } from './context';
 import { clearLocalData, resetSyncedData } from './localData';
+import { clearImageCache } from '../pwa/imageCache';
 
 export interface AuthProviderProps {
   children?: ReactNode;
@@ -135,6 +136,9 @@ export default function AuthProvider({
     clearLocal();
     setUser(null);
     setStatus('guest');
+    // Cached posters/backdrops would reveal what was browsed or watched.
+    // clearImageCache never rejects, so this cannot fail the deletion.
+    await clearImageCache();
   }, [service, user, clearLocal]);
 
   const value = useMemo<AuthContextValue>(
