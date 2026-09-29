@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react';
 import Hero from '../components/Hero';
 import Row from '../components/Row';
 import DetailModal from '../components/DetailModal';
-import { analytics, loadHomeCatalog, type CatalogRow, type Movie } from '../services';
+import { Link } from 'react-router-dom';
+import {
+  analytics,
+  loadHomeCatalog,
+  tmdb,
+  type CatalogRow,
+  type Movie,
+  type TmdbGenre,
+} from '../services';
 
 interface Catalog {
   featured: Movie[];
@@ -13,6 +21,20 @@ export default function Home() {
   const [selected, setSelected] = useState<Movie | null>(null);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [genres, setGenres] = useState<TmdbGenre[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    tmdb
+      .genres()
+      .then((g) => {
+        if (!cancelled) setGenres(g);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +62,15 @@ export default function Home() {
         <>
           <Hero featured={catalog.featured} onMore={select} />
           <main className="rows">
+            {genres.length > 0 && (
+              <nav className="genre-chips" aria-label="Browse by genre">
+                {genres.map((g) => (
+                  <Link key={g.id} className="chip glass" to={`/genre/${g.id}`}>
+                    {g.name}
+                  </Link>
+                ))}
+              </nav>
+            )}
             {catalog.rows.map((r) => (
               <Row key={r.title} title={r.title} items={r.items} onSelect={select} />
             ))}

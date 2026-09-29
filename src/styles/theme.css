@@ -168,3 +168,21 @@ a.avatar { display: block; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .row, .card { opacity: 1 !important; transform: none !important; }
 }
+
+/* ---------- genre browse ---------- */
+.genre-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 4% 8px; }
+.genre-chips .chip {
+  padding: 6px 14px; border-radius: 999px; color: var(--text); text-decoration: none; font-size: 0.9rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.genre-chips .chip:hover, .genre-chips .chip:focus-visible { transform: translateY(-2px); }
+.genre-toolbar { display: flex; justify-content: flex-end; margin: 8px 0 16px; }
+.genre-toolbar select { margin-left: 6px; padding: 4px 8px; border-radius: 8px; background: transparent; color: var(--text); border: 1px solid var(--muted); }
+.genre-toolbar option { color: #000; }
+.genre-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+.pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; }
+.pager .btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .genre-chips .chip { transition: none; }
+  .genre-chips .chip:hover, .genre-chips .chip:focus-visible { transform: none; }
+}
