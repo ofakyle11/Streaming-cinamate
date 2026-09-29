@@ -42,6 +42,7 @@ export default function TitlePage() {
     description: failed ? undefined : movie?.description,
     image: failed ? undefined : movie?.poster,
     type: type === 'tv' ? 'video.tv_show' : 'video.movie',
+    noindex: movie === null,
   });
 
   if (failed) {

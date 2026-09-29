@@ -112,12 +112,14 @@ fast. A non-ok final response throws `HttpError` with its `status`. Live adapter
 
 ## SEO: `useMeta`
 
-`useMeta({ title?, description?, image?, type? })` (`hooks/useMeta.ts`) is called once at the
+`useMeta({ title?, description?, image?, type?, noindex? })` (`hooks/useMeta.ts`) is called once at the
 top of each page. It sets `document.title` to `"<title> · Last Frame"` and upserts
 `description`, OpenGraph and Twitter meta tags through DOM APIs (no `innerHTML`). On unmount
 or input change it restores the previous values. `data:` images, such as mock posters, fall
 back to the brand icon because crawlers can't use them. `index.html` carries the default tags
-for non-JS crawlers. `public/robots.txt` and `public/sitemap.xml` cover the static routes. Run
+for non-JS crawlers. The hook also upserts `<link rel="canonical">` (absolute URL, query and hash
+stripped), and `noindex: true` adds `<meta name="robots" content="noindex">` (used by
+`NotFoundPage` and TitlePage's "Title not found" state). `public/robots.txt` and `public/sitemap.xml` cover the static routes. Run
 `SITE_ORIGIN=https://… node scripts/generate-sitemap.mjs` after adding a static route.
 
 ## Accessibility hooks

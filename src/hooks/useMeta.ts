@@ -14,6 +14,8 @@ export interface MetaOptions {
   image?: string;
   /** og:type, defaults to "website". */
   type?: string;
+  /** Adds <meta name="robots" content="noindex"> (e.g. for not-found states). */
+  noindex?: boolean;
 }
 
 type Attr = 'name' | 'property';
@@ -65,17 +67,54 @@ function applyTag({ attr, key, content }: Tag): () => void {
 }
 
 /**
- * Sets the document title plus description, OpenGraph and Twitter tags for the
- * current page, restoring the previous values when the component unmounts or
+ * Upserts <link rel="canonical"> via DOM APIs and returns a function that
+ * restores the previous href (or removes the link if it was created here).
+ */
+function applyCanonical(href: string): () => void {
+  const head = document.head;
+  let el = Array.from(head.getElementsByTagName('link')).find(
+    (l) => l.getAttribute('rel') === 'canonical',
+  );
+  const created = !el;
+  const previous = el?.getAttribute('href') ?? null;
+  if (!el) {
+    el = document.createElement('link');
+    el.setAttribute('rel', 'canonical');
+    head.appendChild(el);
+  }
+  el.setAttribute('href', href);
+  const node = el;
+  return () => {
+    if (created) {
+      node.remove();
+    } else if (previous === null) {
+      node.removeAttribute('href');
+    } else {
+      node.setAttribute('href', previous);
+    }
+  };
+}
+
+/**
+ * Sets the document title plus description, OpenGraph, Twitter and canonical
+ * tags (and robots noindex when requested) for the current page, restoring the previous values when the component unmounts or
  * the inputs change. Uses DOM APIs only (no innerHTML).
  */
-export function useMeta({ title, description, image, type = 'website' }: MetaOptions = {}): void {
+export function useMeta({
+  title,
+  description,
+  image,
+  type = 'website',
+  noindex = false,
+}: MetaOptions = {}): void {
   useEffect(() => {
     const fullTitle = formatTitle(title);
     const desc = description?.trim() || DEFAULT_DESCRIPTION;
     // Crawlers can't use inline data: URIs (e.g. mock-mode posters), so fall back.
     const img = absoluteUrl(image && !image.startsWith('data:') ? image : DEFAULT_IMAGE);
     const url = absoluteUrl(window.location.pathname + window.location.search);
+    // Canonical URL: same origin, but without query string or hash.
+    const canonical = absoluteUrl(window.location.pathname);
 
     const previousTitle = document.title;
     document.title = fullTitle;
@@ -93,10 +132,14 @@ export function useMeta({ title, description, image, type = 'website' }: MetaOpt
       { attr: 'name', key: 'twitter:description', content: desc },
       { attr: 'name', key: 'twitter:image', content: img },
     ].map((t) => applyTag(t as Tag));
+    restores.push(applyCanonical(canonical));
+    if (noindex) {
+      restores.push(applyTag({ attr: 'name', key: 'robots', content: 'noindex' }));
+    }
 
     return () => {
       for (let i = restores.length - 1; i >= 0; i--) restores[i]();
       document.title = previousTitle;
     };
-  }, [title, description, image, type]);
+  }, [title, description, image, type, noindex]);
 }
