@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Hero from '../components/Hero';
 import Row from '../components/Row';
 import DetailModal from '../components/DetailModal';
+import GenreChips from '../components/GenreChips';
 import { analytics, loadHomeCatalog, type CatalogRow, type Movie } from '../services';
 
 interface Catalog {
@@ -43,6 +44,7 @@ export default function Home() {
             {catalog.rows.map((r) => (
               <Row key={r.title} title={r.title} items={r.items} onSelect={select} />
             ))}
+            <GenreChips />
           </main>
         </>
       ) : (
