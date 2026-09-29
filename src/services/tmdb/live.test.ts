@@ -4,6 +4,7 @@ import {
   createLiveTmdb,
   DEFAULT_TMDB_PROXY,
   DETAILS_APPEND,
+  DISCOVER_MIN_VOTE_COUNT,
   TmdbHttpError,
   tmdbImageUrl,
   tmdbSrcSet,
@@ -190,7 +191,68 @@ describe('createLiveTmdb', () => {
     expect(calls[1].searchParams.get('with_genres')).toBe('12');
   });
 
+  it('pushes year range and rating floor down to /discover (movie vs TV date fields)', async () => {
+    const { fn, calls } = mockFetch(() => ({ body: emptyPage }));
+    const tmdb = createLiveTmdb('/p', { fetch: fn });
+    await tmdb.discover({ mediaType: 'movie', yearFrom: 1990, yearTo: 1999, minRating: 7 });
+    await tmdb.discover({ mediaType: 'tv', yearFrom: 2010, minRating: 8.5, page: 3 });
+    await tmdb.discover({ mediaType: 'tv' });
+
+    const m = calls[0].searchParams;
+    expect(m.get('path')).toBe('/discover/movie');
+    expect(m.get('primary_release_date.gte')).toBe('1990-01-01');
+    expect(m.get('primary_release_date.lte')).toBe('1999-12-31');
+    expect(m.get('vote_average.gte')).toBe('7');
+    expect(m.get('vote_count.gte')).toBe(String(DISCOVER_MIN_VOTE_COUNT));
+    expect(m.has('first_air_date.gte')).toBe(false);
+
+    const t = calls[1].searchParams;
+    expect(t.get('path')).toBe('/discover/tv');
+    expect(t.get('first_air_date.gte')).toBe('2010-01-01');
+    expect(t.has('first_air_date.lte')).toBe(false);
+    expect(t.get('vote_average.gte')).toBe('8.5');
+    expect(t.get('page')).toBe('3');
+    expect(t.has('primary_release_date.gte')).toBe(false);
+
+    const plain = calls[2].searchParams;
+    expect(plain.has('vote_average.gte')).toBe(false);
+    expect(plain.has('vote_count.gte')).toBe(false);
+    expect(plain.has('first_air_date.gte')).toBe(false);
+  });
+
+  it('keeps TMDB popularity on normalised titles', async () => {
+    const { fn } = mockFetch(() => ({
+      body: { ...emptyPage, results: [{ ...movieRaw, popularity: 42.5 }, tvRaw] },
+    }));
+    const page = await createLiveTmdb('/p', { fetch: fn }).discover({});
+    expect(page.results[0].popularity).toBe(42.5);
+    expect(page.results[1].popularity).toBeUndefined();
+  });
+
   describe('search', () => {
+    it('sends typed search with year and filters genre / rating on the page', async () => {
+      const { fn, calls } = mockFetch(() => ({
+        body: {
+          ...emptyPage,
+          results: [
+            { ...movieRaw, vote_average: 9 },
+            { ...movieRaw, id: 9, genre_ids: [18] },
+          ],
+        },
+      }));
+      const tmdb = createLiveTmdb('/p', { fetch: fn });
+      const page = await tmdb.search('x', 2, {
+        mediaType: 'movie',
+        year: 2024,
+        genreId: 28,
+        minRating: 8,
+      });
+      expect(calls[0].searchParams.get('path')).toBe('/search/movie');
+      expect(calls[0].searchParams.get('year')).toBe('2024');
+      expect(calls[0].searchParams.get('page')).toBe('2');
+      expect(page.results.map((t) => t.id)).toEqual([1]);
+    });
+
     it('uses multi search, drops people, and skips the network for blank queries', async () => {
       const { fn, calls } = mockFetch(() => ({
         body: { ...emptyPage, results: [movieRaw, personRaw, tvRaw] },
@@ -408,6 +470,27 @@ describe('mock adapter parity', () => {
     expect(movies.results.length).toBeGreaterThan(0);
     expect(movies.results.length).toBeLessThan(all.results.length);
     expect(movies.results.every((t) => t.media_type === 'movie')).toBe(true);
+  });
+
+  it('discover supports year range and rating floor', async () => {
+    const all = await mock.discover({ mediaType: 'tv' });
+    const filtered = await mock.discover({
+      mediaType: 'tv',
+      yearFrom: 2017,
+      yearTo: 2020,
+      minRating: 7,
+    });
+    expect(filtered.results.length).toBeGreaterThan(0);
+    expect(filtered.total_results).toBeLessThan(all.total_results);
+    for (const t of filtered.results) {
+      const y = Number(t.release_date.slice(0, 4));
+      expect(t.media_type).toBe('tv');
+      expect(y).toBeGreaterThanOrEqual(2017);
+      expect(y).toBeLessThanOrEqual(2020);
+      expect(t.vote_average).toBeGreaterThanOrEqual(7);
+    }
+    // Existing call shapes still work.
+    expect((await mock.discover({ genreId: 878 })).results.length).toBeGreaterThan(0);
   });
 
   it('returns rich details', async () => {

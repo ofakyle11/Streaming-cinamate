@@ -132,6 +132,7 @@ export function normalizeTitle(raw: TmdbRawListItem, fallbackType: MediaType): T
     release_date: raw.release_date || raw.first_air_date || '',
     runtime: 0,
   };
+  if (typeof raw.popularity === 'number') t.popularity = raw.popularity;
   if (mediaType === 'tv') t.name = raw.name ?? display;
   else t.title = raw.title ?? display;
   return t;
@@ -228,6 +229,28 @@ function applyFilters(page: TmdbPage<TmdbTitle>, filters: TmdbSearchFilters): Tm
   return { ...page, results };
 }
 
+/** Minimum vote count required when a rating floor is set, so 1-vote 10/10s don't flood results. */
+export const DISCOVER_MIN_VOTE_COUNT = 50;
+
+/**
+ * TMDB `/discover` params for year range + rating floor. Movies filter on
+ * `primary_release_date`, TV on `first_air_date`.
+ */
+export function discoverFilterParams(
+  mediaType: MediaType,
+  { yearFrom, yearTo, minRating }: { yearFrom?: number; yearTo?: number; minRating?: number },
+): Record<string, QueryValue> {
+  const field = mediaType === 'tv' ? 'first_air_date' : 'primary_release_date';
+  const out: Record<string, QueryValue> = {};
+  if (yearFrom != null) out[`${field}.gte`] = `${yearFrom}-01-01`;
+  if (yearTo != null) out[`${field}.lte`] = `${yearTo}-12-31`;
+  if (minRating != null) {
+    out['vote_average.gte'] = minRating;
+    out['vote_count.gte'] = DISCOVER_MIN_VOTE_COUNT;
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------------ adapter */
 
 export interface LiveTmdbOptions {
@@ -270,12 +293,16 @@ export function createLiveTmdb(
     genreId,
     page = 1,
     sortBy,
+    yearFrom,
+    yearTo,
+    minRating,
   } = {}) =>
     list(`/discover/${mediaType}`, mediaType, {
       page,
       with_genres: genreId,
       sort_by: sortBy ? toTmdbSortParam(sortBy, mediaType) : 'popularity.desc',
       include_adult: false,
+      ...discoverFilterParams(mediaType, { yearFrom, yearTo, minRating }),
     });
 
   return {

@@ -50,7 +50,18 @@ export interface TmdbService {
   popular(mediaType: MediaType, page?: number): Promise<TmdbPage<TmdbTitle>>;
   topRated(mediaType: MediaType, page?: number): Promise<TmdbPage<TmdbTitle>>;
   nowPlaying(page?: number): Promise<TmdbPage<TmdbTitle>>;
-  discover(opts: { mediaType?: MediaType; genreId?: number; page?: number; sortBy?: DiscoverSort }): Promise<TmdbPage<TmdbTitle>>;
+  discover(opts: {
+    mediaType?: MediaType;
+    genreId?: number;
+    page?: number;
+    sortBy?: DiscoverSort;
+    /** Earliest release / first-air year (inclusive). */
+    yearFrom?: number;
+    /** Latest release / first-air year (inclusive). */
+    yearTo?: number;
+    /** Minimum vote average (0..10). */
+    minRating?: number;
+  }): Promise<TmdbPage<TmdbTitle>>;
   search(query: string, page?: number, filters?: TmdbSearchFilters): Promise<TmdbPage<TmdbTitle>>;
   /** Full record incl. credits, videos, similar, recommendations and watch providers when available. */
   details(mediaType: MediaType, id: number): Promise<TmdbTitleDetails | null>;
@@ -163,6 +174,7 @@ export interface TmdbRawListItem {
   vote_average?: number;
   release_date?: string;
   first_air_date?: string;
+  popularity?: number;
 }
 
 export interface TmdbRawPage {
