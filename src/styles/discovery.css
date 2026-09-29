@@ -1,0 +1,35 @@
+/* New & Popular (/new). Uses tokens and the shared .row / .card styles only. */
+
+.discovery-page { display: block; padding-left: 0; padding-right: 0; }
+.discovery-shell { width: 100%; max-width: 1440px; margin: 0 auto; }
+.discovery-head {
+  margin: 0 5vw 28px; padding: 24px 28px; border-radius: var(--radius-xl);
+  animation: spring var(--dur-slow) var(--ease-out);
+}
+.discovery-head h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); line-height: 1.1; }
+.discovery-head .muted { color: var(--color-muted); margin-top: 6px; }
+.discovery-eyebrow {
+  color: var(--color-muted); text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; margin-bottom: 4px;
+}
+
+.discovery-state {
+  margin: 0 5vw; padding: 24px; border-radius: var(--radius-lg);
+  display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+}
+
+.discovery-skel-row { padding: 0 5vw; margin-bottom: 36px; display: flex; flex-direction: column; gap: 12px; }
+.discovery-skel-track { display: flex; gap: 14px; overflow: hidden; padding: 24px 4px; }
+.discovery-skel-card.skeleton.card { border-radius: var(--radius-md); }
+
+@media (max-width: 760px) {
+  .discovery-head { margin: 0 16px 20px; padding: 18px; }
+  .discovery-state { margin: 0 16px; }
+  .discovery-skel-row { padding: 0 16px; }
+  .discovery-page .row { padding: 0 16px; }
+  /* Touch devices swipe the track; hide the off-edge arrows so nothing overflows at 375px. */
+  .discovery-page .arrow { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discovery-head { animation: none !important; }
+}
