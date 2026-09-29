@@ -88,6 +88,24 @@ export function removeView(list: readonly ViewEntry[], key: string): ViewEntry[]
   return list.filter((e) => e.key !== key);
 }
 
+/**
+ * Undo a removal: re-insert the exact `entry` snapshot (timestamps, counts and
+ * trailer play untouched) at the slot its `lastViewedAt` puts it in, so the
+ * list stays most-recent-first. No-op when the key is already present (e.g.
+ * the title was viewed again before Undo). Caps the list at `limit`.
+ */
+export function restoreView(
+  list: readonly ViewEntry[],
+  entry: ViewEntry,
+  limit: number = VIEW_HISTORY_LIMIT,
+): ViewEntry[] {
+  if (list.some((e) => e.key === entry.key)) return list.slice(0, Math.max(0, limit));
+  const restored: ViewEntry = { ...entry, title: { ...entry.title, genres: [...entry.title.genres] } };
+  const at = list.findIndex((e) => e.lastViewedAt < entry.lastViewedAt);
+  const next = at === -1 ? [...list, restored] : [...list.slice(0, at), restored, ...list.slice(at)];
+  return next.slice(0, Math.max(0, limit));
+}
+
 /** Minimal playback-history shape (state/store.ts HistoryEntry) used to merge progress in. */
 export interface PlaybackLike {
   titleId: number;

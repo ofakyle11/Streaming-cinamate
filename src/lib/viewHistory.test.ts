@@ -6,6 +6,7 @@ import {
   recentlyViewed,
   relativeTime,
   removeView,
+  restoreView,
   upsertView,
   viewKey,
   viewToMovie,
@@ -65,6 +66,48 @@ describe('upsertView', () => {
   it('removes a single entry', () => {
     const list = upsertView(upsertView([], movie(1), 'open', 1), movie(2), 'open', 2);
     expect(removeView(list, 'movie:1').map((e) => e.key)).toEqual(['movie:2']);
+  });
+});
+
+describe('restoreView', () => {
+  function build(): ViewEntry[] {
+    let list: ViewEntry[] = [];
+    list = upsertView(list, movie(1), 'open', 1000);
+    list = upsertView(list, movie(2), 'trailer', 2000);
+    list = upsertView(list, movie(2), 'open', 2500);
+    list = upsertView(list, movie(3), 'open', 3000);
+    return list; // [3, 2, 1]
+  }
+
+  it('re-inserts the exact entry at its original position', () => {
+    const list = build();
+    const original = list[1];
+    const restored = restoreView(removeView(list, original.key), original);
+    expect(restored.map((e) => e.key)).toEqual(['movie:3', 'movie:2', 'movie:1']);
+    expect(restored[1]).toEqual(original);
+    expect(restored[1]).toMatchObject({ firstViewedAt: 2000, lastViewedAt: 2500, trailerPlayedAt: 2000, views: 2 });
+  });
+
+  it('restores oldest and newest entries to the ends', () => {
+    const list = build();
+    expect(restoreView(removeView(list, 'movie:1'), list[2]).map((e) => e.key)).toEqual(['movie:3', 'movie:2', 'movie:1']);
+    expect(restoreView(removeView(list, 'movie:3'), list[0]).map((e) => e.key)).toEqual(['movie:3', 'movie:2', 'movie:1']);
+    expect(restoreView([], list[0])).toEqual([list[0]]);
+  });
+
+  it('is a no-op when the key is already present', () => {
+    const list = build();
+    const stale: ViewEntry = { ...list[1], lastViewedAt: 1, views: 99 };
+    const out = restoreView(list, stale);
+    expect(out).toEqual(list);
+    expect(out.find((e) => e.key === 'movie:2')?.views).toBe(2);
+  });
+
+  it('respects the limit', () => {
+    const list = build();
+    expect(restoreView(removeView(list, 'movie:3'), list[0], 2).map((e) => e.key)).toEqual(['movie:3', 'movie:2']);
+    // An entry older than everything in a full list is dropped again.
+    expect(restoreView(removeView(list, 'movie:1'), list[2], 2).map((e) => e.key)).toEqual(['movie:3', 'movie:2']);
   });
 });
 

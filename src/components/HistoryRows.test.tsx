@@ -99,6 +99,45 @@ describe('HistoryRows', () => {
     expect(keys()).toContain('movie:11');
   });
 
+  it('Undo restores the exact entry at its original index without recording a new view', () => {
+    const now = Date.now();
+    act(() => {
+      const s = useLastFrameStore.getState();
+      const pid = s.activeProfileId!;
+      const entry = (id: number, title: string, at: number) => ({
+        key: `movie:${id}`,
+        title: { ...movie(id, title) },
+        firstViewedAt: at - 5000,
+        lastViewedAt: at,
+        views: id,
+      });
+      useLastFrameStore.setState({
+        views: {
+          [pid]: [entry(1, 'First', now - 1000), entry(2, 'Middle', now - 2000), entry(3, 'Last', now - 3000)],
+        },
+      });
+    });
+    renderWithToasts();
+    const pid = useLastFrameStore.getState().activeProfileId!;
+    const before = useLastFrameStore.getState().views[pid]!.find((e) => e.key === 'movie:2')!;
+    const titles = () =>
+      within(section('Recently Viewed'))
+        .getAllByRole('link')
+        .map((a) => a.getAttribute('href'));
+    expect(titles()).toEqual(['/title/movie/1', '/title/movie/2', '/title/movie/3']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Middle from Recently Viewed' }));
+    expect(titles()).toEqual(['/title/movie/1', '/title/movie/3']);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(titles()).toEqual(['/title/movie/1', '/title/movie/2', '/title/movie/3']);
+    const after = useLastFrameStore.getState().views[pid]!.find((e) => e.key === 'movie:2')!;
+    expect(after).toEqual(before);
+    expect(after.views).toBe(2);
+    expect(after.lastViewedAt).toBe(now - 2000);
+    expect(after.trailerPlayedAt).toBeUndefined();
+  });
+
   it('removes a Continue Watching card and Undo keeps it in Continue Watching', () => {
     act(() => useLastFrameStore.getState().recordView(movie(20, 'Trailer Film'), 'trailer'));
     renderWithToasts();
