@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { isViewEntry, removeView, upsertView, type ViewEntry, type ViewSource, type ViewedTitle } from '../lib/viewHistory';
+import type { MediaType } from '../services/types';
 
 /** Persisted slices for Last Frame. Keyed per profile so switching profiles swaps state. */
 
@@ -19,6 +20,8 @@ export interface Profile {
 export interface WatchlistEntry {
   titleId: TitleId;
   addedAt: number;
+  /** Movie or series; lets My List resolve the title. Absent on entries saved before w2-mylist. */
+  mediaType?: MediaType;
 }
 
 export interface HistoryEntry {
@@ -52,9 +55,9 @@ export interface ProfilesSlice {
 
 export interface WatchlistSlice {
   watchlist: PerProfile<WatchlistEntry[]>;
-  addToWatchlist: (titleId: TitleId) => void;
+  addToWatchlist: (titleId: TitleId, mediaType?: MediaType) => void;
   removeFromWatchlist: (titleId: TitleId) => void;
-  toggleWatchlist: (titleId: TitleId) => void;
+  toggleWatchlist: (titleId: TitleId, mediaType?: MediaType) => void;
 }
 
 export interface HistorySlice {
@@ -188,13 +191,14 @@ export const useLastFrameStore = create<LastFrameState>()(
       // ---- watchlist ----
       watchlist: {},
 
-      addToWatchlist: (titleId) =>
+      addToWatchlist: (titleId, mediaType) =>
         set((s) => {
           const pid = s.activeProfileId;
           if (!pid) return {};
           const list = s.watchlist[pid] ?? [];
           if (list.some((e) => e.titleId === titleId)) return {};
-          return { watchlist: { ...s.watchlist, [pid]: [{ titleId, addedAt: Date.now() }, ...list] } };
+          const entry: WatchlistEntry = mediaType ? { titleId, addedAt: Date.now(), mediaType } : { titleId, addedAt: Date.now() };
+          return { watchlist: { ...s.watchlist, [pid]: [entry, ...list] } };
         }),
 
       removeFromWatchlist: (titleId) =>
@@ -205,12 +209,12 @@ export const useLastFrameStore = create<LastFrameState>()(
           return { watchlist: { ...s.watchlist, [pid]: list.filter((e) => e.titleId !== titleId) } };
         }),
 
-      toggleWatchlist: (titleId) => {
+      toggleWatchlist: (titleId, mediaType) => {
         const { activeProfileId, watchlist, addToWatchlist, removeFromWatchlist } = get();
         if (!activeProfileId) return;
         const has = (watchlist[activeProfileId] ?? []).some((e) => e.titleId === titleId);
         if (has) removeFromWatchlist(titleId);
-        else addToWatchlist(titleId);
+        else addToWatchlist(titleId, mediaType);
       },
 
       // ---- history ----

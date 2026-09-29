@@ -8,8 +8,9 @@ import TitleSkeleton from '../components/title/TitleSkeleton';
 import TrailerModal from '../components/title/TrailerModal';
 import WhereToWatch from '../components/title/WhereToWatch';
 import '../components/title/title.css';
-import { Button, useToast } from '../components/ui';
-import { useIsInWatchlist, useViewActions, useWatchlistActions } from '../hooks';
+import { Button } from '../components/ui';
+import { useViewActions } from '../hooks';
+import { useMyListToggle } from '../hooks/useMyListToggle';
 import { formatRuntime, useTitleDetails, type TitleDetails } from '../hooks/useTitleDetails';
 import { analytics, type Movie } from '../services';
 
@@ -63,9 +64,7 @@ function TitleError({ message, onRetry }: { message: string; onRetry: () => void
 function TitleView({ data }: { data: TitleDetails }) {
   const { movie, raw, cast, similar, trailer } = data;
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const inList = useIsInWatchlist(movie.id);
-  const { toggle } = useWatchlistActions();
+  const { inList, toggle: toggleList } = useMyListToggle(movie, 'title');
   const [trailerOpen, setTrailerOpen] = useState(false);
   const { recordView } = useViewActions();
   const closeTrailer = useCallback(() => setTrailerOpen(false), []);
@@ -86,14 +85,6 @@ function TitleView({ data }: { data: TitleDetails }) {
 
   const runtime = formatRuntime(movie.runtime);
   const score = Number.isFinite(raw.vote_average) && raw.vote_average > 0 ? raw.vote_average.toFixed(1) : null;
-
-  const toggleList = () => {
-    toggle(movie.id);
-    analytics.track(inList ? 'watchlist_remove' : 'watchlist_add', { id: movie.id, source: 'title' });
-    toast(inList ? `Removed ${movie.title} from My List` : `Added ${movie.title} to My List`, {
-      kind: inList ? 'info' : 'success',
-    });
-  };
 
   const openTrailer = () => {
     analytics.track('trailer_open', { id: movie.id, mediaType: movie.mediaType });

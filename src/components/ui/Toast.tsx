@@ -95,3 +95,10 @@ export function useToast(): ToastApi {
   if (!ctx) throw new Error('useToast must be used inside <ToastProvider>');
   return ctx;
 }
+
+const NOOP_TOAST: ToastApi = { toast: () => 0, dismiss: () => {} };
+
+/** Like useToast, but a no-op outside <ToastProvider> (for components that also render in isolation). */
+export function useOptionalToast(): ToastApi {
+  return useContext(ToastContext) ?? NOOP_TOAST;
+}

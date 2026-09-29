@@ -56,7 +56,7 @@ describe('TitlePage', () => {
   it('toggles My List in the store', async () => {
     renderAt('/title/movie/1000');
     await screen.findByRole('heading', { level: 1, name: 'Neon Drift' }, T);
-    const btn = screen.getByRole('button', { name: /my list/i });
+    const btn = screen.getByRole('button', { name: /^my list$/i });
     expect(btn).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(btn);
     expect(btn).toHaveAttribute('aria-pressed', 'true');

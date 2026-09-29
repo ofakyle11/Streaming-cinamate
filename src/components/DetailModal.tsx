@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import type { Movie } from '../services';
+import { useMyListToggle } from '../hooks/useMyListToggle';
+import '../styles/my-list.css';
 
 interface Props {
   movie: Movie;
@@ -7,6 +9,8 @@ interface Props {
 }
 
 export default function DetailModal({ movie, onClose }: Props) {
+  const { inList, toggle } = useMyListToggle(movie, 'modal');
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -35,7 +39,14 @@ export default function DetailModal({ movie, onClose }: Props) {
           <p className="genres">Genres: {movie.genres.join(', ')}</p>
           <div className="actions">
             <button className="btn primary">▶ Play</button>
-            <button className="btn glass">＋ My List</button>
+            <button
+              type="button"
+              className={`btn glass${inList ? ' is-listed' : ''}`}
+              aria-pressed={inList}
+              onClick={toggle}
+            >
+              <span aria-hidden>{inList ? '✓' : '＋'}</span> My List
+            </button>
           </div>
         </div>
       </div>
