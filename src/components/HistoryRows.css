@@ -1,0 +1,63 @@
+/* History row overlays (Continue Watching / Recently Viewed). They sit in the
+   card's bottom band so they never collide with the My List toggle (top-left)
+   or the rating overlay (top-right). */
+
+/* ---------- remove button (bottom-right) ---------- */
+.card .history-remove {
+  position: absolute; right: 6px; bottom: 10px; z-index: 2;
+  width: 30px; height: 30px; font-size: 0.8rem;
+  background: var(--glass-bg-strong); border: 1px solid var(--glass-border-strong);
+  -webkit-backdrop-filter: var(--glass-blur-soft); backdrop-filter: var(--glass-blur-soft);
+  color: var(--color-text);
+  opacity: 0; transform: scale(0.8);
+  transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-base) var(--ease-spring),
+    border-color var(--dur-fast), color var(--dur-fast);
+}
+.card:hover .history-remove,
+.card:focus-within .history-remove { opacity: 1; transform: none; }
+.card .history-remove:hover { transform: scale(1.12); border-color: var(--color-danger); color: var(--color-danger); }
+.card .history-remove:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset);
+}
+
+/* Keep the slid-up title info clear of the remove button. */
+.card:has(> .history-remove) .card-info { padding-right: 40px; }
+
+/* ---------- progress bar (card bottom edge) ---------- */
+.history-progress {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; height: 4px;
+  background: var(--glass-bg-strong); pointer-events: none;
+}
+.history-progress-fill {
+  display: block; height: 100%;
+  background: var(--color-accent); box-shadow: var(--glow-accent);
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  transition: width var(--dur-medium) var(--ease-out);
+}
+
+/* ---------- "Trailer watched" pill (bottom-left) ---------- */
+.history-pill {
+  position: absolute; left: 6px; bottom: 14px; z-index: 1;
+  padding: 2px 8px; border-radius: var(--radius-pill);
+  background: var(--glass-bg-strong); border: 1px solid var(--glass-border);
+  color: var(--color-text-soft); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.02em;
+  pointer-events: none; transition: opacity var(--dur-fast) var(--ease-standard);
+}
+/* The title info slides over the same band on hover / focus. */
+.card:hover .history-pill,
+.card:focus-within .history-pill { opacity: 0; }
+
+/* Touch screens have no hover: keep the remove button visible. */
+@media (hover: none) {
+  .card .history-remove { opacity: 1; transform: none; }
+}
+
+@media (max-width: 760px) {
+  .card .history-remove { right: 4px; bottom: 8px; width: 28px; height: 28px; }
+  .history-pill { left: 4px; bottom: 12px; font-size: 0.6rem; padding: 1px 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card .history-remove, .card .history-remove:hover { transform: none; transition: none; }
+  .history-progress-fill, .history-pill { transition: none; }
+}

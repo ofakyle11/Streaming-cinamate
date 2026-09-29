@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Movie } from '../services';
 import { titlePath } from '../pages/homeRows';
@@ -15,9 +16,14 @@ interface Props {
   listToggle?: boolean;
   /** Analytics source for the My List toggle. Default 'card'. */
   listSource?: MyListSource;
+  /**
+   * Optional extra overlay (e.g. a remove button or progress bar) rendered as a
+   * sibling of the link, after the built-in overlays. Buttons are safe here.
+   */
+  extraAction?: ReactNode;
 }
 
-export default function MovieCard({ movie, delay, onSelect, listToggle = true, listSource = 'card' }: Props) {
+export default function MovieCard({ movie, delay, onSelect, listToggle = true, listSource = 'card', extraAction }: Props) {
   return (
     <div className="card" style={{ transitionDelay: `${delay}ms` }}>
       <Link
@@ -37,6 +43,7 @@ export default function MovieCard({ movie, delay, onSelect, listToggle = true, l
       </Link>
       {listToggle && <CardListToggle movie={movie} source={listSource} />}
       <CardRating movie={movie} />
+      {extraAction}
     </div>
   );
 }

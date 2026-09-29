@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Movie } from '../services';
 import MovieCard from './MovieCard';
 
@@ -6,9 +6,11 @@ interface Props {
   title: string;
   items: Movie[];
   onSelect?: (m: Movie) => void;
+  /** Optional per-card overlay passed to MovieCard's `extraAction` slot. */
+  cardExtra?: (m: Movie) => ReactNode;
 }
 
-export default function Row({ title, items, onSelect }: Props) {
+export default function Row({ title, items, onSelect, cardExtra }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
@@ -41,7 +43,13 @@ export default function Row({ title, items, onSelect }: Props) {
         <button className="arrow left glass" onClick={() => scroll(-1)} aria-label="Scroll left">‹</button>
         <div className="track" ref={trackRef}>
           {items.map((m, i) => (
-            <MovieCard key={`${m.mediaType}-${m.id}`} movie={m} delay={i * 60} onSelect={onSelect} />
+            <MovieCard
+              key={`${m.mediaType}-${m.id}`}
+              movie={m}
+              delay={i * 60}
+              onSelect={onSelect}
+              extraAction={cardExtra?.(m)}
+            />
           ))}
         </div>
         <button className="arrow right glass" onClick={() => scroll(1)} aria-label="Scroll right">›</button>

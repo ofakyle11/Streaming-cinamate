@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import Button from './Button';
 import IconButton from './IconButton';
 
 export type ToastKind = 'info' | 'success' | 'error';
@@ -7,6 +8,13 @@ export interface ToastOptions {
   kind?: ToastKind;
   /** ms before auto-dismiss; 0 keeps it until closed. Default 4000. */
   duration?: number;
+  /** Optional inline action (e.g. Undo). Clicking it runs `onAction` and dismisses the toast. */
+  action?: ToastAction;
+}
+
+export interface ToastAction {
+  label: string;
+  onAction: () => void;
 }
 
 interface ToastItem {
@@ -14,6 +22,7 @@ interface ToastItem {
   message: string;
   kind: ToastKind;
   leaving: boolean;
+  action?: ToastAction;
 }
 
 interface ToastApi {
@@ -59,7 +68,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (message: string, opts: ToastOptions = {}) => {
       const id = nextId.current++;
       const duration = opts.duration ?? 4000;
-      setItems((list) => [...list, { id, message, kind: opts.kind ?? 'info', leaving: false }]);
+      setItems((list) => [...list, { id, message, kind: opts.kind ?? 'info', leaving: false, action: opts.action }]);
       if (duration > 0) timers.current.set(id, setTimeout(() => dismiss(id), duration));
       return id;
     },
@@ -80,6 +89,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((t) => (
           <div key={t.id} className={`toast glass ${t.kind}${t.leaving ? ' leaving' : ''}`} role="status">
             <span className="toast-msg">{t.message}</span>
+            {t.action && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="toast-action"
+                onClick={() => {
+                  t.action?.onAction();
+                  dismiss(t.id);
+                }}
+              >
+                {t.action.label}
+              </Button>
+            )}
             <IconButton label="Dismiss" size="sm" glass={false} onClick={() => dismiss(t.id)}>
               ✕
             </IconButton>
