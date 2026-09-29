@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Row from '../components/Row';
 import CastStrip from '../components/title/CastStrip';
@@ -9,7 +9,7 @@ import TrailerModal from '../components/title/TrailerModal';
 import WhereToWatch from '../components/title/WhereToWatch';
 import '../components/title/title.css';
 import { Button, useToast } from '../components/ui';
-import { useIsInWatchlist, useWatchlistActions } from '../hooks';
+import { useIsInWatchlist, useViewActions, useWatchlistActions } from '../hooks';
 import { formatRuntime, useTitleDetails, type TitleDetails } from '../hooks/useTitleDetails';
 import { analytics, type Movie } from '../services';
 
@@ -67,12 +67,22 @@ function TitleView({ data }: { data: TitleDetails }) {
   const inList = useIsInWatchlist(movie.id);
   const { toggle } = useWatchlistActions();
   const [trailerOpen, setTrailerOpen] = useState(false);
+  const { recordView } = useViewActions();
   const closeTrailer = useCallback(() => setTrailerOpen(false), []);
 
   useEffect(() => {
     document.title = `${movie.title} (${movie.year}) · Last Frame`;
     analytics.page('title', { id: movie.id, mediaType: movie.mediaType });
   }, [movie.id, movie.mediaType, movie.title, movie.year]);
+
+  // Track the open in viewing history (feeds Home's Continue Watching / Recently Viewed).
+  // TitleView is keyed per title; the ref keeps StrictMode's double effect from counting twice.
+  const recordedRef = useRef(false);
+  useEffect(() => {
+    if (recordedRef.current) return;
+    recordedRef.current = true;
+    recordView(movie, 'open');
+  }, [movie, recordView]);
 
   const runtime = formatRuntime(movie.runtime);
   const score = Number.isFinite(raw.vote_average) && raw.vote_average > 0 ? raw.vote_average.toFixed(1) : null;
@@ -87,6 +97,7 @@ function TitleView({ data }: { data: TitleDetails }) {
 
   const openTrailer = () => {
     analytics.track('trailer_open', { id: movie.id, mediaType: movie.mediaType });
+    recordView(movie, 'trailer');
     setTrailerOpen(true);
   };
 

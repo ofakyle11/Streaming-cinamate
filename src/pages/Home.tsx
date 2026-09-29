@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Hero from '../components/Hero';
 import HeroSkeleton from '../components/HeroSkeleton';
+import HistoryRows from '../components/HistoryRows';
 import Row from '../components/Row';
 import RowSkeleton from '../components/RowSkeleton';
 import RowError from '../components/RowError';
@@ -56,6 +57,7 @@ export default function Home({ svc = tmdb }: Props) {
     <>
       {featured ? <Hero featured={featured} onMore={openFromHero} /> : heroStatus === 'loading' && <HeroSkeleton />}
       <main className={`rows home-rows${hasHero ? '' : ' no-hero'}`}>
+        <HistoryRows onSelect={track} />
         {rows.map(({ id, title, state }) => {
           if (state.status === 'loading') return <RowSkeleton key={id} title={title} />;
           if (state.status === 'error') {

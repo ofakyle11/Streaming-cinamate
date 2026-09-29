@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { isViewEntry, removeView, upsertView, type ViewEntry, type ViewSource, type ViewedTitle } from '../lib/viewHistory';
 
 /** Persisted slices for Last Frame. Keyed per profile so switching profiles swaps state. */
 
@@ -69,7 +70,15 @@ export interface RatingsSlice {
   clearRating: (titleId: TitleId) => void;
 }
 
-export type LastFrameState = ProfilesSlice & WatchlistSlice & HistorySlice & RatingsSlice;
+/** Viewed titles (title page opens / trailer plays) with timestamps; feeds Continue Watching + Recently Viewed. */
+export interface ViewsSlice {
+  views: PerProfile<ViewEntry[]>;
+  recordView: (title: ViewedTitle, source: ViewSource) => void;
+  removeView: (key: string) => void;
+  clearViews: () => void;
+}
+
+export type LastFrameState = ProfilesSlice & WatchlistSlice & HistorySlice & RatingsSlice & ViewsSlice;
 
 export const STORAGE_KEY = 'lastframe';
 export const STORAGE_VERSION = 1;
@@ -128,6 +137,7 @@ function safeStorage(): Storage {
 const EMPTY_WATCHLIST: WatchlistEntry[] = [];
 const EMPTY_HISTORY: HistoryEntry[] = [];
 const EMPTY_RATINGS: RatingEntry[] = [];
+const EMPTY_VIEWS: ViewEntry[] = [];
 
 const defaultProfile = createDefaultProfile();
 
@@ -168,6 +178,7 @@ export const useLastFrameStore = create<LastFrameState>()(
             watchlist: omitKey(s.watchlist, id),
             history: omitKey(s.history, id),
             ratings: omitKey(s.ratings, id),
+            views: omitKey(s.views, id),
           };
         }),
 
@@ -252,6 +263,26 @@ export const useLastFrameStore = create<LastFrameState>()(
           const list = s.ratings[pid] ?? [];
           return { ratings: { ...s.ratings, [pid]: list.filter((e) => e.titleId !== titleId) } };
         }),
+
+      // ---- viewed titles ----
+      views: {},
+
+      recordView: (title, source) =>
+        set((s) => {
+          const pid = s.activeProfileId;
+          if (!pid) return {};
+          return { views: { ...s.views, [pid]: upsertView(s.views[pid] ?? [], title, source) } };
+        }),
+
+      removeView: (key) =>
+        set((s) => {
+          const pid = s.activeProfileId;
+          if (!pid) return {};
+          return { views: { ...s.views, [pid]: removeView(s.views[pid] ?? [], key) } };
+        }),
+
+      clearViews: () =>
+        set((s) => (s.activeProfileId ? { views: { ...s.views, [s.activeProfileId]: [] } } : {})),
     }),
     {
       name: STORAGE_KEY,
@@ -264,6 +295,7 @@ export const useLastFrameStore = create<LastFrameState>()(
         watchlist: s.watchlist,
         history: s.history,
         ratings: s.ratings,
+        views: s.views,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<LastFrameState>;
@@ -279,6 +311,7 @@ export const useLastFrameStore = create<LastFrameState>()(
           watchlist: p.watchlist ?? {},
           history: p.history ?? {},
           ratings: p.ratings ?? {},
+          views: sanitizeViews(p.views),
         };
       },
     },
@@ -311,3 +344,16 @@ export const selectHistoryFor = (titleId: TitleId) => (s: LastFrameState): Histo
 /** In-progress titles, most recent first. Returns a new array; use with useShallow in components. */
 export const selectContinueWatching = (s: LastFrameState): HistoryEntry[] =>
   selectHistory(s).filter((e) => !e.completed && e.position > 0);
+
+export const selectViews = (s: LastFrameState): ViewEntry[] =>
+  s.activeProfileId ? s.views[s.activeProfileId] ?? EMPTY_VIEWS : EMPTY_VIEWS;
+
+/** Drops malformed persisted view entries (e.g. from hand-edited storage). */
+function sanitizeViews(raw: unknown): PerProfile<ViewEntry[]> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: PerProfile<ViewEntry[]> = {};
+  for (const [pid, list] of Object.entries(raw as Record<string, unknown>)) {
+    if (Array.isArray(list)) out[pid] = list.filter(isViewEntry);
+  }
+  return out;
+}

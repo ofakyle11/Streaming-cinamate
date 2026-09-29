@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ToastProvider } from '../components/ui';
-import { selectRatingFor, selectIsInWatchlist, useLastFrameStore } from '../state/store';
+import { selectRatingFor, selectIsInWatchlist, selectViews, useLastFrameStore } from '../state/store';
 import TitlePage from './TitlePage';
 
 const T = { timeout: 3000 };
@@ -89,6 +89,21 @@ describe('TitlePage', () => {
       fireEvent.keyDown(document, { key: 'Escape' });
     });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('records the page open and trailer play in viewing history', async () => {
+    useLastFrameStore.setState({ views: {} });
+    renderAt('/title/movie/1000');
+    await screen.findByRole('heading', { level: 1, name: 'Neon Drift' }, T);
+
+    let [entry] = selectViews(useLastFrameStore.getState());
+    expect(entry).toMatchObject({ key: 'movie:1000', views: 1, title: { title: 'Neon Drift' } });
+    expect(entry.trailerPlayedAt).toBeUndefined();
+
+    fireEvent.click(screen.getByRole('button', { name: /play trailer/i }));
+    [entry] = selectViews(useLastFrameStore.getState());
+    expect(entry.views).toBe(2);
+    expect(entry.trailerPlayedAt).toEqual(expect.any(Number));
   });
 
   it('disables Play trailer when the title has none', async () => {
