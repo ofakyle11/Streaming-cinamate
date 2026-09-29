@@ -4,7 +4,7 @@ import MovieCard from '../components/MovieCard';
 import DetailModal from '../components/DetailModal';
 import { Button, Skeleton } from '../components/ui';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { analytics, tmdb as defaultTmdb, type Movie, type TmdbGenre, type TmdbService } from '../services';
+import { tmdb as defaultTmdb, type Movie, type TmdbGenre, type TmdbService } from '../services';
 import {
   EMPTY_FILTERS,
   RATING_STEPS,
@@ -89,10 +89,6 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
   }, [svc]);
 
   useEffect(() => {
-    analytics.page('search');
-  }, []);
-
-  useEffect(() => {
     const trimmed = q.trim();
     if (trimmed) track(AnalyticsEvents.search, { query: trimmed.slice(0, 100), length: trimmed.length });
   }, [q]);
@@ -120,7 +116,7 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
 
   const [selected, setSelected] = useState<Movie | null>(null);
   const select = (m: Movie) => {
-    analytics.track('title_open', { id: m.id, mediaType: m.mediaType, source: 'search' });
+    track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'search' });
     setSelected(m);
   };
   const closeModal = useCallback(() => setSelected(null), []);

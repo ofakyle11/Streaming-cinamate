@@ -18,6 +18,7 @@ export function createMockAnalytics(opts: { debug?: boolean; bufferSize?: number
   const max = opts.bufferSize ?? 100;
   const buffer: AnalyticsEvent[] = [];
   let userId: string | null = null;
+  let lastPagePath: string | undefined;
 
   const push = (e: AnalyticsEvent) => {
     buffer.push(e);
@@ -34,6 +35,10 @@ export function createMockAnalytics(opts: { debug?: boolean; bufferSize?: number
       push({ type: 'track', name: event, props, at: new Date().toISOString() });
     },
     page(name, props) {
+      // Mirror Plausible's URL de-dupe: StrictMode double effects must not inflate counts.
+      const path = typeof props?.path === 'string' ? props.path : undefined;
+      if (path !== undefined && path === lastPagePath) return;
+      lastPagePath = path;
       push({ type: 'page', name, props, at: new Date().toISOString() });
     },
     events: () => buffer,

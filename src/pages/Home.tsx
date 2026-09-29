@@ -3,7 +3,8 @@ import Hero from '../components/Hero';
 import Row from '../components/Row';
 import DetailModal from '../components/DetailModal';
 import GenreChips from '../components/GenreChips';
-import { analytics, loadHomeCatalog, type CatalogRow, type Movie } from '../services';
+import { AnalyticsEvents, track } from '../services/analytics/track';
+import { loadHomeCatalog, type CatalogRow, type Movie } from '../services';
 
 interface Catalog {
   featured: Movie[];
@@ -17,7 +18,6 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
-    analytics.page('home');
     loadHomeCatalog()
       .then((c) => {
         if (!cancelled) setCatalog(c);
@@ -31,7 +31,7 @@ export default function Home() {
   }, []);
 
   const select = (m: Movie) => {
-    analytics.track('title_open', { id: m.id, mediaType: m.mediaType });
+    track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'home' });
     setSelected(m);
   };
 
