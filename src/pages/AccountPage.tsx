@@ -7,6 +7,7 @@ import { useAuth } from '../auth';
 import { isValidEmail, normalizeEmail } from '../services/auth/validate';
 import type { User } from '../services/types';
 import '../styles/account.css';
+import { useMeta } from '../hooks/useMeta';
 
 type Notice = { kind: 'success' | 'error' | 'info'; text: string } | null;
 
@@ -27,6 +28,7 @@ function memberSince(iso: string): string | null {
 }
 
 export default function AccountPage() {
+  useMeta({ title: 'Account', description: 'Manage your Last Frame account settings.' });
   const { status, user, mode, signInWithMagicLink, signInWithOAuth, signOut, deleteData } = useAuth();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState<null | 'magic' | 'google' | 'signout' | 'delete'>(null);

@@ -2,10 +2,11 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { MemoryRouter, Route, RouterProvider, Routes, createMemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '../components/ui';
-import { analytics } from '../services';
+import { analytics, tmdb } from '../services';
 import { selectRatingFor, selectIsInWatchlist, selectViews, useLastFrameStore } from '../state/store';
 import TitlePage from './TitlePage';
 import { createMockTmdb } from '../services/tmdb/mock';
+import { getLive, queryLive } from '../test/liveRegions';
 
 const T = { timeout: 3000 };
 
@@ -35,7 +36,7 @@ describe('TitlePage', () => {
 
   it('shows a skeleton, then the glass info panel', async () => {
     renderAt('/title/movie/1000');
-    expect(screen.getByRole('status')).toHaveTextContent(/loading title/i);
+    expect(getLive('status')).toHaveTextContent(/loading title/i);
 
     const heading = await screen.findByRole('heading', { level: 1, name: 'Neon Drift' }, T);
     const panel = heading.closest('article')!;
@@ -125,7 +126,7 @@ describe('TitlePage', () => {
     'shows the not-found state for %s',
     async (path) => {
       renderAt(path);
-      await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/couldn’t find that title/i), T);
+      await waitFor(() => expect(getLive('alert')).toHaveTextContent(/couldn’t find that title/i), T);
       expect(screen.getByRole('link', { name: /back home/i })).toHaveAttribute('href', '/');
     },
   );
@@ -224,4 +225,33 @@ describe('TitlePage data resolution (details())', () => {
     renderAt('/title/person/1000');
     expect(await screen.findByRole('heading', { name: /couldn’t find that title/ }, T)).toBeInTheDocument();
   });
+});
+
+describe('TitlePage load failure (ErrorCard + withRetry)', () => {
+  beforeEach(() => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('shows the ErrorCard (not "not found") when loading fails, and retries', async () => {
+    const { results } = await createMockTmdb().popular('movie', 1);
+    const first = results[0];
+    const details = vi.spyOn(tmdb, 'details').mockRejectedValue(new TypeError('Failed to fetch'));
+    renderAt(`/title/movie/${first.id}`);
+
+    const alert = await screen.findByRole('alert', { name: 'Something went wrong' }, { timeout: 4000 });
+    expect(details).toHaveBeenCalledTimes(3);
+    expect(alert).toHaveAccessibleName('Something went wrong');
+    expect(screen.queryByText(/couldn’t find that title/)).not.toBeInTheDocument();
+    await waitFor(() => expect(document.title).toMatch(/Something went wrong/));
+
+    details.mockRestore();
+    fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: first.title ?? first.name }, T)).toBeInTheDocument();
+    expect(queryLive('alert')).not.toBeInTheDocument();
+  }, 10000);
 });

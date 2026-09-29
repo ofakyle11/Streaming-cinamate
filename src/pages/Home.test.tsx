@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createMockTmdb } from '../services/tmdb/mock';
 import type { TmdbService } from '../services/types';
 import Home from './Home';
@@ -110,5 +110,51 @@ describe('Home', () => {
 
     for (const t of ROW_TITLES) await readyRow(t);
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('Home load states (polish)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const allDown = (err: () => Error): TmdbService => {
+    const base = createMockTmdb();
+    return { ...base, genres: () => Promise.reject(err()) };
+  };
+
+  it('retries transient failures, then shows the ErrorCard as the only <main>', async () => {
+    const base = createMockTmdb();
+    let calls = 0;
+    const svc: TmdbService = {
+      ...base,
+      genres: () => {
+        calls++;
+        return Promise.reject(new TypeError('Failed to fetch'));
+      },
+    };
+    renderHome(svc);
+
+    const alert = await screen.findByRole('alert', { name: /couldn.t load the catalogue/i }, { timeout: 4000 });
+    expect(calls).toBeGreaterThanOrEqual(3);
+    expect(alert).toHaveAccessibleName(/couldn.t load the catalogue/i);
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    expect(within(alert).queryByRole('link', { name: /go home/i })).not.toBeInTheDocument();
+  }, 10000);
+
+  it('says so when the browser is offline', async () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    renderHome(allDown(() => new Error('offline')));
+    expect(
+      await screen.findByText('You appear to be offline. Reconnect and try again.', {}, { timeout: 4000 }),
+    ).toBeInTheDocument();
+  }, 10000);
+
+  it('puts the hero h1 inside the main landmark', async () => {
+    renderHome(createMockTmdb());
+    const h1 = await screen.findByRole('heading', { level: 1 }, { timeout: 3000 });
+    const main = screen.getByRole('main');
+    expect(main).toContainElement(h1);
+    expect(main).toContainElement(await readyRow('Trending Now'));
   });
 });

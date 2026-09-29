@@ -8,6 +8,7 @@ import { suggestAvatar } from '../features/profiles/avatars';
 import { canAddProfile, canDeleteProfile, MAX_PROFILES } from '../features/profiles/rules';
 import type { Profile } from '../state/store';
 import '../features/profiles/profiles.css';
+import { useMeta } from '../hooks/useMeta';
 
 type EditorState = { mode: 'add' } | { mode: 'edit'; profile: Profile } | null;
 
@@ -21,6 +22,7 @@ function safeNext(state: unknown): string {
 
 /** "Who's watching?" — pick, add, edit and delete profiles. */
 export default function ProfilesPage() {
+  useMeta({ title: 'Profiles', description: 'Manage who is watching on Last Frame.' });
   const profiles = useProfiles();
   const active = useActiveProfile();
   const { addProfile, updateProfile, removeProfile, setActiveProfile } = useProfileActions();

@@ -11,6 +11,7 @@ import {
 } from '../services/billing/types';
 import type { FeatureValue } from '../services/billing/types';
 import '../styles/plans.css';
+import { useMeta } from '../hooks/useMeta';
 
 /** Id used for the fake subscription when nobody is signed in (mock mode only). */
 export const GUEST_BILLING_ID = 'guest';
@@ -288,5 +289,6 @@ export function PlansView({
 }
 
 export default function PlansPage() {
+  useMeta({ title: 'Plans', description: 'Compare plans and choose the one that fits you.' });
   return <PlansView />;
 }

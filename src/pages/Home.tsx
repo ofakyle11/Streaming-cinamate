@@ -7,11 +7,13 @@ import Row from '../components/Row';
 import GenreChips from '../components/GenreChips';
 import RowSkeleton from '../components/RowSkeleton';
 import RowError from '../components/RowError';
-import { Button } from '../components/ui';
+import ErrorCard from '../components/errors/ErrorCard';
 import { tmdb, type Movie, type TmdbService } from '../services';
 import { AnalyticsEvents, track, trackPage } from '../services/analytics/track';
 import { useHomeRows } from '../hooks/useHomeRows';
 import { useBecauseYouLiked } from '../hooks/useBecauseYouLiked';
+import { useMeta } from '../hooks/useMeta';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { HERO_ROW_ID, titlePath } from './homeRows';
 import '../styles/home.css';
 
@@ -24,6 +26,8 @@ export default function Home({ svc = tmdb }: Props) {
   const navigate = useNavigate();
   const { rows, featured, heroStatus, allFailed, retry, retryAll } = useHomeRows(svc);
   const likedRows = useBecauseYouLiked(svc);
+  const online = useOnlineStatus();
+  useMeta();
 
   useEffect(() => {
     trackPage('home');
@@ -42,16 +46,18 @@ export default function Home({ svc = tmdb }: Props) {
   );
 
   if (allFailed) {
+    // ErrorCard renders its own <main>, so it replaces (not nests in) Home's.
     return (
-      <main className="rows home-rows no-hero">
-        <div className="home-error glass" role="alert">
-          <h1>We couldn’t load the catalogue</h1>
-          <p>Check your connection and try again.</p>
-          <Button variant="primary" onClick={retryAll}>
-            ↻ Try again
-          </Button>
-        </div>
-      </main>
+      <ErrorCard
+        title="We couldn’t load the catalogue"
+        message={
+          online
+            ? 'The catalogue failed to load. Check your connection and try again.'
+            : 'You appear to be offline. Reconnect and try again.'
+        }
+        onRetry={retryAll}
+        showHome={false}
+      />
     );
   }
 
@@ -62,9 +68,10 @@ export default function Home({ svc = tmdb }: Props) {
   const liked = likedRows.map((r) => <Row key={r.id} title={r.title} items={r.items} onSelect={trackOpen} />);
 
   return (
-    <>
+    // One <main> landmark holds the Hero (and its page <h1>) and the rows.
+    <main className="home">
       {featured ? <Hero featured={featured} onMore={openFromHero} /> : heroStatus === 'loading' && <HeroSkeleton />}
-      <main className={`rows home-rows${hasHero ? '' : ' no-hero'}`}>
+      <div className={`rows home-rows${hasHero ? '' : ' no-hero'}`}>
         <HistoryRows onSelect={trackOpen} />
         {likedAfter === null && liked}
         {rows.map(({ id, title, state }) => {
@@ -81,7 +88,7 @@ export default function Home({ svc = tmdb }: Props) {
           );
         })}
         <GenreChips />
-      </main>
-    </>
+      </div>
+    </main>
   );
 }

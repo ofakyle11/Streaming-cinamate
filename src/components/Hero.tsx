@@ -307,7 +307,7 @@ export default function Hero({
           </div>
         )}
         <div className="hero-nav">
-          <div className="hero-dots">
+          <div className="hero-dots" role="group" aria-label="Choose featured title">
             {featured.map((m, i) => (
               <button
                 key={m.id}

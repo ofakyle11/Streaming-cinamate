@@ -11,6 +11,7 @@ import {
   type TmdbWatchProviders,
   type WatchRegion,
 } from '../services';
+import { withRetry } from '../services/retry';
 
 export interface TitleDetails {
   movie: Movie;
@@ -99,13 +100,17 @@ export function useTitleDetails(type: string | undefined, id: string | undefined
     const settle = (state: TitleDetailsState) => {
       if (!cancelled) setResult({ key, state });
     };
-    loadTitleDetails(parsed.mediaType, parsed.id, svc)
+    const controller = new AbortController();
+    // Transient failures (network drop, 429/5xx) retry with backoff before showing the error card.
+    withRetry(() => loadTitleDetails(parsed.mediaType, parsed.id, svc), { maxAttempts: 3, signal: controller.signal })
       .then((data) => settle(data ? { status: 'ready', data } : { status: 'not-found' }))
-      .catch((e: unknown) =>
-        settle({ status: 'error', message: e instanceof Error ? e.message : 'Could not load this title.' }),
-      );
+      .catch((e: unknown) => {
+        if (controller.signal.aborted) return;
+        settle({ status: 'error', message: e instanceof Error ? e.message : 'Could not load this title.' });
+      });
     return () => {
       cancelled = true;
+      controller.abort();
     };
     // `parsed` is derived from `key`; depending on the key avoids refetching on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps

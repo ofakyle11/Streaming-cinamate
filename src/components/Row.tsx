@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { Movie } from '../services';
+import { useRovingFocus } from '../hooks/useRovingFocus';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { useKeepFocusOnRemoval, useKeepFocusOnUnmount } from '../hooks/useKeepFocusOnRemoval';
 import MovieCard from './MovieCard';
@@ -25,6 +26,8 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
   const headingId = `row-title-${uid}`;
   const trackId = `row-track-${uid}`;
   const [visible, setVisible] = useState(() => typeof IntersectionObserver === 'undefined');
+  // Keyboard: one tab stop per row; arrow keys / Home / End move between cards.
+  const { getItemProps } = useRovingFocus<HTMLAnchorElement>(items.length);
   const [track, setTrack] = useState<TrackState>({ overflows: false, atStart: true, atEnd: true });
 
   useEffect(() => {
@@ -110,9 +113,9 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
           aria-disabled={track.atStart}
           hidden={!track.overflows}
         >
-          ‹
+          <span aria-hidden="true">‹</span>
         </button>
-        <div className="track" id={trackId} ref={trackRef} {...focusKeeper}>
+        <div className="track" id={trackId} ref={trackRef} role="group" aria-label={title} {...focusKeeper}>
           {items.map((m, i) => (
             <MovieCard
               key={cardKey(m)}
@@ -120,6 +123,7 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
               delay={i * 60}
               onSelect={onSelect}
               extraAction={cardExtra?.(m)}
+              rovingProps={getItemProps(i)}
             />
           ))}
         </div>
@@ -132,7 +136,7 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
           aria-disabled={track.atEnd}
           hidden={!track.overflows}
         >
-          ›
+          <span aria-hidden="true">›</span>
         </button>
       </div>
     </section>

@@ -9,3 +9,19 @@
 **Merger** (1, sequential): merges approved branches into the feature branch, runs build, pushes after each wave.
 
 Rules: keep the glass-motion design language; never add Stripe SDK or keys; every external service has a mock adapter that works with no env vars.
+
+## Task log — Quality & Polish stream
+
+Branch: `lf-stream/polish`. Each task was built on `lf/<task-id>`, reviewed and merged in
+order.
+
+| Task              | Summary                                                                                                                                                                                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `w3-brand`        | LF glass monogram `LogoMark` (`src/components/brand/`), Navbar brand mark, `favicon.svg`, `mask-icon.svg`, `icons/icon.svg`, PNG fallbacks through `scripts/generate-icons.mjs`, `theme-color` `#0b0b12`.                                                                          |
+| `w3-errors`       | In-layout `ErrorBoundary` plus router `RouteError` with a glass `ErrorCard` and retry, an `OfflineBanner` with `useOnlineStatus`, and `withRetry`/`fetchWithRetry` with exponential backoff (`src/services/retry.ts`).                                                             |
+| `w3-seo`          | `useMeta` hook for per-page title, description, OpenGraph and Twitter tags on every page, default meta in `index.html`, `robots.txt`, and `sitemap.xml` through `scripts/generate-sitemap.mjs`.                                                                                    |
+| `w3-a11y`         | Roving-focus card rows (`useRovingFocus`), focus-trapped `DetailModal` (`useFocusTrap`), skip link, ARIA landmarks and labels, and a contrast and reduced-motion audit, documented in `docs/A11Y.md`.                                                                              |
+| `w3-docs`         | `README.md` (what it is, features, run, checks, Netlify deploy, mock mode), `docs/KEYS.md` (every env var, client vs server-only, where to get and set it, no Stripe keys), `docs/ARCHITECTURE.md` refresh (brand, errors/retry, `useMeta`, a11y hooks, deployment), and this log. |
+| `w3-polish-fu1-1` | Mobile primary nav at <=760px: `Navbar` menu toggle (`aria-expanded`/`aria-controls`) opens the links as a glass dropdown (`src/styles/nav.css`), closes on Escape, outside click or route change and restores focus; logo-only at 375px. Tests: `Navbar.test.tsx`.                |
+| `w3-polish-fu1-2` | `RouteAnnouncer` (`src/components/a11y/`) in `AppLayout`: polite announcement of the new title and focus to `#main` on route change, waits up to 1.5s for a lazy title, no focus move under `aria-modal`; `.sr-only` in `a11y.css`. Tests: `RouteAnnouncer.test.tsx`.              |
+| `w3-polish-fu1-3` | Tests only: `ErrorCard`, `RouteError` (404, 500, lazy-chunk and generic errors), `useOnlineStatus` (initial state, events, listener cleanup) and `OfflineBanner` (live region, offline banner, 'Back online' announcement).                                                        |

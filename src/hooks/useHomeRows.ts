@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { tmdb, toMovie } from '../services';
 import type { Movie, TmdbGenre, TmdbService } from '../services/types';
 import { HERO_COUNT, HERO_ROW_ID, HOME_ROWS, uniqueTitles, type HomeRowSpec } from '../pages/homeRows';
+import { withRetry } from '../services/retry';
 
 export type HomeRowState =
   | { status: 'loading' }
@@ -61,7 +62,8 @@ export function useHomeRows(svc: TmdbService = tmdb, specs: readonly HomeRowSpec
       tokens.current[spec.id] = token;
       let next: HomeRowState;
       try {
-        const [genres, page] = await Promise.all([getGenres(), spec.load(svc)]);
+        // Transient failures (network drop, 429/5xx) retry with backoff before the row shows an error.
+        const [genres, page] = await withRetry(() => Promise.all([getGenres(), spec.load(svc)]), { maxAttempts: 3 });
         next = { status: 'ready', items: uniqueTitles(page.results.map((t) => toMovie(t, genres, svc))) };
       } catch (e) {
         next = { status: 'error', message: messageOf(e) };

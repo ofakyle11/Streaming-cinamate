@@ -7,3 +7,6 @@ export * from './useViewHistory';
 export * from './useMyListToggle';
 export * from './useMyListTitles';
 export * from './useThumbs';
+export * from './useFocusTrap';
+export * from './useRovingFocus';
+export * from './useMeta';

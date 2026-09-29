@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { Movie } from '../services';
+import type { RovingItemProps } from '../hooks/useRovingFocus';
 import { titlePath } from '../pages/homeRows';
 import { useMyListToggle, type MyListSource } from '../hooks/useMyListToggle';
 import { IconButton } from './ui';
@@ -21,9 +22,11 @@ interface Props {
    * sibling of the link, after the built-in overlays. Buttons are safe here.
    */
   extraAction?: ReactNode;
+  /** Roving-tabindex wiring from the parent Row (arrow keys move between cards). */
+  rovingProps?: RovingItemProps<HTMLAnchorElement>;
 }
 
-export default function MovieCard({ movie, delay, onSelect, listToggle = true, listSource = 'card', extraAction }: Props) {
+export default function MovieCard({ movie, delay, onSelect, listToggle = true, listSource = 'card', extraAction, rovingProps }: Props) {
   return (
     <div className="card" style={{ transitionDelay: `${delay}ms` }}>
       <Link
@@ -31,9 +34,10 @@ export default function MovieCard({ movie, delay, onSelect, listToggle = true, l
         className="card-link"
         aria-label={`${movie.title} (${movie.year})`}
         onClick={onSelect ? () => onSelect(movie) : undefined}
+        {...rovingProps}
       >
         <img src={movie.poster} alt="" loading="lazy" />
-        <div className="card-info glass">
+        <div className="card-info glass" aria-hidden="true">
           <strong>{movie.title}</strong>
           <span>
             <em className="match">{movie.match}%</em> · {movie.year}

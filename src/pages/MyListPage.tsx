@@ -8,6 +8,7 @@ import { useWatchlistActions } from '../hooks/useWatchlist';
 import { MY_LIST_SORTS, sortMyList, useMyListTitles, type MyListSort } from '../hooks/useMyListTitles';
 import { analytics, tmdb as defaultTmdb, type Movie, type TmdbService } from '../services';
 import '../styles/my-list.css';
+import { useMeta } from '../hooks/useMeta';
 
 interface Props {
   /** Injectable for tests; defaults to the active TMDB adapter. */
@@ -44,12 +45,12 @@ function EmptyState() {
 }
 
 export default function MyListPage({ svc = defaultTmdb }: Props) {
+  useMeta({ title: 'My List', description: 'The films and series you have saved to watch.' });
   const { state, retry } = useMyListTitles(svc);
   const { remove } = useWatchlistActions();
   const [sort, setSort] = useState<MyListSort>('added');
 
   useEffect(() => {
-    document.title = 'My List · Last Frame';
     analytics.page('my-list');
   }, []);
 

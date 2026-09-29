@@ -7,6 +7,9 @@ import { useLastFrameStore } from '../state/store';
 import { ToastProvider } from '../components/ui';
 import AccountPage from './AccountPage';
 
+import { findLive, getLive, queryLive } from '../test/liveRegions';
+
+
 function renderPage(service: AuthService = createMockAuth(), clearLocal = vi.fn()) {
   render(
     <ToastProvider>
@@ -36,14 +39,14 @@ describe('AccountPage + AuthProvider', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /sign out/i }));
     expect(await screen.findByText('Guest mode')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent(/signed out/i);
+    expect(getLive('status')).toHaveTextContent(/signed out/i);
   });
 
   it('shows a validation error for a bad email', async () => {
     renderPage();
     fireEvent.change(await screen.findByLabelText('Email'), { target: { value: 'nope' } });
     fireEvent.click(screen.getByRole('button', { name: /magic link/i }));
-    expect(screen.getByRole('alert')).toHaveTextContent(/valid email/i);
+    expect(getLive('alert')).toHaveTextContent(/valid email/i);
   });
 
   it('signs in with Google', async () => {
@@ -75,7 +78,7 @@ describe('AccountPage + AuthProvider', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /delete my data/i }));
     fireEvent.click(screen.getByRole('button', { name: /yes, delete everything/i }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Network down');
+    expect(await findLive('alert')).toHaveTextContent('Network down');
     expect(clearLocal).not.toHaveBeenCalled();
   });
 
@@ -112,7 +115,7 @@ describe('Delete my data clears the PWA image cache', () => {
     expect(del).toHaveBeenCalledTimes(1);
     expect(clearLocal).toHaveBeenCalledTimes(1);
     expect(clearLocal.mock.invocationCallOrder[0]).toBeLessThan(del.mock.invocationCallOrder[0]);
-    expect(await screen.findByRole('status')).toHaveTextContent(/deleted/i);
+    expect(await findLive('status')).toHaveTextContent(/deleted/i);
   });
 
   it('still clears local data when Cache Storage is unavailable', async () => {
@@ -125,8 +128,8 @@ describe('Delete my data clears the PWA image cache', () => {
 
     await waitFor(() => expect(localStorage.getItem('lf.mock.db')).toBeNull());
     expect(useLastFrameStore.getState().watchlist).toEqual({});
-    expect(await screen.findByRole('status')).toHaveTextContent(/deleted/i);
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(await findLive('status')).toHaveTextContent(/deleted/i);
+    expect(queryLive('alert')).not.toBeInTheDocument();
   });
 
   it('still resolves and signs out when deleting the cache rejects', async () => {
@@ -141,7 +144,7 @@ describe('Delete my data clears the PWA image cache', () => {
     await waitFor(() => expect(del).toHaveBeenCalledWith('lf-images'));
     expect(clearLocal).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('Guest mode')).toBeInTheDocument();
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(queryLive('alert')).not.toBeInTheDocument();
   });
 
   it('does not touch the cache when server deletion fails', async () => {
@@ -154,7 +157,7 @@ describe('Delete my data clears the PWA image cache', () => {
 
     await confirmDelete();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Network down');
+    expect(await findLive('alert')).toHaveTextContent('Network down');
     expect(del).not.toHaveBeenCalled();
   });
 });

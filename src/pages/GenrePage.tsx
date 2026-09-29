@@ -7,6 +7,7 @@ import { AnalyticsEvents, track } from '../services/analytics/track';
 import { genreSearch, loadGenrePage, parseGenreQuery, type GenrePageData } from '../services/genre';
 import { DISCOVER_SORTS } from '../services/tmdb/sort';
 import '../styles/genre.css';
+import { useMeta } from '../hooks/useMeta';
 
 type State =
   | { status: 'loading' }
@@ -70,6 +71,12 @@ export default function GenrePage() {
 
   const data = state.status === 'ready' ? state.data : null;
   const notFound = genreId == null || (data !== null && data.genre === null);
+  const genreName = data?.genre?.name ?? known?.genre?.name;
+  useMeta({
+    title: notFound ? 'Genre not found' : genreName ? `${genreName}` : 'Genre',
+    description: genreName ? `Browse ${genreName} films and series on Last Frame.` : 'Browse titles by genre.',
+    noindex: notFound,
+  });
 
   if (notFound) {
     return (

@@ -15,6 +15,7 @@ import {
 import { useInfiniteSearch } from '../features/search/useInfiniteSearch';
 import { AnalyticsEvents, track } from '../services/analytics/track';
 import '../styles/search.css';
+import { useMeta } from '../hooks/useMeta';
 
 export const SEARCH_DEBOUNCE_MS = 300;
 const FIRST_YEAR = 1950;
@@ -31,6 +32,7 @@ const TYPE_OPTIONS: Array<{ value: SearchFilters['type']; label: string }> = [
 ];
 
 export default function SearchPage({ svc = defaultTmdb }: Props) {
+  useMeta({ title: 'Search', description: 'Search films, series, people and genres.' });
   const [params, setParams] = useSearchParams();
   const q = params.get('q') ?? '';
   const paramsKey = params.toString();

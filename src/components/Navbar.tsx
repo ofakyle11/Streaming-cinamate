@@ -1,6 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import ProfileMenu from '../features/profiles/ProfileMenu';
+import LogoMark from './brand/LogoMark';
+import IconButton from './ui/IconButton';
+import '../styles/nav.css';
 
 const links = [
   { to: '/', label: 'Home' },
@@ -9,6 +12,8 @@ const links = [
   { to: '/new', label: 'New & Popular' },
   { to: '/my-list', label: 'My List' },
 ];
+
+const MENU_ID = 'primary-nav-links';
 
 /**
  * NavLink matches on pathname only, so `/search?type=tv` and `/search?type=movie`
@@ -29,6 +34,13 @@ export default function Navbar() {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  // The mobile menu remembers the pathname it was opened on, so any route change
+  // closes it without a state-syncing effect.
+  const { pathname } = location;
+  const [openOnPath, setOpenOnPath] = useState<string | null>(null);
+  const menuOpen = openOnPath === pathname;
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const submitSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,10 +55,55 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const closeAndRestoreFocus = useCallback(() => {
+    setOpenOnPath(null);
+    toggleRef.current?.focus();
+  }, []);
+
+  // While open, Escape and outside clicks close the menu and return focus to the toggle.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeAndRestoreFocus();
+      }
+    };
+    const onPointerDown = (e: Event) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (toggleRef.current?.contains(target) || listRef.current?.contains(target)) return;
+      closeAndRestoreFocus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+    };
+  }, [menuOpen, closeAndRestoreFocus]);
+
   return (
-    <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`}>
-      <Link to="/" className="logo">LAST FRAME</Link>
-      <ul className="nav-links">
+    <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`} aria-label="Primary">
+      <Link to="/" className="logo logo--with-mark" aria-label="Last Frame home">
+        <LogoMark size={30} decorative />
+        LAST FRAME
+      </Link>
+      <IconButton
+        ref={toggleRef}
+        label="Menu"
+        className="nav-toggle"
+        aria-expanded={menuOpen}
+        aria-controls={MENU_ID}
+        onClick={() => setOpenOnPath(menuOpen ? null : pathname)}
+      >
+        <span className="nav-toggle-icon" aria-hidden="true">
+          {menuOpen ? '✕' : '☰'}
+        </span>
+      </IconButton>
+      <ul id={MENU_ID} ref={listRef} className={`nav-links${menuOpen ? ' is-open' : ''}`}>
         {links.map((l) => (
           <li key={l.to}>
             <NavLink
@@ -54,6 +111,7 @@ export default function Navbar() {
               end={l.to === '/'}
               className={({ isActive }) => (isNavLinkActive(l.to, isActive, location.search) ? 'active' : '')}
               aria-current={isNavLinkActive(l.to, true, location.search) ? 'page' : 'false'}
+              onClick={() => setOpenOnPath(null)}
             >
               {l.label}
             </NavLink>

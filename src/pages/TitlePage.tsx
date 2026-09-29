@@ -17,11 +17,11 @@ import { formatRuntime, useTitleDetails, type TitleDetails } from '../hooks/useT
 import type { Movie } from '../services';
 import { AnalyticsEvents, thumbEvent, track, trackPage } from '../services/analytics/track';
 import type { Thumb } from '../state/store';
+import ErrorCard from '../components/errors/ErrorCard';
+import { useMeta } from '../hooks/useMeta';
 
 function TitleNotFound({ type, id }: { type?: string; id?: string }) {
-  useEffect(() => {
-    document.title = 'Title not found · Last Frame';
-  }, []);
+  useMeta({ title: 'Title not found', noindex: true });
   return (
     <main className="title-page title-page-empty">
       <section className="title-state glass" role="alert">
@@ -46,22 +46,13 @@ function TitleNotFound({ type, id }: { type?: string; id?: string }) {
   );
 }
 
-function TitleError({ message, onRetry }: { message: string; onRetry: () => void }) {
+function TitleError({ type, onRetry }: { type?: string; onRetry: () => void }) {
+  useMeta({ title: 'Something went wrong' });
   return (
-    <main className="title-page title-page-empty">
-      <section className="title-state glass" role="alert">
-        <h1>Something went wrong</h1>
-        <p className="muted">{message}</p>
-        <div className="title-actions">
-          <Button variant="primary" onClick={onRetry}>
-            Try again
-          </Button>
-          <Link className="btn glass" to="/">
-            Back home
-          </Link>
-        </div>
-      </section>
-    </main>
+    <ErrorCard
+      message={`We couldn’t load this ${type === 'tv' ? 'show' : 'title'}. Try again, or head back home.`}
+      onRetry={onRetry}
+    />
   );
 }
 
@@ -75,8 +66,13 @@ function TitleView({ data }: { data: TitleDetails }) {
   const { toast } = useToast();
   const closeTrailer = useCallback(() => setTrailerOpen(false), []);
 
+  useMeta({
+    title: `${movie.title} (${movie.year})`,
+    description: movie.description,
+    image: movie.poster,
+    type: movie.mediaType === 'tv' ? 'video.tv_show' : 'video.movie',
+  });
   useEffect(() => {
-    document.title = `${movie.title} (${movie.year}) · Last Frame`;
     trackPage('title', { id: movie.id, mediaType: movie.mediaType });
   }, [movie.id, movie.mediaType, movie.title, movie.year]);
 
@@ -212,6 +208,6 @@ export default function TitlePage() {
 
   if (state.status === 'loading') return <TitleSkeleton />;
   if (state.status === 'not-found') return <TitleNotFound type={type} id={id} />;
-  if (state.status === 'error') return <TitleError message={state.message} onRetry={retry} />;
+  if (state.status === 'error') return <TitleError type={type} onRetry={retry} />;
   return <TitleView key={`${state.data.movie.mediaType}-${state.data.movie.id}`} data={state.data} />;
 }

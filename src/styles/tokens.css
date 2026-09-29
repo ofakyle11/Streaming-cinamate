@@ -23,6 +23,9 @@
   --glass-bg: rgba(255, 255, 255, 0.06);
   --glass-bg-faint: rgba(255, 255, 255, 0.03);
   --glass-bg-strong: rgba(15, 15, 25, 0.55);
+  /* Text-bearing glass laid over arbitrary imagery (posters). Even over pure
+     white it keeps --color-text at 9.9:1 and --color-text-soft at 7.5:1 (docs/A11Y.md). */
+  --glass-bg-legible: rgba(12, 12, 20, 0.8);
   --glass-border: rgba(255, 255, 255, 0.12);
   --glass-border-strong: rgba(255, 255, 255, 0.25);
   --glass-blur: blur(18px) saturate(160%);

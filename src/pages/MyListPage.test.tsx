@@ -6,6 +6,7 @@ import { createMockTmdb } from '../services/tmdb/mock';
 import type { TmdbService } from '../services/types';
 import { selectWatchlist, useLastFrameStore } from '../state/store';
 import MyListPage from './MyListPage';
+import { findLive } from '../test/liveRegions';
 
 const T = { timeout: 3000 };
 
@@ -109,7 +110,7 @@ describe('MyListPage', () => {
     const svc: TmdbService = { ...base, genres: () => (down ? Promise.reject(new Error('offline')) : base.genres()) };
     useLastFrameStore.getState().addToWatchlist(1000, 'movie');
     renderPage(svc);
-    expect(await screen.findByRole('alert', {}, T)).toHaveTextContent('offline');
+    expect(await findLive('alert', T)).toHaveTextContent('offline');
     down = false;
     fireEvent.click(screen.getByRole('button', { name: /try again/i }));
     expect(await screen.findByRole('link', { name: 'Neon Drift (2015)' }, T)).toBeInTheDocument();
