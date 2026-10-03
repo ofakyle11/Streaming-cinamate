@@ -70,7 +70,6 @@
   position: absolute;
   inset: -35%;
   z-index: 0;
-  border-radius: 50%;
   pointer-events: none;
   transform: scale(1);
   transition:
@@ -86,14 +85,13 @@
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: inherit;
   /* Each layer blurs on its own so the breathe never re-blurs the hover layer. */
   filter: blur(14px);
   background: radial-gradient(
     circle at 78% 22%,
     color-mix(in srgb, var(--logo-halo-a) 70%, transparent) 0%,
     color-mix(in srgb, var(--logo-halo-b) 55%, transparent) 32%,
-    transparent 100%
+    transparent 72%
   );
 }
 
@@ -259,8 +257,8 @@
    un-hovering does not replay it; the header has no load sweep to keep. */
 :is(
     .logo-mark:hover,
-    .logo:hover .logo-mark,
-    .logo:focus-visible .logo-mark
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
   ).logo-mark--hero[data-animate='once']
   .logo-mark__band {
   animation:
@@ -270,8 +268,8 @@
 
 :is(
     .logo-mark:hover,
-    .logo:hover .logo-mark,
-    .logo:focus-visible .logo-mark
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
   ).logo-mark--hero[data-animate='hover']
   .logo-mark__band {
   animation: lf-logo-sweep-hover var(--logo-dur-sweep) var(--logo-ease-exit) both;
