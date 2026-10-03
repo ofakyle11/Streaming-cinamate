@@ -1,5 +1,6 @@
 import { FormEvent, KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Button } from '../../components/ui';
+import { useSheetDismiss } from '../../hooks/useSheetDismiss';
 import type { Profile } from '../../state/store';
 import { AVATAR_OPTIONS, resolveAvatarId } from './avatars';
 import ProfileAvatar from './ProfileAvatar';
@@ -23,7 +24,8 @@ export interface ProfileEditorProps {
   onClose: () => void;
 }
 
-const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+  'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
 
 /** Glass dialog for adding or editing a profile. */
 export default function ProfileEditor({
@@ -49,6 +51,9 @@ export default function ProfileEditor({
   const dialogRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const avatarRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // Phone and tablet: the dialog is a bottom sheet; drag it down to close.
+  useSheetDismiss(dialogRef, onClose);
 
   const error = validateProfileName(name, profiles, profile?.id);
   const showError = touched && error;
@@ -95,7 +100,11 @@ export default function ProfileEditor({
   // Roving tabindex + arrow keys for the avatar radiogroup.
   const handleAvatarKey = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const delta =
-      e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+      e.key === 'ArrowRight' || e.key === 'ArrowDown'
+        ? 1
+        : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+          ? -1
+          : 0;
     if (!delta) return;
     e.preventDefault();
     const next = (index + delta + AVATAR_OPTIONS.length) % AVATAR_OPTIONS.length;
@@ -114,7 +123,7 @@ export default function ProfileEditor({
     >
       <div
         ref={dialogRef}
-        className="profile-editor glass"
+        className="profile-editor sheet glass"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -175,17 +184,26 @@ export default function ProfileEditor({
           </fieldset>
 
           <div className="field kids-toggle">
-            <input id={kidsId} type="checkbox" role="switch" checked={kid} onChange={(e) => setKid(e.target.checked)} />
+            <input
+              id={kidsId}
+              type="checkbox"
+              role="switch"
+              checked={kid}
+              onChange={(e) => setKid(e.target.checked)}
+            />
             <label htmlFor={kidsId}>
               <span className="kids-toggle-title">Kids profile</span>
-              <span className="muted">Only shows titles rated for kids (G, PG, TV-Y, TV-G, TV-PG).</span>
+              <span className="muted">
+                Only shows titles rated for kids (G, PG, TV-Y, TV-G, TV-PG).
+              </span>
             </label>
           </div>
 
           {confirmingDelete ? (
             <div className="delete-confirm glass" role="alert">
               <p>
-                Delete <strong>{profile?.name}</strong>? Their list, watch history and ratings will be removed.
+                Delete <strong>{profile?.name}</strong>? Their list, watch history and ratings will
+                be removed.
               </p>
               <div className="actions">
                 <Button variant="accent" onClick={onDelete}>

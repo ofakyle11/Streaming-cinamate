@@ -222,7 +222,7 @@
   justify-content: center;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 480px) {
   .search-page {
     padding: 88px 16px 40px;
     gap: 16px;

@@ -239,7 +239,7 @@ describe('title action events (trailer + My List)', () => {
         </MemoryRouter>
       </ToastProvider>,
     );
-    const play = await screen.findByRole('button', { name: /Play trailer/ }, T);
+    const play = await screen.findByRole('button', { name: /^Trailer$/ }, T);
     fireEvent.click(play);
     expect(t).toHaveBeenCalledWith(
       AnalyticsEvents.playTrailer,

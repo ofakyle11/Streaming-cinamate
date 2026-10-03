@@ -1,9 +1,12 @@
 /* Home page: skeleton rows, per-row errors and the page-level error panel.
-   Built on tokens.css; keeps the glass-motion look of .row / .hero. */
+   Built on tokens.css and surfaces.css; the rows sit under the hero screen. */
 
+.home-rows {
+  margin-top: 24px;
+}
 .home-rows.no-hero {
   margin-top: 0;
-  padding-top: 110px;
+  padding-top: calc(var(--nav-top) + var(--nav-h) + var(--safe-top) + 24px);
 }
 
 /* ---------- skeleton rows ---------- */
@@ -11,19 +14,26 @@
   overflow: hidden;
 }
 
-/* ---------- hero skeleton ---------- */
+/* ---------- hero skeleton: the Ink screen with the copy block's shape ---------- */
 .hero-skeleton {
-  background: linear-gradient(160deg, var(--glass-bg), var(--glass-bg-faint));
+  animation: none;
+  background: var(--color-ink, #141126);
 }
-.hero-skeleton-card {
-  display: flex;
-  flex-direction: column;
+.hero-skeleton-copy {
   gap: 12px;
-  width: min(520px, 90vw);
+}
+.hero-skeleton-copy .skeleton {
+  background: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 10%, transparent);
+}
+.hero-skeleton-lockup.skeleton {
+  border-radius: var(--radius-lg);
 }
 .hero-skeleton-title.skeleton.text {
   height: 2.4rem;
   width: 80%;
+}
+.hero-skeleton-pill.skeleton {
+  border-radius: var(--radius-pill);
 }
 
 /* ---------- per-row error ---------- */
@@ -72,19 +82,13 @@
   color: var(--color-text-soft);
 }
 
-@media (max-width: 760px) {
-  .home-rows.no-hero {
-    padding-top: 96px;
-  }
+@media (max-width: 480px) {
   .row-error-card {
     padding: 14px 16px;
   }
   .home-error {
     margin: 0 16px;
     padding: 22px;
-  }
-  .hero-skeleton-card {
-    width: auto;
   }
 }
 

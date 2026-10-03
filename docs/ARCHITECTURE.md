@@ -40,7 +40,10 @@ src/
   styles/
     tokens.css        Design tokens (color, radius, blur, motion)
     primitives.css    Styles for ui/ primitives
-    theme.css         Imports tokens + primitives; app styles; prefers-reduced-motion overrides
+    themes.css        Dark theme overrides of the colour tokens (media query and data-theme forms)
+    theme.css         Imports tokens + themes + primitives; base, glass, shared buttons, pages, modal/sheet
+    surfaces.css      Responsive system: 480/1024 breakpoints, gutters, safe areas, fluid type, pill buttons, 44px targets
+    motion.css        The motion system: the four moves, load stagger, button sweep, view transitions, reduced-motion stills
     brand.css         LogoMark styles (imported by LogoMark.tsx)
     errors.css        Error card + offline banner (imported by errors/ components)
     a11y.css          Skip link, focus rings, main target, .sr-only (imported by AppLayout.tsx)
@@ -120,6 +123,32 @@ Under the Lumen brand the tokens are split in two: `tokens.css` holds the shared
 the light theme values, and `themes.css` redefines the colour tokens for dark (device
 preference, or an explicit `data-theme` on `<html>`). Phase 1 ships with
 `data-theme="dark"` as the default; phase 2 adds the theme switch.
+
+### Surfaces (phase 5)
+
+`surfaces.css` is the one place that knows the breakpoints: phone is `max-width: 480px`,
+tablet is `max-width: 1024px`, desktop is everything above. It exposes layout tokens
+(`--gutter`, `--container`, `--nav-h`, `--nav-top`, `--hero-inset`, `--card-w`, the
+`--safe-*` insets and the `--fs-*` type sizes) that components read instead of writing
+their own media queries. Blur is a desktop treatment: phones and tablets get solid
+surfaces, as do `prefers-reduced-transparency` and the `perf-lite` class that
+`src/lib/perfLite.ts` sets on `<html>` for low-memory or data-saver devices.
+
+The home hero is an Ink screen (`.hero-screen`, always dark, using the `--color-ink-*`
+tokens) inset 24px into the page on tablet and desktop and full-bleed on phones. Dialogs
+(`.modal-backdrop > [role="dialog"]`) are a centred card on desktop and a bottom sheet with
+a drag handle at 1024px and below; `useSheetDismiss` adds swipe-down to close.
+
+### Motion (phase 5)
+
+`motion.css` holds the whole vocabulary: an 8px rise, a fade, a screen settle and a
+one-shot sweep, on transform and opacity only. Enter with `--ease-enter`, leave with
+`--ease-exit`; only `--ease-toggle` overshoots. Staggered entrances use `.lf-rise` with
+`--i` (0 to 4, 50ms apart). Hover effects live under `(hover: hover) and (pointer: fine)`;
+touch gets a 100ms press to 0.97. Route changes use React Router's `viewTransition`
+(a 240ms fade out, 400ms fade in) and the clicked poster carries the `lf-artwork`
+view-transition name so it morphs into the title page backdrop. Under
+`prefers-reduced-motion` every surface renders its end frame.
 
 ## Brand
 

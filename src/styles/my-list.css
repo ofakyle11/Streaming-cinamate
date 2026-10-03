@@ -154,7 +154,7 @@
 }
 
 /* ---------- small screens (375px) ---------- */
-@media (max-width: 760px) {
+@media (max-width: 480px) {
   .mylist-page {
     padding: 96px 16px 40px;
     gap: 18px;

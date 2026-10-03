@@ -1,13 +1,17 @@
 /* ---------- rows ---------- */
+/* Lumen rows: the row rises 8px into place as it scrolls into view, its cards
+   follow 50ms apart (the delay is set inline by Row.tsx). The first two rows on
+   any page are never hidden so the fold is painted on first frame. Hover
+   styles live under (hover: hover) and (pointer: fine); touch gets native
+   swipe and no arrows. Breakpoints: 480px phone, 1024px tablet-and-below. */
 .rows {
   position: relative;
-  margin-top: -10vh;
   z-index: 2;
   padding-bottom: 40px;
 }
 .row {
-  padding: 0 5vw;
-  margin-bottom: 36px;
+  padding: 0 var(--gutter);
+  margin-bottom: clamp(24px, 4vw, 40px);
   opacity: 0;
   transform: translateY(8px);
   transition:
@@ -18,31 +22,49 @@
   opacity: 1;
   transform: none;
 }
+/* Above the fold: the first two rows (and their cards) are always visible.
+   HistoryRows may wrap its rows, hence the second selector. */
+.rows > .row:nth-child(-n + 2),
+.rows > .row:nth-child(-n + 2) .card,
+.rows > :nth-child(-n + 2) .row,
+.rows > :nth-child(-n + 2) .row .card {
+  opacity: 1;
+  transform: none;
+  animation: none;
+}
 .row h2 {
-  font-size: 1.25rem;
+  font-size: var(--fs-h2);
   margin-bottom: 12px;
+  letter-spacing: -0.01em;
 }
 .row-wrap {
   position: relative;
 }
 .track {
   display: flex;
-  gap: 14px;
+  gap: clamp(10px, 1.5vw, 14px);
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
-  padding: 24px 4px;
+  scroll-padding-inline: 4px;
+  padding: 16px 4px;
   scrollbar-width: none;
 }
 .track::-webkit-scrollbar {
   display: none;
 }
+
+/* ---------- arrows ---------- */
+/* Revealed on hover, on keyboard focus (focus-within / focus-visible), dimmed
+   when they cannot scroll further, and removed on touch-only devices where
+   native swipe is the scroll affordance. */
 .arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   z-index: 5;
-  width: 44px;
-  height: 44px;
+  width: var(--tap);
+  height: var(--tap);
   border-radius: 50%;
   font-size: 1.6rem;
   opacity: 0;
@@ -50,44 +72,39 @@
     opacity var(--dur-component) var(--ease-enter),
     transform var(--dur-component) var(--ease-enter);
 }
-.row-wrap:hover .arrow {
-  opacity: 1;
-}
-.arrow:hover {
-  transform: translateY(-50%) scale(1.04);
-}
 .arrow.left {
   left: -22px;
 }
 .arrow.right {
   right: -22px;
 }
-
-/* Row carousel: overrides for the base .row/.arrow rules in theme.css.
-   Arrows are revealed on hover, on keyboard focus (focus-within / focus-visible),
-   dimmed when they cannot scroll further, and removed on touch-only devices
-   where native swipe is the scroll affordance. */
-
 .row-wrap .arrow {
   display: grid;
   place-items: center;
   padding: 0;
   line-height: 1;
-  transition:
-    opacity var(--dur-base) var(--ease-out),
-    transform var(--dur-base) var(--ease-out);
 }
-
 .row-wrap .arrow[hidden] {
   display: none;
 }
-
-.row-wrap:hover .arrow,
 .row-wrap:focus-within .arrow,
 .row-wrap .arrow:focus-visible {
   opacity: 1;
 }
-
+@media (hover: hover) and (pointer: fine) {
+  .row-wrap:hover .arrow {
+    opacity: 1;
+  }
+  .arrow:hover {
+    transform: translateY(-50%) scale(1.04);
+  }
+  .row-wrap:hover .arrow[aria-disabled='true'] {
+    opacity: 0.35;
+  }
+  .row-wrap .arrow[aria-disabled='true']:hover {
+    transform: translateY(-50%);
+  }
+}
 .row-wrap .arrow:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
@@ -96,16 +113,12 @@
 }
 
 /* End of track: keep the button focusable (so focus is not lost) but show it as inert. */
-.row-wrap:hover .arrow[aria-disabled='true'],
 .row-wrap:focus-within .arrow[aria-disabled='true'],
 .row-wrap .arrow[aria-disabled='true']:focus-visible {
   opacity: 0.35;
 }
 .row-wrap .arrow[aria-disabled='true'] {
   cursor: default;
-}
-.row-wrap .arrow[aria-disabled='true']:hover {
-  transform: translateY(-50%);
 }
 
 /* Touch-only devices: native swipe, no hover-revealed buttons eating taps. */
@@ -115,9 +128,9 @@
   }
 }
 
-/* Narrow viewports: pull the arrows inside the row so -22px offsets cannot
-   cause horizontal page overflow (e.g. at 375px). */
-@media (max-width: 760px) {
+/* Tablet and below: pull the arrows inside the row so the -22px offsets cannot
+   cause horizontal page overflow. */
+@media (max-width: 1024px) {
   .row-wrap .arrow {
     width: 40px;
     height: 40px;
@@ -132,6 +145,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .row,
+  .row .card {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    animation: none;
+  }
   .row-wrap .arrow,
   .row-wrap .arrow:hover {
     transition: none;

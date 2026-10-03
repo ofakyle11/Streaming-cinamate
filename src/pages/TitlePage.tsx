@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import Row from '../components/Row';
 import CastStrip from '../components/title/CastStrip';
 import ThumbsControl from '../components/ratings/ThumbsControl';
@@ -56,9 +56,20 @@ function TitleError({ type, onRetry }: { type?: string; onRetry: () => void }) {
   );
 }
 
+/** Anchor of the "Where to watch" section; `/title/:type/:id#where-to-watch` opens the page there. */
+const WHERE_TO_WATCH = '#where-to-watch';
+
+function scrollToWhereToWatch(reducedMotion: boolean) {
+  const section = document.getElementById(WHERE_TO_WATCH.slice(1));
+  if (!section) return false;
+  section.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+  return true;
+}
+
 function TitleView({ data }: { data: TitleDetails }) {
   const { movie, raw, cast, similar, trailer } = data;
   const reducedMotion = usePrefersReducedMotion();
+  const { hash } = useLocation();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const { inList, toggle: toggleList } = useMyListToggle(movie, 'title');
   const [trailerOpen, setTrailerOpen] = useState(false);
@@ -79,9 +90,13 @@ function TitleView({ data }: { data: TitleDetails }) {
   // TitleView is keyed per title, so this runs once per title change (including Similar-card opens):
   // bring the new title into view and move focus to its heading so screen readers announce it.
   // Reduced motion is read once on mount on purpose; toggling it later must not re-scroll.
+  // A #where-to-watch link (e.g. the Home hero) lands on that section instead of the top.
   const reducedMotionOnMount = useRef(reducedMotion);
+  const hashOnMount = useRef(hash);
   useEffect(() => {
-    if (typeof window.scrollTo === 'function') {
+    const toWhereToWatch =
+      hashOnMount.current === WHERE_TO_WATCH && scrollToWhereToWatch(reducedMotionOnMount.current);
+    if (!toWhereToWatch && typeof window.scrollTo === 'function') {
       window.scrollTo({ top: 0, behavior: reducedMotionOnMount.current ? 'auto' : 'smooth' });
     }
     headingRef.current?.focus({ preventScroll: true });
@@ -97,7 +112,8 @@ function TitleView({ data }: { data: TitleDetails }) {
   }, [movie, recordView]);
 
   const runtime = formatRuntime(movie.runtime);
-  const score = Number.isFinite(raw.vote_average) && raw.vote_average > 0 ? raw.vote_average.toFixed(1) : null;
+  const score =
+    Number.isFinite(raw.vote_average) && raw.vote_average > 0 ? raw.vote_average.toFixed(1) : null;
 
   const onThumb = (thumb: Thumb | null) => {
     track(thumbEvent(thumb), { id: movie.id, mediaType: movie.mediaType, source: 'title' });
@@ -106,8 +122,17 @@ function TitleView({ data }: { data: TitleDetails }) {
     else toast(`Removed your thumb for ${movie.title}`);
   };
 
+  const goToWhereToWatch = () => {
+    scrollToWhereToWatch(reducedMotion);
+    document.getElementById('title-wtw-heading')?.focus({ preventScroll: true });
+  };
+
   const openTrailer = () => {
-    track(AnalyticsEvents.playTrailer, { id: movie.id, mediaType: movie.mediaType, source: 'title' });
+    track(AnalyticsEvents.playTrailer, {
+      id: movie.id,
+      mediaType: movie.mediaType,
+      source: 'title',
+    });
     recordView(movie, 'trailer');
     setTrailerOpen(true);
   };
@@ -128,7 +153,7 @@ function TitleView({ data }: { data: TitleDetails }) {
             {movie.title}
           </h1>
           <ul className="title-facts" aria-label="Details">
-            <li className="match">{movie.match}% Match</li>
+            <li className="fit">Fit {movie.match}</li>
             <li>{movie.year}</li>
             {runtime && (
               <li>
@@ -161,18 +186,31 @@ function TitleView({ data }: { data: TitleDetails }) {
           )}
           <p className="title-overview">{movie.description || 'No overview available yet.'}</p>
           <div className="title-actions">
+            <Button variant="primary" onClick={goToWhereToWatch}>
+              Where to watch
+            </Button>
             <Button
-              variant="primary"
+              variant="glass"
               onClick={openTrailer}
               disabled={!trailer}
               title={trailer ? undefined : 'No trailer available'}
             >
-              <span aria-hidden>▶</span> {trailer ? 'Play trailer' : 'No trailer'}
+              {trailer ? 'Trailer' : 'No trailer'}
             </Button>
-            <Button variant="glass" onClick={toggleList} aria-pressed={inList} className={inList ? 'is-listed' : undefined}>
+            <Button
+              variant="glass"
+              onClick={toggleList}
+              aria-pressed={inList}
+              className={inList ? 'is-listed' : undefined}
+            >
               <span aria-hidden>{inList ? '✓' : '＋'}</span> My List
             </Button>
-            <ThumbsControl titleId={movie.id} mediaType={movie.mediaType} title={movie.title} onChange={onThumb} />
+            <ThumbsControl
+              titleId={movie.id}
+              mediaType={movie.mediaType}
+              title={movie.title}
+              onChange={onThumb}
+            />
             <RatingControl titleId={movie.id} title={movie.title} mediaType={movie.mediaType} />
           </div>
         </article>
@@ -183,7 +221,11 @@ function TitleView({ data }: { data: TitleDetails }) {
 
         {similar.length > 0 && (
           <div className="title-similar">
-            <Row title={movie.mediaType === 'tv' ? 'More series like this' : 'More like this'} items={similar} onSelect={openSimilar} />
+            <Row
+              title={movie.mediaType === 'tv' ? 'More series like this' : 'More like this'}
+              items={similar}
+              onSelect={openSimilar}
+            />
           </div>
         )}
       </div>
@@ -209,5 +251,7 @@ export default function TitlePage() {
   if (state.status === 'loading') return <TitleSkeleton />;
   if (state.status === 'not-found') return <TitleNotFound type={type} id={id} />;
   if (state.status === 'error') return <TitleError type={type} onRetry={retry} />;
-  return <TitleView key={`${state.data.movie.mediaType}-${state.data.movie.id}`} data={state.data} />;
+  return (
+    <TitleView key={`${state.data.movie.mediaType}-${state.data.movie.id}`} data={state.data} />
+  );
 }

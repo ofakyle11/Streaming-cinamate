@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useContext, type ReactNode } from 'react';
+import { Link, UNSAFE_DataRouterStateContext, useViewTransitionState } from 'react-router-dom';
 import { prefetchTitleRoute } from '../app/prefetch';
 import type { Movie } from '../services';
 import type { RovingItemProps } from '../hooks/useRovingFocus';
@@ -27,18 +27,53 @@ interface Props {
   rovingProps?: RovingItemProps<HTMLAnchorElement>;
 }
 
-export default function MovieCard({ movie, delay, onSelect, listToggle = true, listSource = 'card', extraAction, rovingProps }: Props) {
+/**
+ * True while the router is running a view transition to or from `to`.
+ * `useViewTransitionState` needs a data router (RouterProvider); unit tests
+ * render inside MemoryRouter, so mirror react-router's own Link: read the data
+ * router state context and only call the hook when one is present. The
+ * presence of a data router is static for a tree, so the conditional call is
+ * stable across renders.
+ */
+function useArtworkTransition(to: string): boolean {
+  const routerState = useContext(UNSAFE_DataRouterStateContext);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return routerState != null && useViewTransitionState(to);
+}
+
+export default function MovieCard({
+  movie,
+  delay,
+  onSelect,
+  listToggle = true,
+  listSource = 'card',
+  extraAction,
+  rovingProps,
+}: Props) {
+  const to = titlePath(movie);
+  // Only the clicked card carries the view-transition name: two elements with
+  // the same name would cancel the poster-to-artwork morph.
+  const isTransitioning = useArtworkTransition(to);
   return (
-    <div className="card" style={{ transitionDelay: `${delay}ms` }}>
+    <div className="card" style={{ transitionDelay: `${delay}ms`, animationDelay: `${delay}ms` }}>
       <Link
-        to={titlePath(movie)}
+        to={to}
+        viewTransition
         className="card-link"
         aria-label={`${movie.title} (${movie.year})`}
         onClick={onSelect ? () => onSelect(movie) : undefined}
         onPointerEnter={prefetchTitleRoute}
         {...rovingProps}
       >
-        <img src={movie.poster} alt="" loading="lazy" decoding="async" width={342} height={513} />
+        <img
+          src={movie.poster}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          width={342}
+          height={513}
+          style={isTransitioning ? { viewTransitionName: 'lf-artwork' } : undefined}
+        />
         <div className="card-info glass" aria-hidden="true">
           <strong>{movie.title}</strong>
           <span>

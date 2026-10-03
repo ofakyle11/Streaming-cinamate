@@ -37,10 +37,20 @@ export default function Home({ svc = tmdb }: Props) {
     track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'home' });
   }, []);
 
+  /** "Where to watch" lands on that section of the title page. */
   const openFromHero = useCallback(
     (m: Movie) => {
       trackOpen(m);
-      navigate(titlePath(m));
+      navigate(`${titlePath(m)}#where-to-watch`, { viewTransition: true });
+    },
+    [navigate, trackOpen],
+  );
+
+  /** Trailer fallback (no trailer available): the plain title page. */
+  const openTitleFromHero = useCallback(
+    (m: Movie) => {
+      trackOpen(m);
+      navigate(titlePath(m), { viewTransition: true });
     },
     [navigate, trackOpen],
   );
@@ -65,12 +75,18 @@ export default function Home({ svc = tmdb }: Props) {
 
   // "Because you liked X" rows sit right after the hero row (or first, if it is missing).
   const likedAfter = rows.some((r) => r.id === HERO_ROW_ID) ? HERO_ROW_ID : null;
-  const liked = likedRows.map((r) => <Row key={r.id} title={r.title} items={r.items} onSelect={trackOpen} />);
+  const liked = likedRows.map((r) => (
+    <Row key={r.id} title={r.title} items={r.items} onSelect={trackOpen} />
+  ));
 
   return (
     // One <main> landmark holds the Hero (and its page <h1>) and the rows.
     <main className="home">
-      {featured ? <Hero featured={featured} onMore={openFromHero} /> : heroStatus === 'loading' && <HeroSkeleton />}
+      {featured ? (
+        <Hero featured={featured} onMore={openFromHero} onOpenTitle={openTitleFromHero} />
+      ) : (
+        heroStatus === 'loading' && <HeroSkeleton />
+      )}
       <div className={`rows home-rows${hasHero ? '' : ' no-hero'}`}>
         <HistoryRows onSelect={trackOpen} />
         {likedAfter === null && liked}
@@ -79,7 +95,8 @@ export default function Home({ svc = tmdb }: Props) {
           if (state.status === 'loading') row = <RowSkeleton title={title} />;
           else if (state.status === 'error') {
             row = <RowError title={title} message={state.message} onRetry={() => retry(id)} />;
-          } else if (state.items.length > 0) row = <Row title={title} items={state.items} onSelect={trackOpen} />;
+          } else if (state.items.length > 0)
+            row = <Row title={title} items={state.items} onSelect={trackOpen} />;
           return (
             <Fragment key={id}>
               {row}

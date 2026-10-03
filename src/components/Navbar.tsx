@@ -87,7 +87,13 @@ export default function Navbar() {
 
   return (
     <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`} aria-label="Primary">
-      <Link to="/" className="logo logo--with-mark" aria-label="Last Frame home">
+      <Link
+        to="/"
+        className="logo logo--with-mark"
+        aria-label="Last Frame home"
+        data-logo-slot="header"
+        viewTransition
+      >
         <LogoMark size={30} decorative />
         LAST FRAME
       </Link>
@@ -109,9 +115,12 @@ export default function Navbar() {
             <NavLink
               to={l.to}
               end={l.to === '/'}
-              className={({ isActive }) => (isNavLinkActive(l.to, isActive, location.search) ? 'active' : '')}
+              className={({ isActive }) =>
+                isNavLinkActive(l.to, isActive, location.search) ? 'active' : ''
+              }
               aria-current={isNavLinkActive(l.to, true, location.search) ? 'page' : 'false'}
               onClick={() => setOpenOnPath(null)}
+              viewTransition
             >
               {l.label}
             </NavLink>
@@ -119,12 +128,15 @@ export default function Navbar() {
         ))}
       </ul>
       <div className="nav-right">
+        {/* phase 2: ThemeToggle goes here (desktop: left of search; phone/tablet: first row of the menu sheet) */}
         <form role="search" onSubmit={submitSearch}>
           <input
             className="search glass"
             type="search"
             placeholder="Search"
             aria-label="Search titles"
+            enterKeyHint="search"
+            autoComplete="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />

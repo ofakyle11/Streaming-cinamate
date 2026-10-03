@@ -205,18 +205,17 @@
 }
 
 /* ---------- editor dialog ---------- */
-.profile-editor-backdrop {
-  align-items: center;
-}
-.profile-editor {
+/* Sizing, radius, shadow and the sheet/card entrance come from the modal block in theme.css. */
+.modal-backdrop > .profile-editor {
   width: min(480px, 100%);
-  max-height: calc(100vh - 32px);
-  overflow: auto;
   padding: 28px;
-  border-radius: var(--radius-xl);
-  background: var(--color-surface);
   text-align: left;
-  animation: spring var(--dur-medium) var(--ease-enter);
+}
+@media (max-width: 1024px) {
+  .modal-backdrop > .profile-editor {
+    width: 100%;
+    padding-bottom: calc(28px + var(--safe-bottom));
+  }
 }
 .profile-editor form {
   display: flex;
@@ -465,7 +464,7 @@
 }
 
 /* ---------- small screens (375px+) ---------- */
-@media (max-width: 760px) {
+@media (max-width: 480px) {
   .profile-trigger-name,
   .profile-trigger .kids-pill {
     display: none;
@@ -489,8 +488,9 @@
   .profile-tile-edit {
     top: calc(18px + 48px);
   }
-  .profile-editor {
+  .modal-backdrop > .profile-editor {
     padding: 20px;
+    padding-bottom: calc(20px + var(--safe-bottom));
   }
   .profile-editor-head .lf-avatar.lg {
     --avatar-size: 64px;

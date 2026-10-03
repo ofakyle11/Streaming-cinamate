@@ -3,7 +3,12 @@ import { MemoryRouter, Route, RouterProvider, Routes, createMemoryRouter } from 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '../components/ui';
 import { analytics, tmdb } from '../services';
-import { selectRatingFor, selectIsInWatchlist, selectViews, useLastFrameStore } from '../state/store';
+import {
+  selectRatingFor,
+  selectIsInWatchlist,
+  selectViews,
+  useLastFrameStore,
+} from '../state/store';
 import TitlePage from './TitlePage';
 import { createMockTmdb } from '../services/tmdb/mock';
 import { getLive, queryLive } from '../test/liveRegions';
@@ -28,6 +33,8 @@ describe('TitlePage', () => {
     useLastFrameStore.setState({ watchlist: {}, ratings: {} });
     // jsdom does not implement scrolling; TitleView scrolls to top on mount.
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    // jsdom has no scrollIntoView either; "Where to watch" scrolls its section into view.
+    Element.prototype.scrollIntoView = vi.fn();
   });
 
   afterEach(() => {
@@ -43,7 +50,8 @@ describe('TitlePage', () => {
     expect(within(panel).getByLabelText('Genres')).toHaveTextContent('Science Fiction');
     expect(within(panel).getByText(/courier in a rain-soaked megacity/i)).toBeInTheDocument();
     expect(within(panel).getByText(/PG/)).toBeInTheDocument();
-    expect(within(panel).getByText(/% Match/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Fit \d+/)).toBeInTheDocument();
+    expect(within(panel).queryByText(/match/i)).not.toBeInTheDocument();
   });
 
   it('renders cast, similar row and where-to-watch with JustWatch attribution', async () => {
@@ -53,7 +61,10 @@ describe('TitlePage', () => {
     expect(screen.getByRole('heading', { name: 'Cast' })).toBeInTheDocument();
     expect(screen.getByRole('list', { name: /cast members/i }).children.length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: 'More like this' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'JustWatch' })).toHaveAttribute('href', 'https://www.justwatch.com');
+    expect(screen.getByRole('link', { name: 'JustWatch' })).toHaveAttribute(
+      'href',
+      'https://www.justwatch.com',
+    );
 
     await screen.findByRole('heading', { name: 'Stream' }, T);
     const ca = screen.getByRole('radio', { name: 'Canada' });
@@ -86,7 +97,7 @@ describe('TitlePage', () => {
   it('opens the trailer modal and closes it with Escape', async () => {
     renderAt('/title/movie/1000');
     await screen.findByRole('heading', { level: 1, name: 'Neon Drift' }, T);
-    fireEvent.click(screen.getByRole('button', { name: /play trailer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^trailer$/i }));
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent(/official trailer/i);
     expect(within(dialog).getByTitle('Neon Drift trailer')).toHaveAttribute(
@@ -109,13 +120,43 @@ describe('TitlePage', () => {
     expect(entry).toMatchObject({ key: 'movie:1000', views: 1, title: { title: 'Neon Drift' } });
     expect(entry.trailerPlayedAt).toBeUndefined();
 
-    fireEvent.click(screen.getByRole('button', { name: /play trailer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^trailer$/i }));
     [entry] = selectViews(useLastFrameStore.getState());
     expect(entry.views).toBe(2);
     expect(entry.trailerPlayedAt).toEqual(expect.any(Number));
   });
 
-  it('disables Play trailer when the title has none', async () => {
+  it('"Where to watch" is the primary action: it scrolls to and focuses the section heading', async () => {
+    const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
+    renderAt('/title/movie/1000');
+    await screen.findByRole('heading', { level: 1, name: 'Neon Drift' }, T);
+    const primary = screen.getByRole('button', { name: 'Where to watch' });
+    expect(primary).toHaveClass('primary');
+    expect(screen.getByRole('button', { name: /^trailer$/i })).not.toHaveClass('primary');
+    expect(screen.queryByRole('button', { name: /play/i })).not.toBeInTheDocument();
+
+    fireEvent.click(primary);
+    const section = document.getElementById('where-to-watch')!;
+    expect(section).toBe(
+      screen.getByRole('heading', { name: 'Where to watch' }).closest('section'),
+    );
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    expect(scrollIntoView.mock.instances[0]).toBe(section);
+    expect(screen.getByRole('heading', { name: 'Where to watch' })).toHaveFocus();
+  });
+
+  it('opens on the Where to watch section when the URL hash asks for it', async () => {
+    const scrollIntoView = vi.mocked(Element.prototype.scrollIntoView);
+    const scrollTo = vi.mocked(window.scrollTo);
+    renderAt('/title/movie/1000#where-to-watch');
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Neon Drift' }, T);
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    expect(scrollIntoView.mock.instances[0]).toBe(document.getElementById('where-to-watch'));
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(heading).toHaveFocus();
+  });
+
+  it('disables the trailer button when the title has none', async () => {
     // Mock title id 1028 ("Overcast") has no entry in the MOCK_VIDEOS fixtures.
     renderAt('/title/movie/1028');
     await screen.findByRole('heading', { level: 1, name: 'Overcast' }, T);
@@ -126,7 +167,10 @@ describe('TitlePage', () => {
     'shows the not-found state for %s',
     async (path) => {
       renderAt(path);
-      await waitFor(() => expect(getLive('alert')).toHaveTextContent(/couldn’t find that title/i), T);
+      await waitFor(
+        () => expect(getLive('alert')).toHaveTextContent(/couldn’t find that title/i),
+        T,
+      );
       expect(screen.getByRole('link', { name: /back home/i })).toHaveAttribute('href', '/');
     },
   );
@@ -140,7 +184,8 @@ describe('TitlePage', () => {
       });
       const actions: string[] = [];
       const unsubscribe = router.subscribe((state) => {
-        if (state.navigation.state === 'idle') actions.push(`${state.historyAction} ${state.location.pathname}`);
+        if (state.navigation.state === 'idle')
+          actions.push(`${state.historyAction} ${state.location.pathname}`);
       });
       render(
         <ToastProvider>
@@ -162,7 +207,11 @@ describe('TitlePage', () => {
       fireEvent.click(similar);
 
       expect(actions).toEqual([`PUSH ${href}`]);
-      expect(track).toHaveBeenCalledWith('title-open', { id: Number(id), mediaType: type, source: 'similar' });
+      expect(track).toHaveBeenCalledWith('title-open', {
+        id: Number(id),
+        mediaType: type,
+        source: 'similar',
+      });
 
       const next = await screen.findByRole('heading', { level: 1, name: /.+/ }, T);
       await waitFor(() => expect(next).not.toHaveTextContent('Neon Drift'), T);
@@ -218,12 +267,16 @@ describe('TitlePage data resolution (details())', () => {
 
   it('shows not found for an unknown id', async () => {
     renderAt('/title/movie/987654');
-    expect(await screen.findByRole('heading', { name: /couldn’t find that title/ }, T)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /couldn’t find that title/ }, T),
+    ).toBeInTheDocument();
   });
 
   it('shows not found for a bad type', async () => {
     renderAt('/title/person/1000');
-    expect(await screen.findByRole('heading', { name: /couldn’t find that title/ }, T)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /couldn’t find that title/ }, T),
+    ).toBeInTheDocument();
   });
 });
 
@@ -242,7 +295,11 @@ describe('TitlePage load failure (ErrorCard + withRetry)', () => {
     const details = vi.spyOn(tmdb, 'details').mockRejectedValue(new TypeError('Failed to fetch'));
     renderAt(`/title/movie/${first.id}`);
 
-    const alert = await screen.findByRole('alert', { name: 'Something went wrong' }, { timeout: 4000 });
+    const alert = await screen.findByRole(
+      'alert',
+      { name: 'Something went wrong' },
+      { timeout: 4000 },
+    );
     expect(details).toHaveBeenCalledTimes(3);
     expect(alert).toHaveAccessibleName('Something went wrong');
     expect(screen.queryByText(/couldn’t find that title/)).not.toBeInTheDocument();
@@ -251,7 +308,9 @@ describe('TitlePage load failure (ErrorCard + withRetry)', () => {
     details.mockRestore();
     fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
 
-    expect(await screen.findByRole('heading', { level: 1, name: first.title ?? first.name }, T)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: first.title ?? first.name }, T),
+    ).toBeInTheDocument();
     expect(queryLive('alert')).not.toBeInTheDocument();
   }, 10000);
 });

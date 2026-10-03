@@ -13,7 +13,7 @@ export default function RowSkeleton({ title, count = 8 }: Props) {
       <h2>{title}</h2>
       <div className="track">
         {Array.from({ length: count }, (_, i) => (
-          <Skeleton key={i} variant="card" />
+          <Skeleton key={i} variant="card" width="var(--card-w)" />
         ))}
       </div>
     </section>

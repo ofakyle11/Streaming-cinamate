@@ -142,7 +142,6 @@ textarea {
     background: var(--glass-bg-strong);
   }
   .glass.navbar,
-  .glass.hero-card,
   .modal-backdrop {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
