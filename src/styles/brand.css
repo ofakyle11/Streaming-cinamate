@@ -19,7 +19,6 @@
   transform: scale(1.03);
 }
 
-
 @media (prefers-reduced-motion: reduce) {
   .logo-mark {
     transition: none;

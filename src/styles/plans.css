@@ -132,7 +132,7 @@
   font-variant-numeric: tabular-nums;
   font-size: 2rem;
   font-weight: var(--weight-medium);
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 .plan-period {
   font-size: 0.95rem;
