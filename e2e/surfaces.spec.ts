@@ -150,7 +150,12 @@ test.describe('title page', () => {
             const el = document.getElementById('where-to-watch');
             if (!el) return 'missing';
             const { top } = el.getBoundingClientRect();
-            return top >= 0 && top <= window.innerHeight ? 'in-view' : `top=${Math.round(top)}`;
+            const nav = document.querySelector('.navbar')?.getBoundingClientRect().bottom ?? 0;
+            // Below the fixed navbar (scroll-margin-top) and inside the viewport; a
+            // half-pixel of slack for WebKit's fractional scroll positions.
+            return top >= nav - 0.5 && top <= window.innerHeight
+              ? 'in-view'
+              : `top=${top.toFixed(2)} nav=${nav.toFixed(2)}`;
           }),
         { message: '#where-to-watch is inside the viewport' },
       )

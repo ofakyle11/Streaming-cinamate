@@ -283,6 +283,8 @@
   max-width: 820px;
   padding: 24px;
   border-radius: var(--radius-xl);
+  /* Scroll targets (hero CTA, #where-to-watch links) land below the fixed navbar. */
+  scroll-margin-top: calc(var(--nav-top) + var(--nav-h) + var(--safe-top) + 12px);
 }
 .wtw-head {
   display: flex;
