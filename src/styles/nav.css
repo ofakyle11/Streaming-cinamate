@@ -231,13 +231,40 @@ a.avatar {
     letter-spacing: 0;
     gap: 0;
   }
+  /* Collapsed to a round field with a magnifier drawn by the form; the
+     placeholder returns once it expands on focus. */
+  .nav-right form[role='search'] {
+    position: relative;
+  }
+  .nav-right form[role='search']::before {
+    content: '\2315';
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--color-text-soft);
+    pointer-events: none;
+  }
+  .nav-right form[role='search']:focus-within::before {
+    display: none;
+  }
   .search {
     width: var(--tap);
     min-height: var(--tap);
     padding: 8px 12px;
+    color: transparent;
+  }
+  .search::placeholder {
+    color: transparent;
   }
   .search:focus {
     width: 160px;
+    color: var(--color-text);
+  }
+  .search:focus::placeholder {
+    color: var(--color-muted);
   }
 }
 
