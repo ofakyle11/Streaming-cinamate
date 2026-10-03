@@ -54,8 +54,8 @@ button {
   font-size: 0.9rem;
   color: var(--color-muted);
 }
-.match {
-  color: var(--color-success);
+.fit {
+  color: var(--color-accent-text);
   font-weight: 700;
   font-style: normal;
 }

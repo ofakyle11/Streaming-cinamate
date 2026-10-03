@@ -77,7 +77,7 @@ export default function MovieCard({
         <div className="card-info glass" aria-hidden="true">
           <strong>{movie.title}</strong>
           <span>
-            <em className="match">{movie.match}%</em> · {movie.year}
+            <em className="fit">Fit {movie.match}</em> · {movie.year}
             {movie.genres[0] ? ` · ${movie.genres[0]}` : ''}
           </span>
         </div>

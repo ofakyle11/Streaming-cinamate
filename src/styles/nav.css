@@ -89,7 +89,7 @@ a.logo:hover {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 .search {
   box-sizing: border-box;
@@ -237,17 +237,21 @@ a.avatar {
     position: relative;
   }
   .nav-right form[role='search']::before {
-    content: '\2315';
+    content: '';
     position: absolute;
     inset: 0;
-    display: grid;
-    place-items: center;
-    font-size: 1.25rem;
-    line-height: 1;
-    color: var(--color-text-soft);
+    width: 20px;
+    height: 20px;
+    margin: auto;
+    background: var(--color-text-soft);
+    -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/></svg>")
+      center / contain no-repeat;
+    mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/></svg>")
+      center / contain no-repeat;
     pointer-events: none;
   }
-  .nav-right form[role='search']:focus-within::before {
+  .nav-right form[role='search']:focus-within::before,
+  .nav-right form[role='search']:has(.search:not(:placeholder-shown))::before {
     display: none;
   }
   .search {
@@ -259,7 +263,8 @@ a.avatar {
   .search::placeholder {
     color: transparent;
   }
-  .search:focus {
+  .search:focus,
+  .search:not(:placeholder-shown) {
     width: 160px;
     color: var(--color-text);
   }

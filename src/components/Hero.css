@@ -92,7 +92,7 @@
   max-width: 640px;
   padding: clamp(24px, 5vw, 48px);
   display: grid;
-  gap: 14px;
+  gap: 12px;
   color: var(--color-ink-fg, #f6f5ff);
 }
 .hero-lockup {
@@ -115,7 +115,7 @@
   color: var(--color-ink-fg-soft, #bdb9d8);
 }
 .hero-copy .fit {
-  color: var(--color-sky);
+  color: var(--color-ink-accent, #9b8cff);
   font-weight: 600;
 }
 .hero-copy .badge {
@@ -214,18 +214,24 @@
 }
 .hero-dots {
   display: flex;
-  gap: 8px;
+  gap: 0;
 }
+/* A 10px dot drawn inside a 44px-tall tappable box (background-clip keeps the
+   padding transparent). */
 .hero-dots button {
+  box-sizing: content-box;
   width: 10px;
   height: 10px;
+  padding: 17px 4px;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 35%, transparent);
+  background-clip: content-box;
   transition: background var(--dur-component) var(--ease-enter);
 }
 .hero-dots button.active {
   width: 28px;
   background: var(--color-ink-fg, #f6f5ff);
+  background-clip: content-box;
 }
 .hero-nav .hero-dots button:focus-visible,
 .hero-nav .icon-btn:focus-visible {
@@ -290,9 +296,13 @@
 
 /* ---------- phone: full-bleed screen ---------- */
 @media (max-width: 480px) {
+  /* The screen runs under the floating header pill: true full-bleed. */
+  .hero {
+    padding-top: 0;
+  }
   .hero-screen {
-    height: calc(100vh - var(--nav-top) - var(--nav-h) - var(--safe-top));
-    height: calc(100dvh - var(--nav-top) - var(--nav-h) - var(--safe-top));
+    height: 100vh;
+    height: 100dvh;
     min-height: 560px;
     box-shadow: none;
   }
@@ -318,7 +328,7 @@
     width: 100%;
   }
   .hero-trailer-controls {
-    top: 12px;
+    top: calc(var(--nav-top) + var(--nav-h) + var(--safe-top) + 12px);
     right: 12px;
     bottom: auto;
   }

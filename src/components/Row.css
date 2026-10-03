@@ -42,12 +42,13 @@
 }
 .track {
   display: flex;
-  gap: clamp(10px, 1.5vw, 14px);
+  gap: clamp(8px, 1.5vw, 16px);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
   scroll-padding-inline: 4px;
   padding: 16px 4px;
+  margin-inline: -4px;
   scrollbar-width: none;
 }
 .track::-webkit-scrollbar {

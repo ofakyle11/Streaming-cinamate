@@ -154,7 +154,9 @@ one-shot sweep, on transform and opacity only. Enter with `--ease-enter`, leave 
 touch gets a 100ms press to 0.97. Route changes use React Router's `viewTransition`
 (a 240ms fade out, 400ms fade in) and the clicked poster carries the `lf-artwork`
 view-transition name so it morphs into the title page backdrop. Under
-`prefers-reduced-motion` every surface renders its end frame.
+`prefers-reduced-motion` every surface renders its end frame. Three named exceptions to the
+8px / no-loop rule: the bottom sheet slides in from the bottom edge, loading spinners rotate
+while a lookup is pending, and the poster-to-backdrop morph on route change.
 
 ## Brand
 

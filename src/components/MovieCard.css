@@ -225,3 +225,10 @@
     transition: none;
   }
 }
+
+/* Score label on the card overlay: the Fit number in the accent text colour. */
+.card-info .fit {
+  color: var(--color-accent-text);
+  font-weight: 600;
+  font-style: normal;
+}

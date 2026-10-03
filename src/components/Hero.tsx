@@ -351,7 +351,6 @@ export default function Hero({
             {slideshowControls && (
               <IconButton
                 className="hero-pause"
-                size="sm"
                 label={userPaused ? 'Play slideshow' : 'Pause slideshow'}
                 aria-pressed={userPaused}
                 onClick={() => {

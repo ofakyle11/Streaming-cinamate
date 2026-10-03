@@ -470,7 +470,10 @@
     display: none;
   }
   .profile-trigger {
-    padding: 2px;
+    padding: 7px;
+    min-width: var(--tap);
+    min-height: var(--tap);
+    justify-content: center;
   }
 }
 @media (max-width: 480px) {

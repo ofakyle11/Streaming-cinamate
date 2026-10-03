@@ -21,7 +21,7 @@ export function trailerEmbedUrl(video: TmdbVideo, autoplay = true): string | nul
   if (video.site === 'YouTube') {
     return `https://www.youtube-nocookie.com/embed/${key}?autoplay=${ap}&rel=0&modestbranding=1`;
   }
-  if (video.site === 'Vimeo') return `https://player.vimeo.com/video/${key}?autoplay=${ap}`;
+  if (video.site === 'Vimeo') return `https://player.vimeo.com/video/${key}?autoplay=${ap}&dnt=1`;
   return null;
 }
 

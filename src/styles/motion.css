@@ -3,6 +3,10 @@
    Transform and opacity only; enter with --ease-enter, leave with --ease-exit;
    only --ease-toggle overshoots. Durations: --dur-feedback 100, --dur-micro 160,
    --dur-component 240, --dur-layout 400, --dur-page 600, --dur-sweep 900.
+   Named exceptions to the 8px / no-loop rule: the bottom sheet slides in from
+   the bottom edge (that is what a sheet is), loading spinners rotate while a
+   lookup is pending, and the poster you tap morphs into the title page
+   artwork through the lf-artwork view transition (the plan's route rule).
    Everything here is switched off under prefers-reduced-motion (theme.css
    zeroes every animation and transition; the rules at the end restore the
    end frames). */

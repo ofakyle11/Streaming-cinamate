@@ -21,8 +21,14 @@ function viewport() {
  * in-flight transforms, so wait for every animation on the element and its subtree first.
  */
 async function box(locator: Locator) {
+  // The brand mark's halo breathes forever, so only finite animations are awaited.
   await locator.evaluate((el) =>
-    Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => undefined))),
+    Promise.all(
+      el
+        .getAnimations({ subtree: true })
+        .filter((a) => a.effect?.getTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
   );
   const b = await locator.boundingBox();
   expect(b, `bounding box of ${locator}`).not.toBeNull();

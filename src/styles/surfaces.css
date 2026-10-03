@@ -9,12 +9,15 @@
 
 :root {
   /* layout */
-  --gutter: clamp(24px, 4vw, 64px);
-  --container: 1280px;
   --nav-h: 64px;
   --nav-top: 12px;
-  --nav-inset: 16px;
   --hero-inset: 24px;
+  /* The header pill, the hero screen and the row gutters share one left edge:
+     pill and screen at --hero-inset, copy and rows at --hero-inset plus the
+     hero copy's own padding. */
+  --nav-inset: var(--hero-inset);
+  --gutter: calc(var(--hero-inset) + clamp(24px, 5vw, 48px));
+  --container: 1280px;
   --hero-radius: var(--radius-xl);
   --card-w: 176px;
   /* safe areas (viewport-fit=cover) */
@@ -31,7 +34,6 @@
 }
 @media (max-width: 1024px) {
   :root {
-    --gutter: 24px;
     --card-w: 150px;
   }
 }
@@ -58,6 +60,7 @@ body {
 input,
 select,
 textarea {
+  font: inherit;
   font-size: max(16px, 1em);
 }
 
@@ -142,7 +145,10 @@ textarea {
     background: var(--glass-bg-strong);
   }
   .glass.navbar,
-  .modal-backdrop {
+  .modal-backdrop,
+  .card-list-btn,
+  .history-remove,
+  .card-rate {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
