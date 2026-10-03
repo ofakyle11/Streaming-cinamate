@@ -163,9 +163,10 @@ one-shot sweep, on transform and opacity only. Enter with `--ease-enter`, leave 
 `--i` (0 to 4, 50ms apart). Hover effects live under `(hover: hover) and (pointer: fine)`;
 touch gets a 100ms press to 0.97. Route changes use React Router's `viewTransition`
 (a 240ms fade out, 400ms fade in) and the clicked poster carries the `lf-artwork`
-view-transition name so it morphs into the title page backdrop. Entrance animations whose end frame is the base
-state fill `backwards`, never `forwards` or `both`: a filled end frame would outrank inline
-transforms (the sheet drag) and hover rules for the life of the element. Under
+view-transition name so it morphs into the title page backdrop. An entrance animation on a surface that
+also gets inline, hover or press transforms (cards, dialogs) fills `backwards`, never
+`forwards` or `both`: a filled end frame would outrank those transforms for the life of the
+element. Pure entrances with nothing to compete with (`.lf-rise`, `.lf-fade`) may fill `both`. Under
 `prefers-reduced-motion` every surface renders its end frame. Three named exceptions to the
 8px / no-loop rule: the bottom sheet slides in from the bottom edge, loading spinners rotate
 while a lookup is pending, and the poster-to-backdrop morph on route change.

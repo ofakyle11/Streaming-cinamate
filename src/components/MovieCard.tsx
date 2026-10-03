@@ -1,4 +1,4 @@
-import { useContext, type ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
 import { Link, UNSAFE_DataRouterStateContext, useViewTransitionState } from 'react-router-dom';
 import { prefetchTitleRoute } from '../app/prefetch';
 import type { Movie } from '../services';
@@ -60,8 +60,16 @@ export default function MovieCard({
 }: Props) {
   const to = titlePath(movie);
   // Only the clicked card carries the view-transition name: two elements with
-  // the same name would cancel the poster-to-artwork morph.
-  const isTransitioning = useArtworkTransition(to) && artworkTransition;
+  // the same name abort the whole route transition, and a title can sit in
+  // several rows. `useViewTransitionState` is path-based (true for every card
+  // of that title), so it is combined with a per-card "this one was clicked"
+  // flag set in the same event as the navigation.
+  const [clicked, setClicked] = useState(false);
+  const transitioning = useArtworkTransition(to) && artworkTransition;
+  const isTransitioning = transitioning && clicked;
+  // Reset once the transition is over (adjusting state during render, per React's
+  // guidance, so a cancelled navigation does not leave the flag set).
+  if (!transitioning && clicked) setClicked(false);
   return (
     <div className="card" style={{ transitionDelay: `${delay}ms`, animationDelay: `${delay}ms` }}>
       <Link
@@ -69,7 +77,10 @@ export default function MovieCard({
         viewTransition
         className="card-link"
         aria-label={`${movie.title} (${movie.year})`}
-        onClick={onSelect ? () => onSelect(movie) : undefined}
+        onClick={() => {
+          setClicked(true);
+          onSelect?.(movie);
+        }}
         onPointerEnter={prefetchTitleRoute}
         {...rovingProps}
       >

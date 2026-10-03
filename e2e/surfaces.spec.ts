@@ -60,6 +60,46 @@ async function openTitle(page: Page, name = TITLE) {
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
 }
 
+/**
+ * Records the outcome of every `document.startViewTransition` from now on
+ * (`ready` or `rejected: <reason>`), or skips the test where the browser has none.
+ */
+async function trackViewTransitions(page: Page) {
+  const supported = await page.evaluate(() => 'startViewTransition' in document);
+  test.skip(!supported, 'this browser has no view transitions');
+  await page.evaluate(() => {
+    const w = window as unknown as { __vt: string[] };
+    w.__vt = [];
+    const doc = document as Document & {
+      startViewTransition: (cb: () => void | Promise<void>) => ViewTransition;
+    };
+    const orig = doc.startViewTransition.bind(doc);
+    doc.startViewTransition = (cb) => {
+      const t = orig(cb);
+      t.ready.then(
+        () => w.__vt.push('ready'),
+        (e: unknown) => w.__vt.push(`rejected: ${(e as Error).message}`),
+      );
+      return t;
+    };
+  });
+}
+
+/**
+ * At least one transition ran and none was rejected: a duplicate
+ * view-transition-name aborts a transition with "invalid state".
+ */
+async function expectViewTransitionsReady(page: Page) {
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __vt: string[] }).__vt.length))
+    .toBeGreaterThan(0);
+  const outcomes = await page.evaluate(() => (window as unknown as { __vt: string[] }).__vt);
+  expect(
+    outcomes.every((o) => o === 'ready'),
+    outcomes.join(', '),
+  ).toBe(true);
+}
+
 test.describe('home', () => {
   test('nav, hero, rows and menu fit the viewport', async ({ page }) => {
     const { width } = viewport();
@@ -231,40 +271,39 @@ test.describe('title page', () => {
 
   test('opening a similar title keeps the route view transition', async ({ page }) => {
     await openTitle(page);
-    const supported = await page.evaluate(() => 'startViewTransition' in document);
-    test.skip(!supported, 'this browser has no view transitions');
-    await page.evaluate(() => {
-      const w = window as unknown as { __vt: string[] };
-      w.__vt = [];
-      const doc = document as Document & {
-        startViewTransition: (cb: () => void | Promise<void>) => ViewTransition;
-      };
-      const orig = doc.startViewTransition.bind(doc);
-      doc.startViewTransition = (cb) => {
-        const t = orig(cb);
-        t.ready.then(
-          () => w.__vt.push('ready'),
-          (e: unknown) => w.__vt.push(`rejected: ${(e as Error).message}`),
-        );
-        return t;
-      };
-    });
+    await trackViewTransitions(page);
     const similar = page.locator('.title-similar .card-link').first();
     await similar.scrollIntoViewIfNeeded();
     const name = (await similar.getAttribute('aria-label'))!.replace(/ \(\d{4}\)$/, '');
     await similar.click();
     await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
-    // The click navigation starts one transition; the title page may start another
-    // (its own navigation once data lands). None may be rejected: a duplicate
-    // view-transition-name aborts a transition with "invalid state".
-    await expect
-      .poll(() => page.evaluate(() => (window as unknown as { __vt: string[] }).__vt.length))
-      .toBeGreaterThan(0);
-    const outcomes = await page.evaluate(() => (window as unknown as { __vt: string[] }).__vt);
-    expect(
-      outcomes.every((o) => o === 'ready'),
-      outcomes.join(', '),
-    ).toBe(true);
+    await expectViewTransitionsReady(page);
+  });
+
+  test('opening a title that sits in two home rows keeps the route view transition', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Where to watch' }).first().waitFor();
+    await page.waitForLoadState('networkidle');
+    // A title in several rows renders several cards for the same path; only the
+    // clicked one may carry the artwork view-transition name.
+    const href = await page.evaluate(() => {
+      const counts = new Map<string, number>();
+      for (const a of document.querySelectorAll<HTMLAnchorElement>('.row .card-link')) {
+        const h = a.getAttribute('href')!;
+        counts.set(h, (counts.get(h) ?? 0) + 1);
+      }
+      return [...counts].find(([, n]) => n > 1)?.[0] ?? null;
+    });
+    test.skip(href === null, 'no title appears in two rows with this data');
+    await trackViewTransitions(page);
+    const card = page.locator(`.row .card-link[href="${href}"]`).first();
+    await card.scrollIntoViewIfNeeded();
+    const name = (await card.getAttribute('aria-label'))!.replace(/ \(\d{4}\)$/, '');
+    await card.click();
+    await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
+    await expectViewTransitionsReady(page);
   });
 });
 

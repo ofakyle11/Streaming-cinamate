@@ -289,5 +289,6 @@ button {
   .card {
     opacity: 1 !important;
     transform: none !important;
+    translate: none !important;
   }
 }

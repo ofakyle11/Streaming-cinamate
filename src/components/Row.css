@@ -156,6 +156,7 @@
   .row .card {
     opacity: 1;
     transform: none;
+    translate: none;
     transition: none;
     animation: none;
   }
