@@ -1,4 +1,4 @@
-# Last Frame agent stack
+# Lastframe.tv agent stack
 
 **Tim** (manager): owns `scripts/tasks.json`, dispatches tasks whose `deps` are merged, keeps 40 workers busy, re-plans after each wave.
 

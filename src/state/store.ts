@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { isViewEntry, removeView, restoreView, upsertView, type ViewEntry, type ViewSource, type ViewedTitle } from '../lib/viewHistory';
 import type { MediaType } from '../services/types';
 
-/** Persisted slices for Last Frame. Keyed per profile so switching profiles swaps state. */
+/** Persisted slices for Lastframe.tv. Keyed per profile so switching profiles swaps state. */
 
 export type ProfileId = string;
 export type TitleId = number;

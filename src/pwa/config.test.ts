@@ -19,9 +19,12 @@ const ctx = (destination: string, pathname: string, origin = 'self') => {
 };
 
 describe('pwa manifest', () => {
-  it('names the app Last Frame with the brand theme colour', () => {
-    expect(pwaManifest.name).toBe('Last Frame');
-    expect(pwaManifest.short_name).toBe('Last Frame');
+  it('names the app Lastframe.tv with the brand theme colour', () => {
+    expect(pwaManifest.name).toBe('Lastframe.tv');
+    expect(pwaManifest.short_name).toBe('Lastframe.tv');
+    expect(pwaManifest.description).toBe(
+      'Discover films and series, see where to watch them and keep your watchlist in one place.',
+    );
     expect(pwaManifest.theme_color).toBe('#141126');
     expect(pwaManifest.background_color).toBe('#141126');
     expect(pwaManifest.display).toBe('standalone');

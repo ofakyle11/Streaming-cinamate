@@ -1,4 +1,4 @@
-# Last Frame — Architecture
+# Lastframe.tv — Architecture
 
 _Originally written for Wave 0; refreshed after the Quality & Polish stream (brand, errors,
 SEO, a11y)._
@@ -98,7 +98,7 @@ The production CSP in `netlify.toml` allows `https://*.supabase.co` and `wss://*
 
 ## PWA
 
-`vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Last Frame" (theme `#0b0b12`), icons generated at build
+`vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Lastframe.tv" (theme `#0b0b12`), icons generated at build
 from `public/logo.svg` via `pwa-assets.config.ts`, generateSW service worker precaching the app shell and caching
 images cache-first (`lf-images`, 250 entries / 30 days). `main.tsx` captures `beforeinstallprompt`; the Account
 page's `InstallAppCard` offers "Install app" (manual Add to Home Screen hint on iOS). The SW is build-only.
@@ -120,6 +120,19 @@ Under the Lumen brand the tokens are split in two: `tokens.css` holds the shared
 the light theme values, and `themes.css` redefines the colour tokens for dark (device
 preference, or an explicit `data-theme` on `<html>`). Phase 1 ships with
 `data-theme="dark"` as the default; phase 2 adds the theme switch.
+
+### Type
+
+Three self-hosted faces, all SIL Open Font License 1.1 (licences in `public/fonts/OFL-*.txt`):
+Gabarito (display and the wordmark), Figtree (body) and DM Mono (figures and code). The woff2
+subsets (latin, latin-ext) live in `public/fonts/` and are declared in `src/styles/fonts.css`
+with `font-display: swap` and a metric-matched local fallback face per family, so the swap
+barely shifts layout. `index.html` preloads the two latin files used above the fold; the
+service worker precaches all of them, so the installed app has its type offline. The CSP
+allows fonts from `'self'` only. Components use the type tokens in `tokens.css`
+(`--font-display`, `--font-body`, `--font-mono`, the `--text-*` fluid scale, weights and
+tracking); `theme.css` applies them to `body`, headings, code and form controls and styles the
+`.logo` wordmark ("Lastframe" in Gabarito 700 with `.logo-tv` in the accent).
 
 ## Brand
 
@@ -157,7 +170,7 @@ fast. A non-ok final response throws `HttpError` with its `status`. Live adapter
 ## SEO: `useMeta`
 
 `useMeta({ title?, description?, image?, type?, noindex? })` (`hooks/useMeta.ts`) is called once at the
-top of each page. It sets `document.title` to `"<title> · Last Frame"` and upserts
+top of each page. It sets `document.title` to `"<title> · Lastframe.tv"` and upserts
 `description`, OpenGraph and Twitter meta tags through DOM APIs (no `innerHTML`). On unmount
 or input change it restores the previous values. `data:` images, such as mock posters, fall
 back to the brand icon because crawlers can't use them. `index.html` carries the default tags

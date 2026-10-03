@@ -16,7 +16,7 @@ function canonicalLinks(): HTMLLinkElement[] {
 
 describe('useMeta', () => {
   beforeEach(() => {
-    document.title = 'Last Frame';
+    document.title = 'Lastframe.tv';
     const desc = document.createElement('meta');
     desc.setAttribute('name', 'description');
     desc.setAttribute('content', 'Original description');
@@ -30,18 +30,18 @@ describe('useMeta', () => {
   });
 
   it('formats titles with the site name', () => {
-    expect(formatTitle('Search')).toBe('Search · Last Frame');
-    expect(formatTitle('  ')).toBe('Last Frame');
-    expect(formatTitle()).toBe('Last Frame');
+    expect(formatTitle('Search')).toBe('Search · Lastframe.tv');
+    expect(formatTitle('  ')).toBe('Lastframe.tv');
+    expect(formatTitle()).toBe('Lastframe.tv');
   });
 
   it('sets title, description, OpenGraph and Twitter tags', () => {
     renderHook(() =>
       useMeta({ title: 'Search', description: 'Find things', image: '/poster.jpg' }),
     );
-    expect(document.title).toBe('Search · Last Frame');
+    expect(document.title).toBe('Search · Lastframe.tv');
     expect(meta('name', 'description')?.getAttribute('content')).toBe('Find things');
-    expect(meta('property', 'og:title')?.getAttribute('content')).toBe('Search · Last Frame');
+    expect(meta('property', 'og:title')?.getAttribute('content')).toBe('Search · Lastframe.tv');
     expect(meta('property', 'og:description')?.getAttribute('content')).toBe('Find things');
     expect(meta('property', 'og:type')?.getAttribute('content')).toBe('website');
     expect(meta('property', 'og:image')?.getAttribute('content')).toBe(
@@ -49,7 +49,7 @@ describe('useMeta', () => {
     );
     expect(meta('property', 'og:url')?.getAttribute('content')).toMatch(/^http/);
     expect(meta('name', 'twitter:card')?.getAttribute('content')).toBe('summary');
-    expect(meta('name', 'twitter:title')?.getAttribute('content')).toBe('Search · Last Frame');
+    expect(meta('name', 'twitter:title')?.getAttribute('content')).toBe('Search · Lastframe.tv');
     // Only one description tag: the existing one is updated, not duplicated.
     expect(
       Array.from(document.head.getElementsByTagName('meta')).filter(
@@ -60,7 +60,7 @@ describe('useMeta', () => {
 
   it('falls back to defaults and ignores data: images', () => {
     renderHook(() => useMeta({ image: 'data:image/svg+xml,<svg/>' }));
-    expect(document.title).toBe('Last Frame');
+    expect(document.title).toBe('Lastframe.tv');
     expect(meta('name', 'description')?.getAttribute('content')).toBe(DEFAULT_DESCRIPTION);
     expect(meta('property', 'og:image')?.getAttribute('content')).toBe(
       `${window.location.origin}/apple-touch-icon.png`,
@@ -69,9 +69,9 @@ describe('useMeta', () => {
 
   it('restores previous values on unmount and removes tags it created', () => {
     const { unmount } = renderHook(() => useMeta({ title: 'Plans', description: 'Pick one' }));
-    expect(document.title).toBe('Plans · Last Frame');
+    expect(document.title).toBe('Plans · Lastframe.tv');
     unmount();
-    expect(document.title).toBe('Last Frame');
+    expect(document.title).toBe('Lastframe.tv');
     expect(meta('name', 'description')?.getAttribute('content')).toBe('Original description');
     expect(meta('property', 'og:title')).toBeUndefined();
     expect(meta('name', 'twitter:title')).toBeUndefined();
@@ -81,12 +81,12 @@ describe('useMeta', () => {
     const { rerender, unmount } = renderHook(({ title }) => useMeta({ title }), {
       initialProps: { title: 'Loading…' },
     });
-    expect(document.title).toBe('Loading… · Last Frame');
+    expect(document.title).toBe('Loading… · Lastframe.tv');
     rerender({ title: 'Dune' });
-    expect(document.title).toBe('Dune · Last Frame');
-    expect(meta('property', 'og:title')?.getAttribute('content')).toBe('Dune · Last Frame');
+    expect(document.title).toBe('Dune · Lastframe.tv');
+    expect(meta('property', 'og:title')?.getAttribute('content')).toBe('Dune · Lastframe.tv');
     unmount();
-    expect(document.title).toBe('Last Frame');
+    expect(document.title).toBe('Lastframe.tv');
   });
 
   it('sets a canonical link per route with query and hash stripped', () => {

@@ -17,9 +17,10 @@ export const IMAGE_CACHE_MAX_ENTRIES = 250;
 export const IMAGE_CACHE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 export const pwaManifest: Partial<ManifestOptions> = {
-  name: 'Last Frame',
-  short_name: 'Last Frame',
-  description: 'Stream films and series with Last Frame.',
+  name: 'Lastframe.tv',
+  short_name: 'Lastframe.tv',
+  description:
+    'Discover films and series, see where to watch them and keep your watchlist in one place.',
   id: '/',
   start_url: '/',
   scope: '/',
@@ -66,7 +67,7 @@ export function isImageRequest({ request, url, sameOrigin }: ImageMatchContext):
 type WorkboxOptions = NonNullable<VitePWAOptions['workbox']>;
 
 export const pwaWorkbox: WorkboxOptions = {
-  globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+  globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2}'],
   cleanupOutdatedCaches: true,
   clientsClaim: true,
   skipWaiting: true,

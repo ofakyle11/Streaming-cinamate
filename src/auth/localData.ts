@@ -2,13 +2,13 @@ import { STORAGE_KEY, useLastFrameStore } from '../state/store';
 import { freshGuestState } from '../services/db/sync';
 import { clearSyncOwner } from '../services/db/syncEngine';
 
-/** localStorage keys owned by Last Frame: the zustand store and every `lf.*` key. */
+/** localStorage keys owned by Lastframe.tv: the zustand store and every `lf.*` key. */
 export function isLastFrameKey(key: string): boolean {
   return key === STORAGE_KEY || key.startsWith(`${STORAGE_KEY}.`) || key.startsWith('lf.');
 }
 
 /**
- * Wipe everything Last Frame keeps on this device (profiles, list, history,
+ * Wipe everything Lastframe.tv keeps on this device (profiles, list, history,
  * ratings, mock session/db) and reset the in-memory store to a fresh guest.
  * Returns the number of storage keys removed.
  */

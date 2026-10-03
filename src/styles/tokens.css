@@ -121,6 +121,28 @@
   --avatar-nebula: linear-gradient(135deg, #141126, #5b47e0);
   --avatar-rose: linear-gradient(135deg, #ff8fa3, #f9c784);
 
+  /* ---------- type (phase 3; the faces are declared in fonts.css) ---------- */
+  --font-display: 'Gabarito', 'Gabarito Fallback', system-ui, -apple-system, sans-serif;
+  --font-body: 'Figtree', 'Figtree Fallback', system-ui, -apple-system, sans-serif;
+  --font-mono: 'DM Mono', 'DM Mono Fallback', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --weight-body: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-display: 700;
+  --tracking-display: -0.02em;
+  --tracking-label: 0.08em; /* uppercase mono labels only */
+  --leading-display: 1.1;
+  --leading-body: 1.55;
+  /* fluid scale: phones get the first value, desktops the last */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem); /* 16 to 18px */
+  --text-lg: 1.125rem;
+  --text-h3: clamp(1.1rem, 1rem + 0.5vw, 1.35rem);
+  --text-h2: clamp(1.25rem, 1rem + 1.2vw, 1.75rem);
+  --text-h1: clamp(1.6rem, 1.2rem + 2vw, 2.4rem);
+  --text-hero: clamp(2rem, 1.2rem + 4vw, 4rem);
+
   /* ---------- legacy aliases (do not remove) ---------- */
   --bg: var(--color-bg);
   --text: var(--color-text);

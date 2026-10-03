@@ -20,7 +20,7 @@ export interface LogoMarkProps {
  */
 export default function LogoMark({
   size = 32,
-  title = 'Last Frame',
+  title = 'Lastframe.tv',
   decorative = false,
   className,
 }: LogoMarkProps) {

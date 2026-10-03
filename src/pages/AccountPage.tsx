@@ -28,7 +28,7 @@ function memberSince(iso: string): string | null {
 }
 
 export default function AccountPage() {
-  useMeta({ title: 'Account', description: 'Manage your Last Frame account settings.' });
+  useMeta({ title: 'Account', description: 'Manage your Lastframe.tv account settings.' });
   const { status, user, mode, signInWithMagicLink, signInWithOAuth, signOut, deleteData } = useAuth();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState<null | 'magic' | 'google' | 'signout' | 'delete'>(null);

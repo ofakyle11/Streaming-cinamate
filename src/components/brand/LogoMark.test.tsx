@@ -4,16 +4,16 @@ import LogoMark from './LogoMark';
 
 describe('LogoMark', () => {
   it('renders as an img with an accessible title', () => {
-    render(<LogoMark title="Last Frame logo" />);
-    const img = screen.getByRole('img', { name: 'Last Frame logo' });
+    render(<LogoMark title="Lastframe.tv logo" />);
+    const img = screen.getByRole('img', { name: 'Lastframe.tv logo' });
     expect(img.tagName.toLowerCase()).toBe('svg');
     expect(img).not.toHaveAttribute('aria-hidden');
-    expect(img.querySelector('title')).toHaveTextContent('Last Frame logo');
+    expect(img.querySelector('title')).toHaveTextContent('Lastframe.tv logo');
   });
 
-  it('defaults the accessible name to "Last Frame" and applies size', () => {
+  it('defaults the accessible name to "Lastframe.tv" and applies size', () => {
     render(<LogoMark size={48} />);
-    const img = screen.getByRole('img', { name: 'Last Frame' });
+    const img = screen.getByRole('img', { name: 'Lastframe.tv' });
     expect(img).toHaveAttribute('width', '48');
     expect(img).toHaveAttribute('height', '48');
   });

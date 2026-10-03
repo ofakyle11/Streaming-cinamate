@@ -40,7 +40,7 @@ export default function AppLayout() {
       </div>
       <OfflineBanner />
       <RouteAnnouncer />
-      <footer className="footer">Last Frame · lastframe.tv</footer>
+      <footer className="footer">Lastframe.tv</footer>
     </>
   );
 }
