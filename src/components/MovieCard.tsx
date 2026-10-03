@@ -67,9 +67,14 @@ export default function MovieCard({
   const [clicked, setClicked] = useState(false);
   const transitioning = useArtworkTransition(to) && artworkTransition;
   const isTransitioning = transitioning && clicked;
-  // Reset once the transition is over (adjusting state during render, per React's
-  // guidance, so a cancelled navigation does not leave the flag set).
-  if (!transitioning && clicked) setClicked(false);
+  // Reset on the transition's end (true -> false edge only, so a render between the
+  // click and the router's transition state, e.g. once routes gain loaders, does not
+  // clear the flag early). Adjusting state during render follows React's guidance.
+  const [wasTransitioning, setWasTransitioning] = useState(transitioning);
+  if (wasTransitioning !== transitioning) {
+    setWasTransitioning(transitioning);
+    if (wasTransitioning && !transitioning) setClicked(false);
+  }
   return (
     <div className="card" style={{ transitionDelay: `${delay}ms`, animationDelay: `${delay}ms` }}>
       <Link
