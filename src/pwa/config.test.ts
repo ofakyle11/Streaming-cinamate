@@ -22,8 +22,8 @@ describe('pwa manifest', () => {
   it('names the app Last Frame with the brand theme colour', () => {
     expect(pwaManifest.name).toBe('Last Frame');
     expect(pwaManifest.short_name).toBe('Last Frame');
-    expect(pwaManifest.theme_color).toBe('#141126');
-    expect(pwaManifest.background_color).toBe('#141126');
+    expect(pwaManifest.theme_color).toBe('#f6f5ff');
+    expect(pwaManifest.background_color).toBe('#f6f5ff');
     expect(pwaManifest.display).toBe('standalone');
     expect(pwaManifest.start_url).toBe('/');
   });
@@ -31,6 +31,10 @@ describe('pwa manifest', () => {
   it('generates icons from the SVG logo mark', () => {
     expect(PWA_LOGO_SOURCE).toBe('public/logo.svg');
     expect(pwaOptions.pwaAssets).toMatchObject({ config: true, overrideManifestIcons: true });
+  });
+
+  it('leaves the theme-color metas to index.html and theme-init.js', () => {
+    expect(pwaOptions.pwaAssets).toMatchObject({ injectThemeColor: false });
   });
 });
 

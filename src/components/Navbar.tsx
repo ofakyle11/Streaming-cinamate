@@ -3,6 +3,7 @@ import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import ProfileMenu from '../features/profiles/ProfileMenu';
 import LogoMark from './brand/LogoMark';
 import IconButton from './ui/IconButton';
+import ThemeToggle from './ui/ThemeToggle';
 import '../styles/nav.css';
 
 const links = [
@@ -110,6 +111,10 @@ export default function Navbar() {
         </span>
       </IconButton>
       <ul id={MENU_ID} ref={listRef} className={`nav-links${menuOpen ? ' is-open' : ''}`}>
+        {/* Mobile and tablet: the theme control is the first row of the menu sheet. */}
+        <li className="nav-theme nav-theme-menu">
+          <ThemeToggle />
+        </li>
         {links.map((l) => (
           <li key={l.to}>
             <NavLink
@@ -128,7 +133,10 @@ export default function Navbar() {
         ))}
       </ul>
       <div className="nav-right">
-        {/* phase 2: ThemeToggle goes here (desktop: left of search; phone/tablet: first row of the menu sheet) */}
+        {/* Desktop: left of search. Hidden at <=1024px where the menu sheet has it. */}
+        <div className="nav-theme nav-theme-desktop">
+          <ThemeToggle />
+        </div>
         <form role="search" onSubmit={submitSearch}>
           <input
             className="search glass"

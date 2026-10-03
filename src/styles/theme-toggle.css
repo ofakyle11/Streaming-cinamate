@@ -1,0 +1,80 @@
+/* ThemeToggle: a segmented radio group (System / Light / Dark) on glass.
+   Tokens only; the checked pill slides by changing which option carries the
+   surface, so nothing animates layout. Reduced motion is handled globally in
+   theme.css (all transitions off). */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+}
+.theme-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  border: 1px solid var(--glass-border);
+}
+.theme-toggle-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-soft);
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background var(--dur-component) var(--ease-enter),
+    color var(--dur-component) var(--ease-enter),
+    box-shadow var(--dur-component) var(--ease-enter);
+}
+.theme-toggle-option:hover {
+  color: var(--color-text);
+}
+.theme-toggle-option.is-checked {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-1);
+}
+.theme-toggle-option:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.theme-toggle-icon {
+  font-size: 0.95em;
+}
+
+/* Header slot (desktop): icon only, labels stay as the accessible name. */
+.navbar .nav-theme-desktop .theme-toggle-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.navbar .nav-theme-desktop .theme-toggle-option {
+  padding: 0 9px;
+}
+
+/* View transition for the theme switch: the new theme grows as a circle from
+   the control (ThemeToggle animates ::view-transition-new(root) with the Web
+   Animations API). The old snapshot stays put and the default cross-fade is off. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}

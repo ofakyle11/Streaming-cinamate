@@ -6,8 +6,9 @@
  */
 import type { ManifestOptions, VitePWAOptions } from 'vite-plugin-pwa';
 
-/** Ink; the dark theme is the default in phase 1 (phase 2 adds the switch). */
-export const PWA_THEME_COLOR = '#141126';
+/** Cloud: the light theme is the default, so the install splash and manifest chrome are light.
+ *  The in-page theme-color metas (index.html, public/theme-init.js) follow the live theme. */
+export const PWA_THEME_COLOR = '#f6f5ff';
 
 /** Source SVG for the generated icon set (relative to the project root). */
 export const PWA_LOGO_SOURCE = 'public/logo.svg';
@@ -98,7 +99,8 @@ export const pwaOptions: Partial<VitePWAOptions> = {
   pwaAssets: {
     config: true,
     overrideManifestIcons: true,
-    injectThemeColor: true,
+    // Off: index.html carries two theme-color metas (light and dark) that theme-init.js keeps in step.
+    injectThemeColor: false,
     includeHtmlHeadLinks: true,
   },
   workbox: pwaWorkbox,

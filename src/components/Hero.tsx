@@ -280,9 +280,9 @@ export default function Hero({
             onFocus={() => setFocusWithin(true)}
             onBlur={handleBlur}
           >
-            {/* Phase 4 drops its animated LogoMark into this slot (data-logo-slot="hero"). */}
+            {/* The animated Lumen mark (phase 4): lens, one sweep and a breathing halo on the Ink screen. */}
             <div className="hero-lockup lf-rise" data-logo-slot="hero" style={rise(0)}>
-              <LogoMark size={56} decorative />
+              <LogoMark variant="hero" size={64} decorative />
             </div>
             <h1 className="lf-rise" style={rise(1)}>
               {movie.title}
