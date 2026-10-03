@@ -52,6 +52,7 @@
   --color-surface-3: #e2dff7;
   --color-surface-solid: #ffffff;
   --color-tint: #eceafb; /* selected and sunken */
+  --color-control-selected: #ffffff; /* the raised, checked segment of a control */
   --color-scrim: rgba(20, 17, 38, 0.45);
   --color-scrim-strong: rgba(20, 17, 38, 0.8); /* behind text over bright imagery */
   /* Text colour to use on top of --color-text (e.g. an Ink button on light). */

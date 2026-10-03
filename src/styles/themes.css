@@ -26,6 +26,7 @@
     --color-surface-3: #2c2650;
     --color-surface-solid: #1c1833;
     --color-tint: rgba(155, 140, 255, 0.14);
+    --color-control-selected: #332d58;
     --color-scrim: rgba(0, 0, 0, 0.5);
     --color-scrim-strong: rgba(0, 0, 0, 0.8);
     --glass-bg: rgba(255, 255, 255, 0.06);
@@ -71,6 +72,7 @@
   --color-surface-3: #2c2650;
   --color-surface-solid: #1c1833;
   --color-tint: rgba(155, 140, 255, 0.14);
+  --color-control-selected: #332d58;
   --color-scrim: rgba(0, 0, 0, 0.5);
   --color-scrim-strong: rgba(0, 0, 0, 0.8);
   --glass-bg: rgba(255, 255, 255, 0.06);
