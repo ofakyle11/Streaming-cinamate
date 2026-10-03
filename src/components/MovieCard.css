@@ -1,3 +1,64 @@
+/* ---------- card ---------- */
+.card {
+  position: relative;
+  flex: 0 0 auto;
+  width: 170px;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  scroll-snap-align: start;
+  background: var(--color-surface-2);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--dur-page) var(--ease-enter),
+    transform var(--dur-layout) var(--ease-enter),
+    box-shadow var(--dur-layout) var(--ease-enter);
+}
+.row.in .card {
+  opacity: 1;
+  transform: none;
+}
+.row.in .card:hover {
+  transform: scale(1.03);
+  z-index: 3;
+  transition-delay: 0ms !important;
+  box-shadow: var(--shadow-card-hover);
+}
+.card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.card-info {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  font-size: 0.75rem;
+  transform: translateY(120%);
+  transition: transform var(--dur-layout) var(--ease-enter);
+}
+.card-info span {
+  color: var(--color-muted);
+}
+.card:hover .card-info {
+  transform: none;
+}
+
+@media (max-width: 760px) {
+  .card {
+    width: 120px;
+  }
+}
+
 /* Poster cards: a .card wrapper holding the router link (/title/:type/:id) plus
    sibling overlays -- the My List toggle (top-left) and the rating overlay
    (top-right, see ratings/ratings.css). Buttons cannot live inside a link. */

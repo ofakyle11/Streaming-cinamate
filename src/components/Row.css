@@ -1,3 +1,68 @@
+/* ---------- rows ---------- */
+.rows {
+  position: relative;
+  margin-top: -10vh;
+  z-index: 2;
+  padding-bottom: 40px;
+}
+.row {
+  padding: 0 5vw;
+  margin-bottom: 36px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--dur-layout) var(--ease-enter),
+    transform var(--dur-layout) var(--ease-enter);
+}
+.row.in {
+  opacity: 1;
+  transform: none;
+}
+.row h2 {
+  font-size: 1.25rem;
+  margin-bottom: 12px;
+}
+.row-wrap {
+  position: relative;
+}
+.track {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 24px 4px;
+  scrollbar-width: none;
+}
+.track::-webkit-scrollbar {
+  display: none;
+}
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  opacity: 0;
+  transition:
+    opacity var(--dur-component) var(--ease-enter),
+    transform var(--dur-component) var(--ease-enter);
+}
+.row-wrap:hover .arrow {
+  opacity: 1;
+}
+.arrow:hover {
+  transform: translateY(-50%) scale(1.04);
+}
+.arrow.left {
+  left: -22px;
+}
+.arrow.right {
+  right: -22px;
+}
+
 /* Row carousel: overrides for the base .row/.arrow rules in theme.css.
    Arrows are revealed on hover, on keyboard focus (focus-within / focus-visible),
    dimmed when they cannot scroll further, and removed on touch-only devices
@@ -13,7 +78,9 @@
     transform var(--dur-base) var(--ease-out);
 }
 
-.row-wrap .arrow[hidden] { display: none; }
+.row-wrap .arrow[hidden] {
+  display: none;
+}
 
 .row-wrap:hover .arrow,
 .row-wrap:focus-within .arrow,
@@ -24,7 +91,8 @@
 .row-wrap .arrow:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
-  box-shadow: 0 0 0 calc(var(--focus-ring-width) + var(--focus-ring-offset) + 2px) var(--focus-ring-glow);
+  box-shadow: 0 0 0 calc(var(--focus-ring-width) + var(--focus-ring-offset) + 2px)
+    var(--focus-ring-glow);
 }
 
 /* End of track: keep the button focusable (so focus is not lost) but show it as inert. */
@@ -33,31 +101,52 @@
 .row-wrap .arrow[aria-disabled='true']:focus-visible {
   opacity: 0.35;
 }
-.row-wrap .arrow[aria-disabled='true'] { cursor: default; }
-.row-wrap .arrow[aria-disabled='true']:hover { transform: translateY(-50%); }
+.row-wrap .arrow[aria-disabled='true'] {
+  cursor: default;
+}
+.row-wrap .arrow[aria-disabled='true']:hover {
+  transform: translateY(-50%);
+}
 
 /* Touch-only devices: native swipe, no hover-revealed buttons eating taps. */
 @media (hover: none) {
-  .row-wrap .arrow { display: none; }
+  .row-wrap .arrow {
+    display: none;
+  }
 }
 
 /* Narrow viewports: pull the arrows inside the row so -22px offsets cannot
    cause horizontal page overflow (e.g. at 375px). */
 @media (max-width: 760px) {
-  .row-wrap .arrow { width: 40px; height: 40px; font-size: 1.4rem; }
-  .row-wrap .arrow.left { left: 4px; }
-  .row-wrap .arrow.right { right: 4px; }
+  .row-wrap .arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 1.4rem;
+  }
+  .row-wrap .arrow.left {
+    left: 4px;
+  }
+  .row-wrap .arrow.right {
+    right: 4px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .row-wrap .arrow,
-  .row-wrap .arrow:hover { transition: none; transform: translateY(-50%); }
-  .track { scroll-behavior: auto; }
+  .row-wrap .arrow:hover {
+    transition: none;
+    transform: translateY(-50%);
+  }
+  .track {
+    scroll-behavior: auto;
+  }
 }
 
 /* Row heading receives focus programmatically (tabIndex=-1) when its last focused card is removed.
    Show the ring for keyboard users only. */
-.row > h2[tabindex='-1']:focus { outline: none; }
+.row > h2[tabindex='-1']:focus {
+  outline: none;
+}
 .row > h2[tabindex='-1']:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
