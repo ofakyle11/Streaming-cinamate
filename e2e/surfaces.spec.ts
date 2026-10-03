@@ -107,13 +107,24 @@ test.describe('home', () => {
 
 test.describe('hover', () => {
   test('cards in the first row still scale on hover', async ({ page, hasTouch }) => {
-    test.skip(hasTouch || viewport().width <= TABLET_MAX, 'desktop pointer projects only');
+    test.skip(
+      hasTouch ||
+        viewport().width <= TABLET_MAX ||
+        test.info().project.use.reducedMotion === 'reduce',
+      'desktop pointer projects only (reduced motion renders the still)',
+    );
     await page.goto('/');
+    // Rows render once the home data lands and may be replaced while it loads, so
+    // wait for the page to settle, then re-resolve the card on every attempt.
+    await page.getByRole('button', { name: 'Where to watch' }).first().waitFor();
+    await page.waitForLoadState('networkidle');
     const card = page.locator('.rows > .row').first().locator('.card').first();
-    await box(card);
-    await card.hover();
+    await expect(card).toBeVisible();
     await expect
-      .poll(() => card.evaluate((el) => getComputedStyle(el).transform))
+      .poll(async () => {
+        await card.hover();
+        return card.evaluate((el) => getComputedStyle(el).transform);
+      })
       .toMatch(/^matrix\(1\.03/);
   });
 });
@@ -185,8 +196,15 @@ test.describe('title page', () => {
     await expect(dialog).toBeHidden();
   });
 
-  test('a finger drag on the sheet handle closes the trailer', async ({ page, hasTouch }) => {
-    test.skip(!hasTouch || viewport().width > TABLET_MAX, 'phone and tablet touch projects only');
+  test('a finger drag on the sheet handle closes the trailer', async ({
+    page,
+    hasTouch,
+    browserName,
+  }) => {
+    test.skip(
+      !hasTouch || viewport().width > TABLET_MAX || browserName !== 'chromium',
+      'phone and tablet touch projects only; the touch sequence is driven over CDP (Chromium)',
+    );
     await openTitle(page);
     await page.getByRole('button', { name: 'Trailer' }).first().click();
     const dialog = page.getByRole('dialog');
@@ -236,9 +254,17 @@ test.describe('title page', () => {
     const name = (await similar.getAttribute('aria-label'))!.replace(/ \(\d{4}\)$/, '');
     await similar.click();
     await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
+    // The click navigation starts one transition; the title page may start another
+    // (its own navigation once data lands). None may be rejected: a duplicate
+    // view-transition-name aborts a transition with "invalid state".
     await expect
-      .poll(() => page.evaluate(() => (window as unknown as { __vt: string[] }).__vt))
-      .toEqual(['ready']);
+      .poll(() => page.evaluate(() => (window as unknown as { __vt: string[] }).__vt.length))
+      .toBeGreaterThan(0);
+    const outcomes = await page.evaluate(() => (window as unknown as { __vt: string[] }).__vt);
+    expect(
+      outcomes.every((o) => o === 'ready'),
+      outcomes.join(', '),
+    ).toBe(true);
   });
 });
 
