@@ -3,6 +3,7 @@ import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import ProfileMenu from '../features/profiles/ProfileMenu';
 import LogoMark from './brand/LogoMark';
 import IconButton from './ui/IconButton';
+import ThemeToggle from './ui/ThemeToggle';
 import '../styles/nav.css';
 
 const links = [
@@ -104,12 +105,18 @@ export default function Navbar() {
         </span>
       </IconButton>
       <ul id={MENU_ID} ref={listRef} className={`nav-links${menuOpen ? ' is-open' : ''}`}>
+        {/* Mobile and tablet: the theme control is the first row of the menu sheet. */}
+        <li className="nav-theme nav-theme-menu">
+          <ThemeToggle />
+        </li>
         {links.map((l) => (
           <li key={l.to}>
             <NavLink
               to={l.to}
               end={l.to === '/'}
-              className={({ isActive }) => (isNavLinkActive(l.to, isActive, location.search) ? 'active' : '')}
+              className={({ isActive }) =>
+                isNavLinkActive(l.to, isActive, location.search) ? 'active' : ''
+              }
               aria-current={isNavLinkActive(l.to, true, location.search) ? 'page' : 'false'}
               onClick={() => setOpenOnPath(null)}
             >
@@ -119,6 +126,10 @@ export default function Navbar() {
         ))}
       </ul>
       <div className="nav-right">
+        {/* Desktop: left of search. Hidden at <=760px where the menu sheet has it. */}
+        <div className="nav-theme nav-theme-desktop">
+          <ThemeToggle />
+        </div>
         <form role="search" onSubmit={submitSearch}>
           <input
             className="search glass"

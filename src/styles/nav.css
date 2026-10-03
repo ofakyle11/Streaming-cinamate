@@ -10,10 +10,37 @@
   cursor: pointer;
 }
 
+/* Theme control slots: one in the header (desktop), one as the first row of
+   the menu sheet (<= 760px). Only one is shown at a time. */
+.navbar .nav-theme-menu {
+  display: none;
+}
+.navbar .nav-theme-desktop {
+  display: inline-flex;
+}
+
 @media (max-width: 760px) {
   .navbar {
     gap: 12px;
     padding: 10px 14px;
+  }
+  .navbar .nav-theme-desktop {
+    display: none;
+  }
+  .navbar .nav-links.is-open .nav-theme-menu {
+    display: flex;
+    justify-content: center;
+    padding: 6px 8px 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--glass-border);
+    cursor: default;
+  }
+  .navbar .nav-links.is-open .nav-theme-menu .theme-toggle-group {
+    width: 100%;
+  }
+  .navbar .nav-links.is-open .nav-theme-menu .theme-toggle-option {
+    flex: 1;
+    min-height: 44px;
   }
   .navbar .nav-right {
     gap: 10px;

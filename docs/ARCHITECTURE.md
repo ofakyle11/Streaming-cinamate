@@ -44,7 +44,9 @@ src/
     brand.css         LogoMark styles (imported by LogoMark.tsx)
     errors.css        Error card + offline banner (imported by errors/ components)
     a11y.css          Skip link, focus rings, main target, .sr-only (imported by AppLayout.tsx)
-    nav.css           Mobile primary nav toggle + glass dropdown (imported by Navbar.tsx)
+    nav.css           Mobile primary nav toggle + glass dropdown, theme control slots (imported by Navbar.tsx)
+    theme-toggle.css  ThemeToggle segmented control + theme view transition (imported by ThemeToggle.tsx)
+  theme/              theme.ts (lf.theme storage, resolve, applyTheme + theme-color metas), useTheme.ts (store hook, setTheme)
   test/               Vitest setup and integration tests
   services/db/sync.ts        Pure store <-> row mapping + last-write-wins merge
   services/db/syncEngine.ts  startCloudSync: initial pull, merge, debounced upserts, persisted retry queue
@@ -98,7 +100,8 @@ The production CSP in `netlify.toml` allows `https://*.supabase.co` and `wss://*
 
 ## PWA
 
-`vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Last Frame" (theme `#0b0b12`), icons generated at build
+`vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Last Frame" (theme and background Cloud `#f6f5ff`;
+`injectThemeColor` is off because `index.html` carries two `theme-color` metas), icons generated at build
 from `public/logo.svg` via `pwa-assets.config.ts`, generateSW service worker precaching the app shell and caching
 images cache-first (`lf-images`, 250 entries / 30 days). `main.tsx` captures `beforeinstallprompt`; the Account
 page's `InstallAppCard` offers "Install app" (manual Add to Home Screen hint on iOS). The SW is build-only.
@@ -118,8 +121,11 @@ extra handling if it's driven by JS (for example, the hero rotation).
 
 Under the Lumen brand the tokens are split in two: `tokens.css` holds the shared tokens and
 the light theme values, and `themes.css` redefines the colour tokens for dark (device
-preference, or an explicit `data-theme` on `<html>`). Phase 1 ships with
-`data-theme="dark"` as the default; phase 2 adds the theme switch.
+preference, or an explicit `data-theme` on `<html>`). Light is the default and follows the
+device. `public/theme-init.js` (first script in `<head>`, allowed by the `script-src 'self'` CSP)
+reads the saved choice from `localStorage` key `lf.theme` and sets `data-theme` before paint;
+`src/theme/useTheme.ts` is the React side of the same store and `ThemeToggle` (System / Light /
+Dark) is in the Navbar: header on desktop, first row of the menu sheet at <=760px.
 
 ## Brand
 
@@ -130,7 +136,7 @@ preference, or an explicit `data-theme` on `<html>`). Phase 1 ships with
 - Static icons in `public/` mirror the mark: `favicon.svg`, `mask-icon.svg` and
   `icons/icon.svg` (full bleed). `node scripts/generate-icons.mjs` rasterises
   `favicon-32.png` and `apple-touch-icon.png` with a local headless Chromium. `index.html`
-  sets `theme-color` `#0b0b12`.
+  sets the `theme-color` metas (Cloud `#f6f5ff` light, Ink `#141126` dark).
 
 ## Errors, offline and retry
 
