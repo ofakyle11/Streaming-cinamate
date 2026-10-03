@@ -19,7 +19,7 @@ src/
   pages/              Route components (Home, Search, Genre, Title, MyList, Profiles, Account, Plans, NotFound)
   components/         Feature components (Hero, Row, MovieCard, Navbar; title/TrailerModal)
     a11y/             RouteAnnouncer (route-change announcement + focus reset)
-    brand/            LogoMark (LF glass monogram, SVG paths, token colours)
+    brand/            LogoMark (the Lumen mark: squircle, lens disc, band, halo)
     errors/           ErrorBoundary, RouteError, ErrorCard, OfflineBanner
     ui/               Primitives: Button, IconButton, Skeleton, Toast (barrel: ui/index.ts)
   features/profiles/  Gradient avatars, name/kids rules, ProfileAvatar, ProfileEditor dialog, navbar ProfileMenu
@@ -152,12 +152,19 @@ view-transition name so it morphs into the title page backdrop. Under
 
 ## Brand
 
-- `components/brand/LogoMark.tsx`: the glossy "LF" monogram. Its glyphs are SVG paths, so it
-  doesn't depend on a loaded font. Gradient ids come from `useId()` so several marks can share a
-  page. Pass `decorative` when a visible wordmark sits beside it (as in the Navbar), otherwise
-  it exposes `title` as its accessible name.
-- Static icons in `public/` mirror the mark: `favicon.svg`, `mask-icon.svg` and
-  `icons/icon.svg` (full bleed). `node scripts/generate-icons.mjs` rasterises
+- `components/brand/LogoMark.tsx`: the Lumen mark, a squircle with a disc of light cut from
+  its top-right corner. The squircle never moves; three light layers animate on transform and
+  opacity only (`brand.css`): the lens disc grows from the corner on load, a white band sweeps
+  across once on load and on hover, and a blurred halo behind the hero mark rises, breathes and
+  comes up on hover. `variant="header"` (default, 24 to 30px) keeps the disc plus a soft shadow;
+  `variant="hero"` (32px and up) adds the band and halo and uses the lights-down gradient pair.
+  `animate` is `once` (load sequence, then hover), `hover` or `none`; `prefers-reduced-motion`
+  renders the end frame and `forced-colors` the mono mark. Gradient, mask and clip ids come from
+  `useId()` so several marks can share a page. Pass `decorative` when a visible wordmark sits
+  beside it (as in the Navbar), otherwise it exposes `title` as its accessible name.
+- Static icons in `public/` come from the Lumen kit: `favicon.svg`, `mask-icon.svg` (one flat
+  path for Safari pinned tabs) and `icons/icon.svg` / `logo.svg` (the full-bleed app icon).
+  `node scripts/generate-icons.mjs` rasterises
   `favicon-32.png` and `apple-touch-icon.png` with a local headless Chromium. `index.html`
   sets `theme-color` `#0b0b12`.
 
