@@ -125,7 +125,10 @@ preference, or an explicit `data-theme` on `<html>`). Light is the default and f
 device. `public/theme-init.js` (first script in `<head>`, allowed by the `script-src 'self'` CSP)
 reads the saved choice from `localStorage` key `lf.theme` and sets `data-theme` before paint;
 `src/theme/useTheme.ts` is the React side of the same store and `ThemeToggle` (System / Light /
-Dark) is in the Navbar: header on desktop, first row of the menu sheet at <=760px.
+Dark) is in the Navbar: header on desktop, first row of the menu sheet at <=1024px (the plan's tablet breakpoint; the menu
+breakpoint moved from 760 to 1024 so the header never overflows on tablets). The manifest's
+`theme_color`/`background_color` are static, so an installed app that was set to Dark shows a Cloud
+splash for a moment before `theme-init.js` runs; that is a platform limitation, not a bug.
 
 ## Brand
 
@@ -196,7 +199,7 @@ hidden polite live region. If the lazily loaded page hasn't set `document.title`
 then announces anyway. While an `[aria-modal="true"]` dialog is open it still announces but
 doesn't move focus.
 
-**Mobile nav.** At <=760px `theme.css` hides `.nav-links`, and `Navbar` shows a menu toggle
+**Mobile nav.** At <=1024px `theme.css` hides `.nav-links`, and `Navbar` shows a menu toggle
 (`aria-expanded`, `aria-controls` pointing at the links list). Opening it shows the same list
 as a glass dropdown under the navbar (`nav.css`, 44px tap targets, reduced-motion safe). It
 closes on Escape or an outside click, returning focus to the toggle, and on any route change.

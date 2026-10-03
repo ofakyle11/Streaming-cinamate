@@ -10,16 +10,55 @@ export interface ThemeToggleProps {
   className?: string;
 }
 
-const OPTIONS: ReadonlyArray<{ value: ThemePreference; label: string; icon: string }> = [
-  { value: 'system', label: 'System', icon: '◐' },
-  { value: 'light', label: 'Light', icon: '☀' },
-  { value: 'dark', label: 'Dark', icon: '☾' },
+/* Inline SVG icons (16px, stroke currentColor) so the control renders the same on every
+   platform; text glyphs fall to emoji or symbol fonts. Labels carry the accessible name. */
+const ICON_PROPS = {
+  width: 16,
+  height: 16,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.75,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': true,
+  focusable: false,
+} as const;
+
+function SystemIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+function LightIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" />
+    </svg>
+  );
+}
+function DarkIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5z" />
+    </svg>
+  );
+}
+
+const OPTIONS: ReadonlyArray<{ value: ThemePreference; label: string; Icon: () => JSX.Element }> = [
+  { value: 'system', label: 'System', Icon: SystemIcon },
+  { value: 'light', label: 'Light', Icon: LightIcon },
+  { value: 'dark', label: 'Dark', Icon: DarkIcon },
 ];
 
 const cx = (...parts: Array<string | false | undefined>) => parts.filter(Boolean).join(' ');
 
 type ViewTransitionDocument = Document & {
-  startViewTransition?: (update: () => void) => { ready: Promise<void> };
+  startViewTransition?: (update: () => void) => { ready: Promise<void>; finished: Promise<void> };
 };
 
 /**
@@ -40,14 +79,21 @@ function switchWithTransition(apply: () => void, origin: HTMLElement | null, red
     Math.max(x, window.innerWidth - x),
     Math.max(y, window.innerHeight - y),
   );
+  const root = document.documentElement;
+  root.dataset.vt = 'theme'; // scopes the ::view-transition rules in theme-toggle.css
   const transition = doc.startViewTransition(apply);
+  transition.finished
+    .finally(() => {
+      delete root.dataset.vt;
+    })
+    .catch(() => {});
   transition.ready
     .then(() => {
       document.documentElement.animate(
         { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
         {
-          duration: 600,
-          easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          duration: 600, // --dur-page
+          easing: 'cubic-bezier(0.16, 1, 0.3, 1)', // --ease-enter (WAAPI cannot read a CSS variable)
           pseudoElement: '::view-transition-new(root)',
         },
       );
@@ -73,9 +119,15 @@ export default function ThemeToggle({ label = 'Theme', className }: ThemeToggleP
     const origin = buttons.current[THEME_PREFERENCES.indexOf(next)];
     if (focusIndex !== undefined) buttons.current[focusIndex]?.focus();
     if (next === preference) return;
-    switchWithTransition(() => setTheme(next), origin ?? null, reduced);
     const name = OPTIONS.find((o) => o.value === next)?.label ?? next;
-    setAnnouncement(next === 'system' ? 'Theme follows your device' : `${name} theme on`);
+    switchWithTransition(
+      () => {
+        setTheme(next);
+        setAnnouncement(next === 'system' ? 'Theme follows your device' : `${name} theme on`);
+      },
+      origin ?? null,
+      reduced,
+    );
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -129,8 +181,8 @@ export default function ThemeToggle({ label = 'Theme', className }: ThemeToggleP
               onClick={() => choose(opt.value)}
               onKeyDown={(e) => onKeyDown(e, i)}
             >
-              <span className="theme-toggle-icon" aria-hidden="true">
-                {opt.icon}
+              <span className="theme-toggle-icon">
+                <opt.Icon />
               </span>
               <span className="theme-toggle-label">{opt.label}</span>
             </button>

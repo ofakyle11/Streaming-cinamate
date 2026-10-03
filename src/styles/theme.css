@@ -489,7 +489,7 @@ a.avatar {
 }
 
 /* ---------- responsive ---------- */
-@media (max-width: 760px) {
+@media (max-width: 1024px) {
   .nav-links {
     display: none;
   }
