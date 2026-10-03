@@ -89,6 +89,10 @@ describe('isImageRequest', () => {
 });
 
 describe('workbox runtime caching', () => {
+  it('precaches the self-hosted font files so the installed app has its type offline', () => {
+    expect(pwaWorkbox.globPatterns?.some((p) => /\bwoff2\b/.test(p))).toBe(true);
+  });
+
   it('caches images cache-first with bounded expiry', () => {
     const rule = pwaWorkbox.runtimeCaching?.[0];
     expect(rule?.urlPattern).toBe(isImageRequest);
