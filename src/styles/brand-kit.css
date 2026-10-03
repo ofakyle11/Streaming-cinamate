@@ -186,6 +186,25 @@
   box-shadow: var(--glass-shadow);
 }
 
+/* ---------- cover: app preview ---------- */
+.bk-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-faint);
+}
+.bk-preview .bk-note {
+  max-width: none;
+}
+.bk-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* ---------- identity: option picker ---------- */
 .bk-options {
   display: grid;

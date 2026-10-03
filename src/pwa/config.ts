@@ -65,7 +65,7 @@ export function isImageRequest({ request, url, sameOrigin }: ImageMatchContext):
 type WorkboxOptions = NonNullable<VitePWAOptions['workbox']>;
 
 export const pwaWorkbox: WorkboxOptions = {
-  globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+  globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2}'],
   cleanupOutdatedCaches: true,
   clientsClaim: true,
   skipWaiting: true,

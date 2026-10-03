@@ -85,10 +85,10 @@ export const MARKS: readonly MarkDef[] = [
     id: 'monogram',
     index: '01',
     name: 'Monogram',
-    idea: 'The initials, cut square. What the app ships with today.',
+    idea: 'The initials, cut square. The original mark.',
     rationale:
       'Reads at 16px, works as a favicon and an avatar, and carries no metaphor to date. The safe choice.',
-    // The existing LogoMark glyphs (public/favicon.svg), unchanged.
+    // The original "LF" glyphs the app launched with, unchanged.
     layers: layers({ fill: ['M16 18h6v22h8v6H16z M32 18h16v6H38v5h8v5h-8v12h-6z'] }),
   },
   {
@@ -177,8 +177,18 @@ export const COLOURWAYS: readonly ColourwayDef[] = [
   },
 ];
 
-export const DEFAULT_MARK: MarkId = 'monogram';
-export const DEFAULT_COLOURWAY: ColourwayId = 'aurora';
+/**
+ * The direction the app ships with. Change it here, then run
+ * `node scripts/generate-brand-assets.mjs && node scripts/generate-icons.mjs`
+ * to refresh the static icons; the Navbar and the kit pick it up on their own.
+ */
+export const ACTIVE_BRAND: { readonly mark: MarkId; readonly colourway: ColourwayId } = {
+  mark: 'countdown',
+  colourway: 'aurora',
+};
+
+export const DEFAULT_MARK: MarkId = ACTIVE_BRAND.mark;
+export const DEFAULT_COLOURWAY: ColourwayId = ACTIVE_BRAND.colourway;
 
 export function getMark(id: MarkId): MarkDef {
   return MARKS.find((m) => m.id === id) ?? MARKS[0];
@@ -216,6 +226,61 @@ export interface MarkSvgOptions {
   title?: string;
 }
 
+const SHINE_GRADIENT =
+  `<linearGradient id="lf-shine" x1="0" y1="0" x2="0" y2="1">` +
+  `<stop offset="0" stop-color="#fff" stop-opacity="0.38"/>` +
+  `<stop offset="0.5" stop-color="#fff" stop-opacity="0.06"/>` +
+  `<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
+
+function gradientDef(stops: readonly string[]): string {
+  return `<linearGradient id="lf-grad" x1="0" y1="0" x2="1" y2="1">${gradientStops(stops)}</linearGradient>`;
+}
+
+function pathList(ds: string[], attrs: string): string {
+  return ds.map((d) => `<path d="${d}" ${attrs}/>`).join('');
+}
+
+/**
+ * The glyph layers of a mark on the 64-grid. `glyph` paints the fill/stroke
+ * layers; `light` paints the light layers (with the usual 35% faint variants).
+ */
+function layerMarkup(def: MarkDef, glyph: string, light: string, faintOpacity = 0.35): string {
+  const faint = faintOpacity === 1 ? '' : ` fill-opacity="${faintOpacity}"`;
+  const faintStroke = faintOpacity === 1 ? '' : ` stroke-opacity="${faintOpacity}"`;
+  return (
+    pathList(def.layers.fill, `fill="${glyph}"`) +
+    pathList(
+      def.layers.stroke,
+      `fill="none" stroke="${glyph}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"`,
+    ) +
+    pathList(def.layers.faint, `fill="${light}"${faint}`) +
+    pathList(
+      def.layers.faintStroke,
+      `fill="none" stroke="${light}"${faintStroke} stroke-width="1.5" stroke-linecap="round"`,
+    ) +
+    pathList(def.layers.light, `fill="${light}"`)
+  );
+}
+
+/** Night tile background with its shine and hairline, on the 64-grid. */
+function tileMarkup(gradientFill: boolean): string {
+  return (
+    `<path d="${rr(2, 2, 60, 60, 15)}" fill="${NIGHT}"/>` +
+    (gradientFill
+      ? `<path d="${rr(2, 2, 60, 60, 15)}" fill="url(#lf-grad)" fill-opacity="0.82"/>`
+      : '') +
+    `<path d="${rr(2, 2, 60, 30, 15)}" fill="url(#lf-shine)"/>` +
+    `<path d="${rr(2.5, 2.5, 59, 59, 14.5)}" fill="none" stroke="#fff" stroke-opacity="0.28"/>`
+  );
+}
+
+function svgOpen(viewBox: string, size: number | undefined, title: string | undefined): string {
+  const sizeAttr = size ? ` width="${size}" height="${size}"` : '';
+  const a11y = title ? ` role="img" aria-labelledby="lf-title"` : ` aria-hidden="true"`;
+  const titleEl = title ? `<title id="lf-title">${title}</title>` : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}"${sizeAttr}${a11y}>${titleEl}`;
+}
+
 /**
  * Standalone SVG markup for a mark (used for the downloadable files). The
  * JSX in BrandMark.tsx mirrors this layer for layer.
@@ -231,41 +296,57 @@ export function markSvg({
   const cw = getColourway(colourway);
   const onGradientTile = variant === 'tile-gradient';
   const glyph = onGradientTile ? LIGHT : 'url(#lf-grad)';
-  const sizeAttr = size ? ` width="${size}" height="${size}"` : '';
-  const paths = (ds: string[], attrs: string) =>
-    ds.map((d) => `<path d="${d}" ${attrs}/>`).join('');
-
-  let body = '';
-  if (variant !== 'bare') {
-    body += `<path d="${rr(2, 2, 60, 60, 15)}" fill="${NIGHT}"/>`;
-    if (onGradientTile) {
-      body += `<path d="${rr(2, 2, 60, 60, 15)}" fill="url(#lf-grad)" fill-opacity="0.82"/>`;
-    }
-    body += `<path d="${rr(2, 2, 60, 30, 15)}" fill="url(#lf-shine)"/>`;
-    body += `<path d="${rr(2.5, 2.5, 59, 59, 14.5)}" fill="none" stroke="#fff" stroke-opacity="0.28"/>`;
-  }
-  body += paths(def.layers.fill, `fill="${glyph}"`);
-  body += paths(
-    def.layers.stroke,
-    `fill="none" stroke="${glyph}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"`,
-  );
-  body += paths(def.layers.faint, `fill="${LIGHT}" fill-opacity="0.35"`);
-  body += paths(
-    def.layers.faintStroke,
-    `fill="none" stroke="${LIGHT}" stroke-opacity="0.35" stroke-width="1.5" stroke-linecap="round"`,
-  );
-  body += paths(def.layers.light, `fill="${LIGHT}"`);
-
-  const a11y = title ? ` role="img" aria-labelledby="lf-title"` : ` aria-hidden="true"`;
-  const titleEl = title ? `<title id="lf-title">${title}</title>` : '';
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"${sizeAttr}${a11y}>` +
-    titleEl +
-    `<defs><linearGradient id="lf-grad" x1="0" y1="0" x2="1" y2="1">${gradientStops(cw.stops)}</linearGradient>` +
-    `<linearGradient id="lf-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.38"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>` +
-    body +
+    svgOpen('0 0 64 64', size, title) +
+    `<defs>${gradientDef(cw.stops)}${SHINE_GRADIENT}</defs>` +
+    (variant === 'bare' ? '' : tileMarkup(onGradientTile)) +
+    layerMarkup(def, glyph, LIGHT) +
     `</svg>\n`
   );
+}
+
+export interface AppIconSvgOptions {
+  mark: MarkId;
+  colourway?: ColourwayId;
+  /**
+   * `rounded`: a 512px rounded tile (PWA source, logo.svg).
+   * `bleed`: full-bleed square for maskable icons; the glyphs stay inside the
+   * central 80% safe zone.
+   */
+  shape: 'rounded' | 'bleed';
+  title?: string;
+}
+
+/** 512px app-icon artwork: night background, the glyphs scaled x6 and centred. */
+export function appIconSvg({
+  mark,
+  colourway = DEFAULT_COLOURWAY,
+  shape,
+  title,
+}: AppIconSvgOptions): string {
+  const def = getMark(mark);
+  const cw = getColourway(colourway);
+  const background =
+    shape === 'rounded'
+      ? `<path d="${rr(0, 0, 512, 512, 112)}" fill="${NIGHT}"/>` +
+        `<path d="${rr(0, 0, 512, 256, 112)}" fill="url(#lf-shine)"/>` +
+        `<path d="${rr(4, 4, 504, 504, 108)}" fill="none" stroke="#fff" stroke-opacity="0.28" stroke-width="8"/>`
+      : `<rect width="512" height="512" fill="${NIGHT}"/>` +
+        `<rect width="512" height="256" fill="url(#lf-shine)"/>`;
+  return (
+    svgOpen('0 0 512 512', 512, title) +
+    `<defs>${gradientDef(cw.stops)}${SHINE_GRADIENT}</defs>` +
+    background +
+    `<g transform="translate(256 256) scale(6) translate(-32 -32)">` +
+    layerMarkup(def, 'url(#lf-grad)', LIGHT) +
+    `</g></svg>\n`
+  );
+}
+
+/** Single-colour silhouette (Safari pinned tab `mask-icon`): every layer in black. */
+export function monoSvg({ mark, title }: Pick<MarkSvgOptions, 'mark' | 'title'>): string {
+  const def = getMark(mark);
+  return svgOpen('0 0 64 64', undefined, title) + layerMarkup(def, '#000', '#000', 1) + `</svg>\n`;
 }
 
 /** Wordmark text and the letter-spacing/weight the kit proposes for it. */

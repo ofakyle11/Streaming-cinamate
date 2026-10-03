@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import ErrorBoundary from '../components/errors/ErrorBoundary';
 import OfflineBanner from '../components/errors/OfflineBanner';
 import RouteAnnouncer from '../components/a11y/RouteAnnouncer';
+import { useBrandFavicon } from '../components/brand/useBrandFavicon';
 import { usePageViews } from '../hooks/usePageViews';
 import '../styles/a11y.css';
 
@@ -19,6 +20,7 @@ function skipToContent(e: MouseEvent<HTMLAnchorElement>) {
 export default function AppLayout() {
   const location = useLocation();
   usePageViews();
+  useBrandFavicon();
   return (
     <>
       <a className="skip-link glass" href="#main" onClick={skipToContent}>

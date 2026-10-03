@@ -17,6 +17,7 @@ import {
   type ColourwayId,
   type MarkId,
 } from '../components/brand/marks';
+import { useActiveBrand } from '../components/brand/activeBrand';
 import { useOptionalToast } from '../components/ui';
 import { useMeta } from '../hooks/useMeta';
 import '../styles/brand-kit.css';
@@ -121,6 +122,10 @@ export default function BrandPage() {
   const colourway = getColourway(colourwayId);
   const files = assetFiles(markId);
   const { toast } = useOptionalToast();
+  const active = useActiveBrand();
+  const isActive = active.mark === markId && active.colourway === colourwayId;
+  const activeMark = getMark(active.mark);
+  const activeColourway = getColourway(active.colourway);
   const [copied, setCopied] = useState<string | null>(null);
 
   const setParam = useCallback(
@@ -178,6 +183,30 @@ export default function BrandPage() {
                 Identity, colour and expression for Last Frame. A first edition for review: pick an
                 option and a colourway below and every page follows.
               </p>
+              <div className="bk-preview" role="group" aria-label="App preview">
+                <p className="bk-note" aria-live="polite">
+                  The app is showing{' '}
+                  <strong>
+                    {activeMark.index} / {activeMark.name} · {activeColourway.name}
+                  </strong>
+                  {active.isPreview ? ' (preview in this browser)' : ' (shipped default)'}.
+                </p>
+                <div className="bk-preview-actions">
+                  <button
+                    type="button"
+                    className="btn primary sm"
+                    disabled={isActive}
+                    onClick={() => active.setPreview({ mark: markId, colourway: colourwayId })}
+                  >
+                    {isActive ? 'Showing in the app' : 'Try it in the app'}
+                  </button>
+                  {active.isPreview && (
+                    <button type="button" className="btn ghost sm" onClick={active.clearPreview}>
+                      Back to default
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="bk-cover-art" style={glowStyle}>
               <Lockup mark={markId} colourway={colourwayId} size={88} orientation="stacked" />
@@ -454,9 +483,9 @@ export default function BrandPage() {
             </tbody>
           </table>
           <p className="bk-footnote">
-            Inter is the declared family; the app does not ship a webfont yet, so the system UI font
-            renders in its place. Loading Inter (or choosing a display face) is a decision for
-            review.
+            Inter ships with the app as a self-hosted variable font (latin subset, one 48 KB file,
+            SIL Open Font License), so all three roles render as shown. The system UI font stands in
+            only until it loads.
           </p>
         </Slide>
 
@@ -622,9 +651,9 @@ export default function BrandPage() {
                 {mark.index} / {mark.name}.
               </p>
               <p className="bk-note">
-                The download links carry the Aurora colourway, the one the app uses today. The copy
-                buttons use the colourway selected above ({colourway.name}) so any combination can
-                be pasted into a design tool.
+                The download links carry the Aurora colourway, the one the shipped brand uses. The
+                copy buttons use the colourway selected above ({colourway.name}) so any combination
+                can be pasted into a design tool.
               </p>
             </div>
             <ul className="bk-files">

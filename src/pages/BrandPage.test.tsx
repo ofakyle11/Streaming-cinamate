@@ -25,16 +25,16 @@ describe('BrandPage', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders the deck with four logo options and the monogram selected by default', () => {
+  it('renders the deck with four logo options and the shipped direction selected by default', () => {
     renderAt();
     expect(document.title).toBe('Brand kit · Last Frame');
     expect(screen.getByRole('heading', { level: 1, name: /Brand\s*kit/ })).toBeInTheDocument();
     const buttons = options().getAllByRole('button');
     expect(buttons.map((b) => b.getAttribute('aria-pressed'))).toEqual([
+      'false',
+      'false',
+      'false',
       'true',
-      'false',
-      'false',
-      'false',
     ]);
     expect(buttons[0]).toHaveTextContent('01 / Monogram');
     expect(buttons[3]).toHaveTextContent('04 / Countdown');
@@ -79,7 +79,7 @@ describe('BrandPage', () => {
     renderAt('/brand?option=bogus&colour=bogus');
     const all = screen.getAllByRole('group', { name: 'Logo options' });
     expect(
-      within(all[all.length - 1]).getByRole('button', { name: /01 \/ Monogram/ }),
+      within(all[all.length - 1]).getByRole('button', { name: /04 \/ Countdown/ }),
     ).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -115,9 +115,26 @@ describe('BrandPage', () => {
     const navMock = document.querySelector('.bk-navbar');
     expect(navMock).toHaveAttribute('aria-hidden', 'true');
     // Both app-icon tiles are named individually.
-    expect(screen.getByRole('img', { name: 'Monogram app icon, night tile' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Countdown app icon, night tile' })).toBeInTheDocument();
     expect(
-      screen.getByRole('img', { name: 'Monogram app icon, gradient tile' }),
+      screen.getByRole('img', { name: 'Countdown app icon, gradient tile' }),
     ).toBeInTheDocument();
+  });
+
+  it('can preview the selected option in the app and go back to the default', () => {
+    window.localStorage.removeItem('lf.brand');
+    renderAt('/brand?option=frame&colour=lagoon');
+    const group = within(screen.getByRole('group', { name: 'App preview' }));
+    expect(group.getByText(/shipped default/)).toBeInTheDocument();
+    fireEvent.click(group.getByRole('button', { name: 'Try it in the app' }));
+    expect(window.localStorage.getItem('lf.brand')).toBe(
+      JSON.stringify({ mark: 'frame', colourway: 'lagoon' }),
+    );
+    expect(group.getByText(/02 \/ Frame · Lagoon/)).toBeInTheDocument();
+    expect(group.getByText(/preview in this browser/)).toBeInTheDocument();
+    expect(group.getByRole('button', { name: 'Showing in the app' })).toBeDisabled();
+    fireEvent.click(group.getByRole('button', { name: 'Back to default' }));
+    expect(window.localStorage.getItem('lf.brand')).toBeNull();
+    expect(group.getByText(/shipped default/)).toBeInTheDocument();
   });
 });

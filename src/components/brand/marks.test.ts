@@ -11,15 +11,22 @@ import stripLockup from '../../../public/brand/lf-strip-lockup.svg?raw';
 import countdownMark from '../../../public/brand/lf-countdown-mark.svg?raw';
 import countdownIcon from '../../../public/brand/lf-countdown-icon.svg?raw';
 import countdownLockup from '../../../public/brand/lf-countdown-lockup.svg?raw';
+import favicon from '../../../public/favicon.svg?raw';
+import maskIcon from '../../../public/mask-icon.svg?raw';
+import maskableIcon from '../../../public/icons/icon.svg?raw';
+import logo from '../../../public/logo.svg?raw';
 import {
+  ACTIVE_BRAND,
   COLOURWAYS,
   MARKS,
+  appIconSvg,
   assetFiles,
   circle,
   isColourwayId,
   isMarkId,
   lockupSvg,
   markSvg,
+  monoSvg,
   rr,
   type MarkId,
 } from './marks';
@@ -106,5 +113,28 @@ describe('marks', () => {
       expect(COMMITTED[id].icon).toBe(markSvg({ mark: id, variant: 'tile', size: 512, title }));
       expect(COMMITTED[id].lockup).toBe(lockupSvg({ mark: id }));
     }
+  });
+
+  it('appIconSvg scales the glyphs into a 512 tile and monoSvg paints everything black', () => {
+    const rounded = appIconSvg({ mark: 'strip', shape: 'rounded', title: 'Last Frame' });
+    expect(rounded).toContain('viewBox="0 0 512 512"');
+    expect(rounded).toContain('translate(256 256) scale(6) translate(-32 -32)');
+    expect(rounded).toContain('a112 112 0 0 1');
+    const bleed = appIconSvg({ mark: 'strip', shape: 'bleed' });
+    expect(bleed).toContain('<rect width="512" height="512" fill="#0b0b12"/>');
+    expect(bleed).not.toContain('a112 112');
+    const mono = monoSvg({ mark: 'strip' });
+    expect(mono).not.toMatch(/url\(#|opacity|#f4f4f8/);
+    expect(mono).toContain('fill="#000"');
+    expect(mono).toContain('stroke="#000"');
+  });
+
+  it('the app icons in public/ are drawn from ACTIVE_BRAND (run the generators)', () => {
+    const { mark, colourway } = ACTIVE_BRAND;
+    const title = 'Last Frame';
+    expect(favicon).toBe(markSvg({ mark, colourway, variant: 'tile', size: 64, title }));
+    expect(maskIcon).toBe(monoSvg({ mark }));
+    expect(maskableIcon).toBe(appIconSvg({ mark, colourway, shape: 'bleed', title }));
+    expect(logo).toBe(appIconSvg({ mark, colourway, shape: 'rounded', title }));
   });
 });

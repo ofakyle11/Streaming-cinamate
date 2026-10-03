@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import ProfileMenu from '../features/profiles/ProfileMenu';
-import LogoMark from './brand/LogoMark';
+import BrandMark from './brand/BrandMark';
+import { useActiveBrand } from './brand/activeBrand';
 import IconButton from './ui/IconButton';
 import '../styles/nav.css';
 
@@ -41,6 +42,7 @@ export default function Navbar() {
   const menuOpen = openOnPath === pathname;
   const toggleRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const brand = useActiveBrand();
 
   const submitSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -88,7 +90,13 @@ export default function Navbar() {
   return (
     <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`} aria-label="Primary">
       <Link to="/" className="logo logo--with-mark" aria-label="Last Frame home">
-        <LogoMark size={30} decorative />
+        <BrandMark
+          mark={brand.mark}
+          colourway={brand.colourway}
+          size={30}
+          decorative
+          className="logo-mark"
+        />
         LAST FRAME
       </Link>
       <IconButton
@@ -109,7 +117,9 @@ export default function Navbar() {
             <NavLink
               to={l.to}
               end={l.to === '/'}
-              className={({ isActive }) => (isNavLinkActive(l.to, isActive, location.search) ? 'active' : '')}
+              className={({ isActive }) =>
+                isNavLinkActive(l.to, isActive, location.search) ? 'active' : ''
+              }
               aria-current={isNavLinkActive(l.to, true, location.search) ? 'page' : 'false'}
               onClick={() => setOpenOnPath(null)}
             >
