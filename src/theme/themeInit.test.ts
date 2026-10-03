@@ -9,9 +9,14 @@ function runInit() {
 }
 
 function installHead() {
-  document.head.innerHTML =
-    '<meta name="theme-color" media="(prefers-color-scheme: light)" content="#000000">' +
-    '<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">';
+  document.head.replaceChildren();
+  for (const scheme of ['light', 'dark']) {
+    const meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    meta.setAttribute('media', `(prefers-color-scheme: ${scheme})`);
+    meta.setAttribute('content', '#000000');
+    document.head.append(meta);
+  }
 }
 const metas = () =>
   Array.from(document.querySelectorAll('meta[name="theme-color"]')).map((m) =>

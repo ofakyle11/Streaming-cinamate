@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ThemeToggle from './ThemeToggle';
 import { setTheme } from '../../theme/useTheme';
@@ -7,12 +7,19 @@ const group = () => screen.getByRole('radiogroup', { name: 'Theme' });
 const radio = (name: string) => within(group()).getByRole('radio', { name });
 
 describe('ThemeToggle', () => {
+  const originalMatchMedia = window.matchMedia;
+  const originalAnimate = document.documentElement.animate;
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.removeAttribute('data-theme');
     setTheme('system');
   });
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.matchMedia = originalMatchMedia;
+    document.documentElement.animate = originalAnimate;
+    delete (document as unknown as { startViewTransition?: unknown }).startViewTransition;
+  });
 
   it('is a radiogroup with System checked by default and one tab stop', () => {
     render(<ThemeToggle />);
@@ -75,11 +82,16 @@ describe('ThemeToggle', () => {
     expect(radio('Light')).toHaveAttribute('tabindex', '0');
   });
 
-  it('uses a view transition from the pressed option when available', () => {
+  it('uses a view transition from the pressed option when available', async () => {
     const animate = vi.fn();
+    let finish: () => void = () => {};
+    const finished = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    // Like the real API, the update callback runs after the old snapshot, not synchronously.
     const startViewTransition = vi.fn((update: () => void) => {
-      update();
-      return { ready: Promise.resolve() };
+      const ready = Promise.resolve().then(update);
+      return { ready, finished };
     });
     Object.defineProperty(document, 'startViewTransition', {
       configurable: true,
@@ -90,15 +102,45 @@ describe('ThemeToggle', () => {
     render(<ThemeToggle />);
     fireEvent.click(radio('Dark'));
     expect(startViewTransition).toHaveBeenCalledTimes(1);
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-    return Promise.resolve().then(() => {
-      expect(animate).toHaveBeenCalledTimes(1);
-      expect(animate.mock.calls[0][1]).toMatchObject({
-        duration: 600,
-        pseudoElement: '::view-transition-new(root)',
-      });
-      delete (document as unknown as { startViewTransition?: unknown }).startViewTransition;
+    expect(document.documentElement.dataset.vt).toBe('theme');
+    // State and announcement land together, inside the update callback.
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+    expect(screen.getByRole('status')).toHaveTextContent('');
+    await act(async () => {
+      await Promise.resolve();
     });
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(screen.getByRole('status')).toHaveTextContent('Dark theme on');
+    expect(animate).toHaveBeenCalledTimes(1);
+    expect(animate.mock.calls[0][1]).toMatchObject({
+      duration: 600,
+      pseudoElement: '::view-transition-new(root)',
+    });
+    finish();
+    await act(async () => {
+      await finished;
+    });
+    expect(document.documentElement.dataset.vt).toBeUndefined();
+  });
+
+  it('survives a skipped transition', async () => {
+    Object.defineProperty(document, 'startViewTransition', {
+      configurable: true,
+      value: vi.fn((update: () => void) => {
+        update();
+        return {
+          ready: Promise.reject(new Error('skipped')),
+          finished: Promise.reject(new Error('skipped')),
+        };
+      }),
+    });
+    render(<ThemeToggle />);
+    fireEvent.click(radio('Light'));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(document.documentElement.dataset.vt).toBeUndefined();
   });
 
   it('swaps instantly under reduced motion', () => {
@@ -121,6 +163,5 @@ describe('ThemeToggle', () => {
     fireEvent.click(radio('Dark'));
     expect(startViewTransition).not.toHaveBeenCalled();
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-    delete (document as unknown as { startViewTransition?: unknown }).startViewTransition;
   });
 });

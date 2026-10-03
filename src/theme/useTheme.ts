@@ -17,13 +17,14 @@ import {
  * when the device switches schemes, so a System change applies live.
  */
 const listeners = new Set<() => void>();
+let detachWindow: (() => void) | null = null;
 
 function emit() {
   listeners.forEach((l) => l());
 }
 
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
+/** Window-level listeners are attached once, while at least one hook is mounted. */
+function attachWindow(): () => void {
   const onStorage = (e: StorageEvent) => {
     if (e.key === null || e.key === THEME_STORAGE_KEY) {
       applyTheme(readStoredTheme());
@@ -33,11 +34,25 @@ function subscribe(listener: () => void): () => void {
   window.addEventListener('storage', onStorage);
   const mql = typeof window.matchMedia === 'function' ? window.matchMedia(DARK_SCHEME_QUERY) : null;
   const onScheme = () => emit();
-  mql?.addEventListener?.('change', onScheme);
+  // Older Safari only has addListener/removeListener.
+  if (mql?.addEventListener) mql.addEventListener('change', onScheme);
+  else mql?.addListener?.(onScheme);
+  return () => {
+    window.removeEventListener('storage', onStorage);
+    if (mql?.removeEventListener) mql.removeEventListener('change', onScheme);
+    else mql?.removeListener?.(onScheme);
+  };
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  if (!detachWindow) detachWindow = attachWindow();
   return () => {
     listeners.delete(listener);
-    window.removeEventListener('storage', onStorage);
-    mql?.removeEventListener?.('change', onScheme);
+    if (listeners.size === 0 && detachWindow) {
+      detachWindow();
+      detachWindow = null;
+    }
   };
 }
 

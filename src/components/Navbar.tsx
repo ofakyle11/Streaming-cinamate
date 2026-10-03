@@ -111,7 +111,7 @@ export default function Navbar() {
         </span>
       </IconButton>
       <ul id={MENU_ID} ref={listRef} className={`nav-links${menuOpen ? ' is-open' : ''}`}>
-        {/* Mobile and tablet: the theme control is the first row of the menu sheet. */}
+        {/* Phones and tablets (<=1024px): the theme control is the first row of the menu sheet. */}
         <li className="nav-theme nav-theme-menu">
           <ThemeToggle />
         </li>
@@ -133,7 +133,7 @@ export default function Navbar() {
         ))}
       </ul>
       <div className="nav-right">
-        {/* Desktop: left of search. Hidden at <=1024px where the menu sheet has it. */}
+        {/* Desktop (>1024px): left of search. Hidden below that, where the menu sheet has it. */}
         <div className="nav-theme nav-theme-desktop">
           <ThemeToggle />
         </div>
