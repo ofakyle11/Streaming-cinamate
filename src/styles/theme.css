@@ -158,6 +158,11 @@ a.avatar {
     linear-gradient(to top, var(--color-bg) 2%, transparent 50%),
     linear-gradient(to right, var(--color-scrim-strong), transparent 60%);
 }
+.hero-card.glass {
+  /* Text over imagery never depends on the backdrop (docs/A11Y.md). */
+  background: var(--glass-bg-legible);
+  color: var(--color-on-glass);
+}
 .hero-card {
   position: absolute;
   left: 5vw;
