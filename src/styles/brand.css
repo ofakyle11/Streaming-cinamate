@@ -19,12 +19,6 @@
   transform: scale(1.03);
 }
 
-@media (max-width: 420px) {
-  .logo.logo--with-mark {
-    gap: 8px;
-    font-size: 1.05rem;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .logo-mark {

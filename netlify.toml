@@ -31,8 +31,9 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Self-hosted font subsets are content-addressed by name only (a new cut
-# gets a new file name), so they can be cached as long as the bundles.
+# Self-hosted font subsets are cached as long as the bundles. The file names
+# are not hashed, so a re-cut subset must get a new file name (update
+# src/styles/fonts.css and the preloads in index.html together).
 [[headers]]
   for = "/fonts/*"
   [headers.values]

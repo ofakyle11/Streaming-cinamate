@@ -142,6 +142,7 @@
   --text-h2: clamp(1.25rem, 1rem + 1.2vw, 1.75rem);
   --text-h1: clamp(1.6rem, 1.2rem + 2vw, 2.4rem);
   --text-hero: clamp(2rem, 1.2rem + 4vw, 4rem);
+  --text-display: clamp(1.9rem, 1.2rem + 3vw, 3.2rem); /* title page and modal headings */
 
   /* ---------- legacy aliases (do not remove) ---------- */
   --bg: var(--color-bg);

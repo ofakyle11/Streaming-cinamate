@@ -16,7 +16,7 @@
   box-shadow: 0 0 20px var(--focus-ring-glow);
 }
 .install-card-body { flex: 1; min-width: 0; }
-.install-card-body h2 { margin: 0 0 4px; font-size: 1.1rem; }
+.install-card-body h2 { margin: 0 0 4px; font-size: var(--text-h3); }
 .install-card-body p { margin: 0; line-height: 1.45; color: var(--color-muted); }
 .install-card-action { flex: none; }
 
