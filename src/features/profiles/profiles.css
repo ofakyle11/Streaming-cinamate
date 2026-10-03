@@ -218,6 +218,14 @@
     width: 100%;
     padding-bottom: calc(28px + var(--safe-bottom));
   }
+  /* The sticky handle cannot leave the dialog's content box, so the top padding
+     moves onto the form and the handle sits at the sheet edge like the trailer's. */
+  .modal-backdrop > .profile-editor.sheet {
+    padding-top: 0;
+  }
+  .profile-editor.sheet form {
+    padding-top: 28px;
+  }
 }
 .profile-editor form {
   display: flex;
@@ -496,7 +504,11 @@
   }
   .modal-backdrop > .profile-editor.sheet {
     padding: 20px;
+    padding-top: 0;
     padding-bottom: calc(20px + var(--safe-bottom));
+  }
+  .profile-editor.sheet form {
+    padding-top: 20px;
   }
   .profile-editor-head .lf-avatar.lg {
     --avatar-size: 64px;

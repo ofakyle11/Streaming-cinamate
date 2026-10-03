@@ -137,6 +137,11 @@
   justify-content: center;
   gap: 6px;
 }
+/* Everything on the Ink screen is theme-invariant, the primary CTA included. */
+.hero-copy .btn.primary {
+  background: var(--color-ink-accent, #9b8cff);
+  color: var(--color-ink, #141126);
+}
 /* Glass secondaries sit on Ink in both themes: an Ink-safe look. */
 .hero-copy .btn.glass,
 .hero-trailer-controls .icon-btn,
@@ -146,6 +151,9 @@
   color: var(--color-ink-fg, #f6f5ff);
 }
 @media (hover: hover) and (pointer: fine) {
+  .hero-copy .btn.primary:hover {
+    background: color-mix(in srgb, var(--color-ink-accent, #9b8cff) 85%, white);
+  }
   .hero-copy .btn.glass:hover,
   .hero-trailer-controls .icon-btn:hover,
   .hero-nav .icon-btn:hover {
