@@ -68,11 +68,10 @@
 
 .logo-mark__halo {
   position: absolute;
-  inset: -45%;
+  inset: -35%;
   z-index: 0;
   border-radius: 50%;
   pointer-events: none;
-  filter: blur(10px);
   transform: scale(1);
   transition:
     transform var(--logo-dur-micro) var(--logo-ease-exit),
@@ -88,11 +87,13 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  /* Each layer blurs on its own so the breathe never re-blurs the hover layer. */
+  filter: blur(14px);
   background: radial-gradient(
     circle at 78% 22%,
     color-mix(in srgb, var(--logo-halo-a) 70%, transparent) 0%,
     color-mix(in srgb, var(--logo-halo-b) 55%, transparent) 32%,
-    transparent 68%
+    transparent 100%
   );
 }
 
@@ -123,7 +124,10 @@
 
 .logo-mark--header::after {
   opacity: 0;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--logo-shadow-color) 40%, transparent);
+  box-shadow: var(
+    --glow-accent,
+    0 4px 16px color-mix(in srgb, var(--logo-shadow-color) 40%, transparent)
+  );
   transition: opacity var(--logo-dur-micro) var(--logo-ease-exit);
 }
 
@@ -138,7 +142,6 @@
 @keyframes lf-logo-tile {
   from {
     opacity: 0;
-    transform: scale(0.96);
   }
 }
 
@@ -207,59 +210,79 @@
 }
 
 /* ---- hover and focus: the light comes up, the object stays ----
-   Triggered on the mark itself or on the link that wraps it (.logo). Enter
+   Triggered on the mark itself or on the link or button that wraps it. Enter
    over 400ms with ease-enter, leave in 160ms with ease-exit (the resting
    transitions above). */
 
-.logo-mark:not([data-animate='none']):hover .logo-mark__tile,
-.logo:hover .logo-mark:not([data-animate='none']) .logo-mark__tile,
-.logo:focus-visible .logo-mark:not([data-animate='none']) .logo-mark__tile {
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ):not([data-animate='none'])
+  .logo-mark__tile {
   transform: scale(1.03);
   transition: transform var(--logo-dur-layout) var(--logo-ease-enter);
 }
 
-.logo-mark:not([data-animate='none']):hover .logo-mark__halo,
-.logo:hover .logo-mark:not([data-animate='none']) .logo-mark__halo,
-.logo:focus-visible .logo-mark:not([data-animate='none']) .logo-mark__halo {
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ):not([data-animate='none'])
+  .logo-mark__halo {
   transform: scale(1.04);
   will-change: opacity, transform;
   transition: transform var(--logo-dur-layout) var(--logo-ease-enter);
 }
 
-.logo-mark:not([data-animate='none']):hover .logo-mark__halo::after,
-.logo:hover .logo-mark:not([data-animate='none']) .logo-mark__halo::after,
-.logo:focus-visible .logo-mark:not([data-animate='none']) .logo-mark__halo::after {
-  opacity: 0.5; /* stacks on the 45% base: the halo reads at about 95% */
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ):not([data-animate='none'])
+  .logo-mark__halo::after {
+  opacity: 0.9; /* composited over the 45% base the halo reads at about 95% */
   will-change: opacity;
   transition: opacity var(--logo-dur-layout) var(--logo-ease-enter);
 }
 
-.logo-mark--header:not([data-animate='none']):hover::after,
-.logo:hover .logo-mark--header:not([data-animate='none'])::after,
-.logo:focus-visible .logo-mark--header:not([data-animate='none'])::after {
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ).logo-mark--header:not([data-animate='none'])::after {
   opacity: 1;
   transition: opacity var(--logo-dur-layout) var(--logo-ease-enter);
 }
 
 /* One more sweep. The hero keeps its finished load sweep in the list so
    un-hovering does not replay it; the header has no load sweep to keep. */
-.logo-mark--hero[data-animate='once']:hover .logo-mark__band,
-.logo:hover .logo-mark--hero[data-animate='once'] .logo-mark__band,
-.logo:focus-visible .logo-mark--hero[data-animate='once'] .logo-mark__band {
+:is(
+    .logo-mark:hover,
+    .logo:hover .logo-mark,
+    .logo:focus-visible .logo-mark
+  ).logo-mark--hero[data-animate='once']
+  .logo-mark__band {
   animation:
     lf-logo-sweep var(--logo-dur-sweep) var(--logo-ease-exit) 0.15s both,
     lf-logo-sweep-hover var(--logo-dur-sweep) var(--logo-ease-exit) both;
 }
 
-.logo-mark--hero[data-animate='hover']:hover .logo-mark__band,
-.logo:hover .logo-mark--hero[data-animate='hover'] .logo-mark__band,
-.logo:focus-visible .logo-mark--hero[data-animate='hover'] .logo-mark__band {
+:is(
+    .logo-mark:hover,
+    .logo:hover .logo-mark,
+    .logo:focus-visible .logo-mark
+  ).logo-mark--hero[data-animate='hover']
+  .logo-mark__band {
   animation: lf-logo-sweep-hover var(--logo-dur-sweep) var(--logo-ease-exit) both;
 }
 
-.logo-mark--header:not([data-animate='none']):hover .logo-mark__band,
-.logo:hover .logo-mark--header:not([data-animate='none']) .logo-mark__band,
-.logo:focus-visible .logo-mark--header:not([data-animate='none']) .logo-mark__band {
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ).logo-mark--header:not([data-animate='none'])
+  .logo-mark__band {
   animation: lf-logo-sweep-hover var(--logo-dur-page) var(--logo-ease-exit) both;
 }
 
@@ -307,6 +330,11 @@
 @media (forced-colors: active) {
   .logo-mark__tile {
     fill: CanvasText;
+  }
+
+  /* The mask's white and black are geometry, not colour: keep them. */
+  .logo-mark mask * {
+    forced-color-adjust: none;
   }
 
   .logo-mark__band,

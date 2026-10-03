@@ -44,7 +44,7 @@ export interface LogoMarkProps {
  */
 export default function LogoMark({
   size = 32,
-  title = 'Last Frame',
+  title = 'Lastframe.tv',
   decorative = false,
   className,
   variant = 'header',
@@ -88,7 +88,7 @@ export default function LogoMark({
             <stop offset="0.5" stopColor="#fff" stopOpacity="0.55" />
             <stop offset="1" stopColor="#fff" stopOpacity="0" />
           </linearGradient>
-          <mask id={lensId}>
+          <mask id={lensId} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
             <rect width="100" height="100" fill="#fff" />
             <circle className="logo-mark__lens" cx="100" cy="0" r="54" fill="#000" />
           </mask>

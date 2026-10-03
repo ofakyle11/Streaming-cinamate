@@ -11,9 +11,9 @@ describe('LogoMark', () => {
     expect(img.querySelector('title')).toHaveTextContent('Last Frame logo');
   });
 
-  it('defaults the accessible name to "Last Frame" and applies size', () => {
+  it('defaults the accessible name to "Lastframe.tv" and applies size', () => {
     render(<LogoMark size={48} />);
-    const img = screen.getByRole('img', { name: 'Last Frame' });
+    const img = screen.getByRole('img', { name: 'Lastframe.tv' });
     expect(img).toHaveAttribute('width', '48');
     expect(img).toHaveAttribute('height', '48');
   });
