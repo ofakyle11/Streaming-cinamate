@@ -1,5 +1,5 @@
 import { MouseEvent, Suspense } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import ErrorBoundary from '../components/errors/ErrorBoundary';
 import OfflineBanner from '../components/errors/OfflineBanner';
@@ -25,19 +25,29 @@ export default function AppLayout() {
         Skip to content
       </a>
       <div className="aurora" aria-hidden>
-        <span /><span /><span />
+        <span />
+        <span />
+        <span />
       </div>
       <Navbar />
       <div id="main" className="main-target" tabIndex={-1}>
         <ErrorBoundary resetKey={location.pathname}>
-          <Suspense fallback={<div className="page-loading" aria-live="polite">Loading…</div>}>
+          <Suspense
+            fallback={
+              <div className="page-loading" aria-live="polite">
+                Loading…
+              </div>
+            }
+          >
             <Outlet />
           </Suspense>
         </ErrorBoundary>
       </div>
       <OfflineBanner />
       <RouteAnnouncer />
-      <footer className="footer">Last Frame · lastframe.tv</footer>
+      <footer className="footer">
+        Last Frame · lastframe.tv · <Link to="/brand">Brand kit</Link>
+      </footer>
     </>
   );
 }
