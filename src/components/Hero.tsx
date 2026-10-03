@@ -271,46 +271,56 @@ export default function Hero({
           <div className="hero-fade" />
           <div
             className="hero-copy"
-            key={movie.id}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={slideLabel}
             onPointerEnter={() => setHovering(true)}
             onPointerLeave={() => setHovering(false)}
             onFocus={() => setFocusWithin(true)}
             onBlur={handleBlur}
           >
-            {/* The animated Lumen mark (phase 4): lens, one sweep and a breathing halo on the Ink screen. */}
+            {/* The animated Lumen mark (phase 4): lens, one sweep and a breathing halo on the
+                Ink screen. Outside the keyed slide so its load choreography plays once per
+                mount, not on every slide change. */}
             <div className="hero-lockup lf-rise" data-logo-slot="hero" style={rise(0)}>
               <LogoMark variant="hero" size={64} decorative />
             </div>
-            <h1 className="lf-rise" style={rise(1)}>
-              {movie.title}
-            </h1>
-            <div className="meta lf-rise" style={rise(2)}>
-              <span className="fit">Fit {movie.match}</span>
-              <span>{movie.year}</span>
-              {movie.rating && <span className="badge">{movie.rating}</span>}
-              <span>{movie.genres.join(' · ')}</span>
-            </div>
-            <p className="lf-rise" style={rise(3)}>
-              {movie.description}
-            </p>
-            <div className="actions lf-rise" style={rise(4)}>
-              <button type="button" className="btn primary hero-cta" onClick={() => onMore(movie)}>
-                Where to watch
-              </button>
-              <button
-                type="button"
-                className={`btn glass hero-trailer-btn${playPending ? ' is-pending' : ''}`}
-                onClick={() => play(movie)}
-                aria-busy={playPending || undefined}
-                aria-disabled={playPending || undefined}
-              >
-                {playPending && <span className="hero-trailer-spinner" aria-hidden />}
-                Trailer
-              </button>
-              <HeroListButton movie={movie} />
+            <div
+              className="hero-slide"
+              key={movie.id}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={slideLabel}
+            >
+              <h1 className="lf-rise" style={rise(1)}>
+                {movie.title}
+              </h1>
+              <div className="meta lf-rise" style={rise(2)}>
+                <span className="fit">Fit {movie.match}</span>
+                <span>{movie.year}</span>
+                {movie.rating && <span className="badge">{movie.rating}</span>}
+                <span>{movie.genres.join(' · ')}</span>
+              </div>
+              <p className="lf-rise" style={rise(3)}>
+                {movie.description}
+              </p>
+              <div className="actions lf-rise" style={rise(4)}>
+                <button
+                  type="button"
+                  className="btn primary hero-cta"
+                  onClick={() => onMore(movie)}
+                >
+                  Where to watch
+                </button>
+                <button
+                  type="button"
+                  className={`btn glass hero-trailer-btn${playPending ? ' is-pending' : ''}`}
+                  onClick={() => play(movie)}
+                  aria-busy={playPending || undefined}
+                  aria-disabled={playPending || undefined}
+                >
+                  {playPending && <span className="hero-trailer-spinner" aria-hidden />}
+                  Trailer
+                </button>
+                <HeroListButton movie={movie} />
+              </div>
             </div>
           </div>
           {trailerKey && (

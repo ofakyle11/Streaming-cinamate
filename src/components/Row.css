@@ -23,13 +23,19 @@
   transform: none;
 }
 /* Above the fold: the first two rows (and their cards) are always visible.
-   HistoryRows may wrap its rows, hence the second selector. */
+   HistoryRows may wrap its rows, hence the second selector. The card branch
+   clears `translate` only: `transform` stays free for hover and press
+   (MovieCard.css), which these selectors would otherwise outrank. */
 .rows > .row:nth-child(-n + 2),
-.rows > .row:nth-child(-n + 2) .card,
-.rows > :nth-child(-n + 2) .row,
-.rows > :nth-child(-n + 2) .row .card {
+.rows > :nth-child(-n + 2) .row {
   opacity: 1;
   transform: none;
+  animation: none;
+}
+.rows > .row:nth-child(-n + 2) .card,
+.rows > :nth-child(-n + 2) .row .card {
+  opacity: 1;
+  translate: none;
   animation: none;
 }
 .row h2 {

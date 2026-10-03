@@ -50,7 +50,8 @@ describe('useSheetDismiss', () => {
   beforeEach(() => {
     onDismiss.mockReset();
     sheet = document.createElement('div');
-    sheet.innerHTML = '<header><h2>Sheet</h2></header><div class="body">body</div>';
+    sheet.innerHTML =
+      '<div class="sheet-handle"></div><header><h2>Sheet</h2></header><div class="body">body</div>';
     document.body.appendChild(sheet);
     mockMatchMedia((q) => q.includes('max-width: 1024px'));
   });
@@ -102,7 +103,7 @@ describe('useSheetDismiss', () => {
     expect(onDismiss).not.toHaveBeenCalled();
   });
 
-  it('only starts from the top of the sheet or its header', () => {
+  it('only starts from the top of the sheet, its handle or its header', () => {
     mount();
     Object.defineProperty(sheet, 'scrollTop', { value: 120, configurable: true });
     const body = sheet.querySelector('.body')!;
@@ -110,6 +111,25 @@ describe('useSheetDismiss', () => {
     expect(onDismiss).not.toHaveBeenCalled();
     const header = sheet.querySelector('header')!;
     drag(header, 200);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    const handle = sheet.querySelector('.sheet-handle')!;
+    drag(handle, 200);
+    expect(onDismiss).toHaveBeenCalledTimes(2);
+  });
+
+  it('a finger only starts from the handle or header, never from scrollable content', () => {
+    mount();
+    const body = sheet.querySelector('.body')!;
+    const touch = { pointerType: 'touch' };
+    pointer(body, 'pointerdown', 100, 0, touch);
+    pointer(body, 'pointermove', 300, 500, touch);
+    pointer(body, 'pointerup', 300, 500, touch);
+    expect(sheet.style.transform).toBe('');
+    expect(onDismiss).not.toHaveBeenCalled();
+    const handle = sheet.querySelector('.sheet-handle')!;
+    pointer(handle, 'pointerdown', 100, 0, touch);
+    pointer(handle, 'pointermove', 300, 500, touch);
+    pointer(handle, 'pointerup', 300, 500, touch);
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 

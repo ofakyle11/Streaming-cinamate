@@ -99,6 +99,11 @@
   display: flex;
   align-items: center;
 }
+/* The keyed slide: remounts per title so the copy re-rises; the lockup above does not. */
+.hero-slide {
+  display: grid;
+  gap: 12px;
+}
 .hero-copy h1 {
   font-size: var(--fs-hero);
   line-height: 1.02;
@@ -347,6 +352,7 @@
   }
   .hero-screen,
   .hero-copy > *,
+  .hero-slide > *,
   .hero-trailer-controls {
     animation: none;
     opacity: 1;

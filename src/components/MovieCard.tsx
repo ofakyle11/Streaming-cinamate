@@ -25,6 +25,13 @@ interface Props {
   extraAction?: ReactNode;
   /** Roving-tabindex wiring from the parent Row (arrow keys move between cards). */
   rovingProps?: RovingItemProps<HTMLAnchorElement>;
+  /**
+   * Carry the `lf-artwork` view-transition name while navigating to this title
+   * (the poster morphs into the title backdrop). Default true. Rows rendered on
+   * a title page pass false: that page's backdrop already owns the name, and a
+   * duplicate aborts the whole route transition.
+   */
+  artworkTransition?: boolean;
 }
 
 /**
@@ -49,11 +56,12 @@ export default function MovieCard({
   listSource = 'card',
   extraAction,
   rovingProps,
+  artworkTransition = true,
 }: Props) {
   const to = titlePath(movie);
   // Only the clicked card carries the view-transition name: two elements with
   // the same name would cancel the poster-to-artwork morph.
-  const isTransitioning = useArtworkTransition(to);
+  const isTransitioning = useArtworkTransition(to) && artworkTransition;
   return (
     <div className="card" style={{ transitionDelay: `${delay}ms`, animationDelay: `${delay}ms` }}>
       <Link

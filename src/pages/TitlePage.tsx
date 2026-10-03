@@ -225,6 +225,7 @@ function TitleView({ data }: { data: TitleDetails }) {
               title={movie.mediaType === 'tv' ? 'More series like this' : 'More like this'}
               items={similar}
               onSelect={openSimilar}
+              artworkTransition={false}
             />
           </div>
         )}

@@ -205,14 +205,16 @@
 }
 
 /* ---------- editor dialog ---------- */
-/* Sizing, radius, shadow and the sheet/card entrance come from the modal block in theme.css. */
-.modal-backdrop > .profile-editor {
+/* Sizing, radius, shadow and the sheet/card entrance come from the modal block in theme.css.
+   `.sheet` is in the selector for specificity: this file is in the eager bundle and loads
+   before theme.css, so an equal-specificity width here would lose to the generic 820px. */
+.modal-backdrop > .profile-editor.sheet {
   width: min(480px, 100%);
   padding: 28px;
   text-align: left;
 }
 @media (max-width: 1024px) {
-  .modal-backdrop > .profile-editor {
+  .modal-backdrop > .profile-editor.sheet {
     width: 100%;
     padding-bottom: calc(28px + var(--safe-bottom));
   }
@@ -223,6 +225,7 @@
   gap: 20px;
 }
 .profile-editor-head {
+  touch-action: none;
   display: flex;
   align-items: center;
   gap: 18px;
@@ -491,7 +494,7 @@
   .profile-tile-edit {
     top: calc(18px + 48px);
   }
-  .modal-backdrop > .profile-editor {
+  .modal-backdrop > .profile-editor.sheet {
     padding: 20px;
     padding-bottom: calc(20px + var(--safe-bottom));
   }

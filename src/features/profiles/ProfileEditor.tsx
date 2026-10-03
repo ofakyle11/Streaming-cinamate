@@ -129,6 +129,7 @@ export default function ProfileEditor({
         aria-labelledby={titleId}
         onKeyDown={handleKeyDown}
       >
+        <div className="sheet-handle" aria-hidden />
         <form onSubmit={handleSubmit} noValidate>
           <header className="profile-editor-head">
             <ProfileAvatar name={previewName} avatar={avatar} kid={kid} size="lg" />

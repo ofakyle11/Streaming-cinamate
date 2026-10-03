@@ -386,15 +386,16 @@
 /* ---------- trailer modal ----------
    Sizing, radius, shadow and the sheet/card entrance come from the modal block in
    theme.css; the dialog keeps its 16:9 frame and is full width on the sheet. */
-.modal-backdrop > .trailer-modal {
+.modal-backdrop > .trailer-modal.sheet {
   width: min(960px, 100%);
 }
 @media (max-width: 1024px) {
-  .modal-backdrop > .trailer-modal {
+  .modal-backdrop > .trailer-modal.sheet {
     width: 100%;
   }
 }
 .trailer-head {
+  touch-action: none;
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -146,14 +146,20 @@ button {
 .modal-backdrop > [role='dialog'] {
   position: relative;
   width: min(820px, 100%);
+  max-height: 90vh;
   max-height: 90dvh;
   overflow: auto;
   border-radius: var(--radius-xl);
   background: var(--color-surface-solid);
   box-shadow: var(--shadow-2);
-  animation: lf-screen var(--dur-layout) var(--ease-enter) both;
+  /* Entrances fill backwards, never forwards/both: the end frame is the base state,
+     so inline transforms (useSheetDismiss) and hover rules can win afterwards. */
+  animation: lf-screen var(--dur-layout) var(--ease-enter) backwards;
 }
 @media (min-width: 1025px) {
+  .sheet-handle {
+    display: none;
+  }
   .modal-backdrop {
     backdrop-filter: var(--glass-blur-soft);
     -webkit-backdrop-filter: var(--glass-blur-soft);
@@ -172,29 +178,35 @@ button {
   .modal-backdrop > [role='dialog'] {
     width: 100%;
     max-width: none;
+    max-height: 92vh;
     max-height: 92dvh;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     padding-bottom: var(--safe-bottom);
     overflow: auto;
     overscroll-behavior: contain;
-    animation: lf-sheet-in var(--dur-layout) var(--ease-enter) both;
+    animation: lf-sheet-in var(--dur-layout) var(--ease-enter) backwards;
   }
   /* Snap back after a drag that did not reach the dismiss threshold (useSheetDismiss). */
   .modal.is-snapping,
   .modal-backdrop > [role='dialog'].is-snapping {
     transition: transform var(--dur-component) var(--ease-enter);
   }
-  /* Drag handle. */
-  .modal::before,
-  .modal-backdrop > [role='dialog']::before {
-    content: '';
-    display: block;
+  /* Drag handle: a real element (not ::before) so it can carry touch-action: none,
+     which keeps the browser from claiming the pan before useSheetDismiss sees it. */
+  .sheet-handle {
+    display: flex;
+    justify-content: center;
     position: sticky;
-    top: 8px;
+    top: 0;
     z-index: 2;
+    padding: 8px 0 4px;
+    touch-action: none;
+    cursor: grab;
+  }
+  .sheet-handle::before {
+    content: '';
     width: 36px;
     height: 4px;
-    margin: 8px auto 0;
     border-radius: var(--radius-pill);
     background: var(--glass-border-strong);
   }

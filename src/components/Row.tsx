@@ -13,11 +13,13 @@ interface Props {
   onSelect?: (m: Movie) => void;
   /** Optional per-card overlay passed to MovieCard's `extraAction` slot. */
   cardExtra?: (m: Movie) => ReactNode;
+  /** Passed to every card; false on pages whose backdrop already carries `lf-artwork`. */
+  artworkTransition?: boolean;
 }
 
 const cardKey = (m: Movie) => `${m.mediaType}-${m.id}`;
 
-export default function Row({ title, items, onSelect, cardExtra }: Props) {
+export default function Row({ title, items, onSelect, cardExtra, artworkTransition }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -134,6 +136,7 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
               onSelect={onSelect}
               extraAction={cardExtra?.(m)}
               rovingProps={getItemProps(i)}
+              artworkTransition={artworkTransition}
             />
           ))}
         </div>

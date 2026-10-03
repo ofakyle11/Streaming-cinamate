@@ -14,7 +14,9 @@
   background: var(--color-surface-2);
   box-shadow: var(--shadow-1);
   opacity: 0;
-  transform: translateY(8px);
+  /* The entrance offset lives on `translate`, so it never competes with the
+     hover/press `transform` (Row.css also clears it for the first two rows). */
+  translate: 0 8px;
   /* Hover leaves with the exit values; the hover state swaps in the enter values. */
   transition:
     transform var(--dur-micro) var(--ease-exit),
@@ -26,7 +28,7 @@
    delay set by Row.tsx (50ms apart, capped at five cards). */
 .row.in .card {
   opacity: 1;
-  transform: none;
+  translate: none;
   animation: lf-rise var(--dur-layout) var(--ease-enter) backwards;
 }
 /* Soft highlight that lags the pointer by --dur-micro. */
@@ -214,6 +216,7 @@
   .row.in .card:active {
     animation: none;
     opacity: 1;
+    translate: none;
     transform: none;
   }
   .card::after {

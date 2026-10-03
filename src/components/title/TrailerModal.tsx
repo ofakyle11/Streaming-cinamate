@@ -116,6 +116,7 @@ export default function TrailerModal({
         aria-labelledby="trailer-title"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="sheet-handle" aria-hidden />
         <header className="trailer-head">
           <h2 id="trailer-title">{video.name || `${title} trailer`}</h2>
           <IconButton ref={closeRef} label="Close trailer" onClick={onClose}>

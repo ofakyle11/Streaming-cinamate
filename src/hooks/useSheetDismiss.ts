@@ -22,11 +22,14 @@ function matches(query: string): boolean {
 
 /**
  * Pointer drag-to-dismiss for a bottom sheet. Only active on phone and tablet
- * (`(max-width: 1024px)`). A downward drag that starts while the sheet is
- * scrolled to the top (or on its header) follows the pointer; releasing past
- * 96px or faster than 0.6 px/ms calls `onDismiss`, otherwise the sheet snaps
- * back (class `is-snapping` for a --dur-component transition; no transition
- * under prefers-reduced-motion).
+ * (`(max-width: 1024px)`). A downward drag from the handle (`.sheet-handle`)
+ * or the header follows the pointer; releasing past 96px or faster than
+ * 0.6 px/ms calls `onDismiss`, otherwise the sheet snaps back (class
+ * `is-snapping` for a --dur-component transition; no transition under
+ * prefers-reduced-motion). Those surfaces carry `touch-action: none` in CSS,
+ * so the browser never claims a finger drag as a scroll pan (which would end
+ * it with `pointercancel`). A mouse may also start from anywhere while the
+ * sheet is scrolled to the top, since touch-action does not apply to it.
  */
 export function useSheetDismiss(
   ref: RefObject<HTMLElement | null>,
@@ -51,12 +54,13 @@ export function useSheetDismiss(
       snapTimer = undefined;
     };
 
-    const canStart = (target: EventTarget | null) =>
-      el.scrollTop <= 0 || (target instanceof Element && target.closest('header') !== null);
+    const canStart = (e: PointerEvent) =>
+      (e.target instanceof Element && e.target.closest('header, .sheet-handle') !== null) ||
+      (e.pointerType !== 'touch' && el.scrollTop <= 0);
 
     const onDown = (e: PointerEvent) => {
       if (pointerId !== null || !e.isPrimary || e.button !== 0) return;
-      if (!canStart(e.target)) return;
+      if (!canStart(e)) return;
       endSnap();
       pointerId = e.pointerId;
       startY = lastY = e.clientY;

@@ -105,6 +105,19 @@ test.describe('home', () => {
   });
 });
 
+test.describe('hover', () => {
+  test('cards in the first row still scale on hover', async ({ page, hasTouch }) => {
+    test.skip(hasTouch || viewport().width <= TABLET_MAX, 'desktop pointer projects only');
+    await page.goto('/');
+    const card = page.locator('.rows > .row').first().locator('.card').first();
+    await box(card);
+    await card.hover();
+    await expect
+      .poll(() => card.evaluate((el) => getComputedStyle(el).transform))
+      .toMatch(/^matrix\(1\.03/);
+  });
+});
+
 test.describe('search', () => {
   test('inputs are at least 16px so phones never zoom', async ({ page }) => {
     await page.goto('/search');
@@ -165,6 +178,62 @@ test.describe('title page', () => {
 
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
+  });
+
+  test('a finger drag on the sheet handle closes the trailer', async ({ page, hasTouch }) => {
+    test.skip(!hasTouch || viewport().width > TABLET_MAX, 'phone and tablet touch projects only');
+    await openTitle(page);
+    await page.getByRole('button', { name: 'Trailer' }).first().click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    const before = await box(dialog);
+    const handle = await box(dialog.locator('.sheet-handle'));
+    const x = handle.x + handle.width / 2;
+    const y = handle.y + handle.height / 2;
+    // A real pointer sequence (touch-action: none keeps the browser from panning instead).
+    const cdp = await page.context().newCDPSession(page);
+    const point = (type: 'touchStart' | 'touchMove' | 'touchEnd', dy: number) =>
+      cdp.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: type === 'touchEnd' ? [] : [{ x, y: y + dy }],
+      });
+    await point('touchStart', 0);
+    for (let dy = 20; dy <= 60; dy += 20) await point('touchMove', dy);
+    const during = await box(dialog);
+    expect(during.y - before.y, 'the sheet follows the finger').toBeGreaterThanOrEqual(40);
+    for (let dy = 80; dy <= 200; dy += 40) await point('touchMove', dy);
+    await point('touchEnd', 0);
+    await expect(dialog).toBeHidden();
+  });
+
+  test('opening a similar title keeps the route view transition', async ({ page }) => {
+    await openTitle(page);
+    const supported = await page.evaluate(() => 'startViewTransition' in document);
+    test.skip(!supported, 'this browser has no view transitions');
+    await page.evaluate(() => {
+      const w = window as unknown as { __vt: string[] };
+      w.__vt = [];
+      const doc = document as Document & {
+        startViewTransition: (cb: () => void | Promise<void>) => ViewTransition;
+      };
+      const orig = doc.startViewTransition.bind(doc);
+      doc.startViewTransition = (cb) => {
+        const t = orig(cb);
+        t.ready.then(
+          () => w.__vt.push('ready'),
+          (e: unknown) => w.__vt.push(`rejected: ${(e as Error).message}`),
+        );
+        return t;
+      };
+    });
+    const similar = page.locator('.title-similar .card-link').first();
+    await similar.scrollIntoViewIfNeeded();
+    const name = (await similar.getAttribute('aria-label'))!.replace(/ \(\d{4}\)$/, '');
+    await similar.click();
+    await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __vt: string[] }).__vt))
+      .toEqual(['ready']);
   });
 });
 
