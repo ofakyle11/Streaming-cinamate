@@ -489,6 +489,7 @@ a.avatar {
 }
 
 /* ---------- responsive ---------- */
+/* Phones and tablets share the menu sheet (see nav.css); the phone layout below stays <= 760px. */
 @media (max-width: 1024px) {
   .nav-links {
     display: none;
@@ -499,6 +500,8 @@ a.avatar {
   .search:focus {
     width: 150px;
   }
+}
+@media (max-width: 760px) {
   .card {
     width: 120px;
   }

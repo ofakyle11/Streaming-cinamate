@@ -81,7 +81,14 @@ function switchWithTransition(apply: () => void, origin: HTMLElement | null, red
   );
   const root = document.documentElement;
   root.dataset.vt = 'theme'; // scopes the ::view-transition rules in theme-toggle.css
-  const transition = doc.startViewTransition(apply);
+  let transition: { ready: Promise<void>; finished: Promise<void> };
+  try {
+    transition = doc.startViewTransition(apply);
+  } catch {
+    delete root.dataset.vt;
+    apply();
+    return;
+  }
   transition.finished
     .finally(() => {
       delete root.dataset.vt;

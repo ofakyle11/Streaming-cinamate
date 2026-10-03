@@ -42,6 +42,16 @@
   }
 }
 
+/* Tablets keep a roomier search field than phones. */
+@media (min-width: 761px) and (max-width: 1024px) {
+  .navbar .search {
+    width: 160px;
+  }
+  .navbar .search:focus {
+    width: 200px;
+  }
+}
+
 @media (max-width: 1024px) {
   .navbar {
     gap: 12px;
