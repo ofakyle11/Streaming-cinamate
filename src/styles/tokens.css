@@ -29,6 +29,16 @@
   --color-sky: #6fd3ff; /* light end of the gradient */
   --color-sky-tint: rgba(111, 211, 255, 0.12); /* "tonight" rows */
 
+  /* ---------- the Ink screen (same in both themes) ----------
+     Surfaces that stay dark whatever the theme, such as the hero inset.
+     Every fg value passes AA on Ink: fg 17.1:1, soft 9.8:1, muted 4.6:1. */
+  --color-ink: #141126;
+  --color-ink-fg: #f6f5ff;
+  --color-ink-fg-soft: #bdb9d8;
+  --color-ink-fg-muted: #948fb3;
+  --color-ink-accent: #9b8cff; /* Lavender on Ink, 6.7:1 */
+  --color-ink-scrim: rgba(14, 11, 30, 0.85);
+
   /* ---------- status ---------- */
   --color-success: #17754c;
   --color-warn: #8f5a00;
@@ -43,6 +53,7 @@
   --color-surface-solid: #ffffff;
   --color-tint: #eceafb; /* selected and sunken */
   --color-scrim: rgba(20, 17, 38, 0.45);
+  --color-scrim-strong: rgba(20, 17, 38, 0.8); /* behind text over bright imagery */
   /* Text colour to use on top of --color-text (e.g. an Ink button on light). */
   --color-on-text: var(--color-bg);
   --color-on-light: var(--color-on-text);

@@ -69,17 +69,23 @@
   box-shadow: var(--glass-shadow);
   animation: plan-in var(--dur-slow) var(--ease-out) both;
   transition:
-    transform var(--dur-base) var(--ease-spring),
+    transform var(--dur-base) var(--ease-enter),
     border-color var(--dur-fast),
     box-shadow var(--dur-base);
 }
 .plan-card:hover {
-  transform: translateY(-4px);
+  transform: scale(1.03);
   border-color: var(--glass-border-strong);
+  box-shadow: var(--shadow-card-hover);
 }
 .plan-card.recommended {
   background:
-    linear-gradient(160deg, rgba(124, 58, 237, 0.18), rgba(6, 182, 212, 0.08)), var(--glass-bg);
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--brand-lavender) 18%, transparent),
+      color-mix(in srgb, var(--color-sky) 8%, transparent)
+    ),
+    var(--glass-bg);
 }
 .plan-card.selected {
   border-color: var(--glass-highlight);
@@ -112,9 +118,9 @@
   color: var(--color-text-soft);
 }
 .plan-badge.accent {
-  background: var(--color-violet);
+  background: var(--color-accent);
   border-color: transparent;
-  color: var(--color-text);
+  color: var(--color-on-accent);
 }
 
 .plan-name {
@@ -155,7 +161,7 @@
 @keyframes plan-in {
   from {
     opacity: 0;
-    transform: translateY(24px) scale(0.97);
+    transform: translateY(8px);
   }
 }
 

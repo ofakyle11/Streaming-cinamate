@@ -1,45 +1,90 @@
 /* Poster cards: a .card wrapper holding the router link (/title/:type/:id) plus
    sibling overlays -- the My List toggle (top-left) and the rating overlay
    (top-right, see ratings/ratings.css). Buttons cannot live inside a link. */
-.card-link { display: block; width: 100%; height: 100%; color: inherit; text-decoration: none; }
-.card-link:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: calc(-1 * var(--focus-ring-width));
-  border-radius: inherit; box-shadow: inset 0 0 0 5px var(--focus-ring-glow);
+.card-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
 }
-.card:focus-within .card-info { transform: none; }
-.row.in .card:focus-within { transform: translateY(-8px) scale(1.04); z-index: 3; }
+.card-link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 5px var(--focus-ring-glow);
+}
+.card:focus-within .card-info {
+  transform: none;
+}
+.row.in .card:focus-within {
+  transform: scale(1.03);
+  z-index: 3;
+}
 
 /* ---------- My List toggle (hover / focus reveal) ---------- */
 /* Top-left so it never overlaps the rating overlay's thumbs pill (top-right). */
 .card-list-btn {
-  position: absolute; top: 6px; left: 6px; z-index: 2;
-  background: var(--glass-bg-strong); border: 1px solid var(--glass-border-strong);
-  -webkit-backdrop-filter: var(--glass-blur-soft); backdrop-filter: var(--glass-blur-soft);
-  color: var(--color-text); font-weight: 700;
-  opacity: 0; transform: scale(0.8);
-  transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-base) var(--ease-spring),
-    background var(--dur-fast), border-color var(--dur-fast);
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border-strong);
+  -webkit-backdrop-filter: var(--glass-blur-soft);
+  backdrop-filter: var(--glass-blur-soft);
+  color: var(--color-text);
+  font-weight: 700;
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity var(--dur-fast) var(--ease-standard),
+    transform var(--dur-base) var(--ease-enter),
+    background var(--dur-fast),
+    border-color var(--dur-fast);
 }
 .card:hover .card-list-btn,
 .card:focus-within .card-list-btn,
-.card-list-btn.is-listed { opacity: 1; transform: none; }
-.card-list-btn:hover { transform: scale(1.12); }
-.card-list-btn.is-listed { border-color: var(--color-success); color: var(--color-success); }
+.card-list-btn.is-listed {
+  opacity: 1;
+  transform: none;
+}
+.card-list-btn:hover {
+  transform: scale(1.03);
+}
+.card-list-btn.is-listed {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
 
 /* Touch screens have no hover: keep the toggle visible. */
 @media (hover: none) {
-  .card-list-btn { opacity: 1; transform: none; }
+  .card-list-btn {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Size the rating overlay to its content so its box never covers (and steals
    clicks from) the My List toggle on the left. */
-.card .card-rate { left: auto; }
+.card .card-rate {
+  left: auto;
+}
 
 @media (max-width: 760px) {
-  .card-list-btn { top: 4px; left: 4px; }
+  .card-list-btn {
+    top: 4px;
+    left: 4px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .row.in .card:focus-within { transform: none; }
-  .card-list-btn, .card-list-btn:hover { transform: none; transition: none; }
+  .row.in .card:focus-within {
+    transform: none;
+  }
+  .card-list-btn,
+  .card-list-btn:hover {
+    transform: none;
+    transition: none;
+  }
 }
