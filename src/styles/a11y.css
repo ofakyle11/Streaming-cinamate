@@ -44,7 +44,7 @@ a.skip-link:focus-visible {
 
 /* ---------- rows / cards: keyboard parity with hover ---------- */
 .row.in .card:focus-visible {
-  transform: translateY(-8px) scale(1.08);
+  transform: scale(1.03);
   z-index: 3;
   transition-delay: 0ms !important;
 }

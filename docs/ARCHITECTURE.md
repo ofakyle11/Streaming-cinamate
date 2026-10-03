@@ -79,12 +79,12 @@ data (profiles, lists, history, ratings) to a fresh guest, since the cloud holds
 
 ## Environment
 
-| Var | Effect |
-| --- | --- |
-| `VITE_TMDB_PROXY` | Live TMDB through our proxy |
-| `TMDB_API_KEY` (server-only) | Used by the Netlify TMDB proxy function, never the client |
-| `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` | Live auth + db (both required; Supabase SDK is lazy-loaded). Auth: magic link + Google OAuth; add `<origin>/account` to Supabase redirect URLs |
-| `VITE_PLAUSIBLE_DOMAIN` (+ optional `VITE_PLAUSIBLE_API_HOST`) | Plausible analytics (`services/analytics/plausible.ts`); else console mock |
+| Var                                                            | Effect                                                                                                                                         |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_TMDB_PROXY`                                              | Live TMDB through our proxy                                                                                                                    |
+| `TMDB_API_KEY` (server-only)                                   | Used by the Netlify TMDB proxy function, never the client                                                                                      |
+| `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`                 | Live auth + db (both required; Supabase SDK is lazy-loaded). Auth: magic link + Google OAuth; add `<origin>/account` to Supabase redirect URLs |
+| `VITE_PLAUSIBLE_DOMAIN` (+ optional `VITE_PLAUSIBLE_API_HOST`) | Plausible analytics (`services/analytics/plausible.ts`); else console mock                                                                     |
 
 See `docs/KEYS.md` for the full list, including tooling-only variables.
 
@@ -115,6 +115,11 @@ the tokens in `tokens.css`, not literal colours. Glass surfaces use the `.glass`
 translucent backgrounds and `backdrop-filter` blur. The global `prefers-reduced-motion` block
 in `theme.css` switches off animations and transitions everywhere, so new motion only needs
 extra handling if it's driven by JS (for example, the hero rotation).
+
+Under the Lumen brand the tokens are split in two: `tokens.css` holds the shared tokens and
+the light theme values, and `themes.css` redefines the colour tokens for dark (device
+preference, or an explicit `data-theme` on `<html>`). Phase 1 ships with
+`data-theme="dark"` as the default; phase 2 adds the theme switch.
 
 ## Brand
 

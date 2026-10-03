@@ -6,7 +6,8 @@
  */
 import type { ManifestOptions, VitePWAOptions } from 'vite-plugin-pwa';
 
-export const PWA_THEME_COLOR = '#0b0b12';
+/** Ink; the dark theme is the default in phase 1 (phase 2 adds the switch). */
+export const PWA_THEME_COLOR = '#141126';
 
 /** Source SVG for the generated icon set (relative to the project root). */
 export const PWA_LOGO_SOURCE = 'public/logo.svg';

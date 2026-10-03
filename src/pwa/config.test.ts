@@ -22,8 +22,8 @@ describe('pwa manifest', () => {
   it('names the app Last Frame with the brand theme colour', () => {
     expect(pwaManifest.name).toBe('Last Frame');
     expect(pwaManifest.short_name).toBe('Last Frame');
-    expect(pwaManifest.theme_color).toBe('#0b0b12');
-    expect(pwaManifest.background_color).toBe('#0b0b12');
+    expect(pwaManifest.theme_color).toBe('#141126');
+    expect(pwaManifest.background_color).toBe('#141126');
     expect(pwaManifest.display).toBe('standalone');
     expect(pwaManifest.start_url).toBe('/');
   });
@@ -40,7 +40,16 @@ describe('isImageRequest', () => {
   });
 
   it('matches fetches of image files by extension', () => {
-    for (const p of ['/a.png', '/b.JPG', '/c.jpeg', '/d.webp', '/e.avif', '/f.gif', '/logo.svg', '/favicon.ico']) {
+    for (const p of [
+      '/a.png',
+      '/b.JPG',
+      '/c.jpeg',
+      '/d.webp',
+      '/e.avif',
+      '/f.gif',
+      '/logo.svg',
+      '/favicon.ico',
+    ]) {
       expect(isImageRequest(ctx('', p))).toBe(true);
     }
   });
@@ -74,7 +83,6 @@ describe('isImageRequest', () => {
     const src = isImageRequest.toString();
     expect(src).not.toMatch(/\bPWA_|\bIMAGE_CACHE/);
   });
-
 });
 
 describe('workbox runtime caching', () => {

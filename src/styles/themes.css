@@ -1,6 +1,6 @@
 /* Dark theme ("lights down"): the same room with the lights off.
    Applied when the device prefers dark and no explicit light choice is set,
-   and whenever <html data-theme="dark">. Only colour tokens are redefined;
+   and whenever <html data-theme="dark">. Only colour, glass and shadow tokens are redefined;
    radii, motion and focus geometry stay in tokens.css. Keep the two blocks
    identical. */
 @media (prefers-color-scheme: dark) {
@@ -27,6 +27,7 @@
     --color-surface-solid: #1c1833;
     --color-tint: rgba(155, 140, 255, 0.14);
     --color-scrim: rgba(0, 0, 0, 0.5);
+    --color-scrim-strong: rgba(0, 0, 0, 0.8);
     --glass-bg: rgba(255, 255, 255, 0.06);
     --glass-bg-faint: rgba(255, 255, 255, 0.03);
     --glass-bg-strong: rgba(20, 17, 38, 0.72);
@@ -39,7 +40,8 @@
     --glass-highlight: rgba(255, 255, 255, 0.3);
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
     --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.45);
-    --shadow-card-hover: var(--shadow-2), 0 0 0 1px rgba(246, 245, 255, 0.25), 0 0 30px rgba(155, 140, 255, 0.35);
+    --shadow-card-hover:
+      var(--shadow-2), 0 0 0 1px rgba(246, 245, 255, 0.25), 0 0 30px rgba(155, 140, 255, 0.35);
     --glow-accent: 0 8px 24px rgba(155, 140, 255, 0.4);
     --glow-light: 0 0 24px rgba(255, 255, 255, 0.35);
     --room-light: radial-gradient(60vw 40vw at 85% -10%, rgba(155, 140, 255, 0.1), transparent);
@@ -70,6 +72,7 @@
   --color-surface-solid: #1c1833;
   --color-tint: rgba(155, 140, 255, 0.14);
   --color-scrim: rgba(0, 0, 0, 0.5);
+  --color-scrim-strong: rgba(0, 0, 0, 0.8);
   --glass-bg: rgba(255, 255, 255, 0.06);
   --glass-bg-faint: rgba(255, 255, 255, 0.03);
   --glass-bg-strong: rgba(20, 17, 38, 0.72);
@@ -82,7 +85,8 @@
   --glass-highlight: rgba(255, 255, 255, 0.3);
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
   --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.45);
-  --shadow-card-hover: var(--shadow-2), 0 0 0 1px rgba(246, 245, 255, 0.25), 0 0 30px rgba(155, 140, 255, 0.35);
+  --shadow-card-hover:
+    var(--shadow-2), 0 0 0 1px rgba(246, 245, 255, 0.25), 0 0 30px rgba(155, 140, 255, 0.35);
   --glow-accent: 0 8px 24px rgba(155, 140, 255, 0.4);
   --glow-light: 0 0 24px rgba(255, 255, 255, 0.35);
   --room-light: radial-gradient(60vw 40vw at 85% -10%, rgba(155, 140, 255, 0.1), transparent);

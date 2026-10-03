@@ -43,6 +43,7 @@
   --color-surface-solid: #ffffff;
   --color-tint: #eceafb; /* selected and sunken */
   --color-scrim: rgba(20, 17, 38, 0.45);
+  --color-scrim-strong: rgba(20, 17, 38, 0.8); /* behind text over bright imagery */
   /* Text colour to use on top of --color-text (e.g. an Ink button on light). */
   --color-on-text: var(--color-bg);
   --color-on-light: var(--color-on-text);
