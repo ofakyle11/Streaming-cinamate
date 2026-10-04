@@ -1,6 +1,6 @@
-# Last Frame
+# Lastframe.tv
 
-Last Frame is a film and TV discovery web app. You can browse trending and popular titles,
+Lastframe.tv is a film and TV discovery web app. You can browse trending and popular titles,
 open a title for details, and keep a watchlist, history and ratings for each profile. It is a single-page app (Vite + React 18 +
 TypeScript) styled with plain CSS in a **glass-motion** design language: translucent,
 blurred panels over a dark cinematic background, with motion that switches off under

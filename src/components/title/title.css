@@ -88,14 +88,14 @@
   animation: title-rise var(--dur-slower) var(--ease-out) both;
 }
 .title-kind {
-  font-size: 0.75rem;
-  letter-spacing: 0.18em;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--color-muted);
 }
 .title-panel h1 {
-  font-size: clamp(1.9rem, 5vw, 3.2rem);
-  line-height: 1.05;
+  font-size: var(--text-display);
   overflow-wrap: anywhere;
 }
 
@@ -108,7 +108,9 @@
 }
 .title-facts {
   gap: 8px 14px;
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
   color: var(--color-muted);
 }
 .title-facts .badge {
@@ -215,7 +217,7 @@
   min-width: 0;
 }
 .title-section h2 {
-  font-size: 1.25rem;
+  font-size: var(--text-h2);
 }
 
 /* ---------- cast ---------- */
@@ -324,8 +326,10 @@
   gap: 16px;
 }
 .wtw-group h3 {
-  font-size: 0.75rem;
-  letter-spacing: 0.14em;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--color-muted);
   margin-bottom: 8px;

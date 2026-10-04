@@ -163,7 +163,7 @@ describe('Delete my data clears the PWA image cache', () => {
 });
 
 describe('clearLocalData', () => {
-  it('removes Last Frame keys only and resets the store', () => {
+  it('removes Lastframe.tv keys only and resets the store', () => {
     localStorage.setItem('lastframe', '{}');
     localStorage.setItem('lf.mock.db', '{}');
     localStorage.setItem('lf.mock.auth.session', '{}');

@@ -89,15 +89,9 @@ export default function Navbar() {
 
   return (
     <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`} aria-label="Primary">
-      <Link to="/" className="logo logo--with-mark" aria-label="Last Frame home">
-        <BrandMark
-          mark={brand.mark}
-          colourway={brand.colourway}
-          size={30}
-          decorative
-          className="logo-mark"
-        />
-        LAST FRAME
+      <Link to="/" className="logo logo--with-mark" aria-label="Lastframe.tv home">
+        <LogoMark size={30} decorative />
+        <span className="logo-wordmark">Lastframe<span className="logo-tv">.tv</span></span>
       </Link>
       <IconButton
         ref={toggleRef}

@@ -22,7 +22,7 @@ function safeNext(state: unknown): string {
 
 /** "Who's watching?" — pick, add, edit and delete profiles. */
 export default function ProfilesPage() {
-  useMeta({ title: 'Profiles', description: 'Manage who is watching on Last Frame.' });
+  useMeta({ title: 'Profiles', description: 'Manage who is watching on Lastframe.tv.' });
   const profiles = useProfiles();
   const active = useActiveProfile();
   const { addProfile, updateProfile, removeProfile, setActiveProfile } = useProfileActions();

@@ -10,7 +10,7 @@
   animation: history-in var(--dur-medium) var(--ease-out);
 }
 .history-panel h2 {
-  font-size: 1.15rem;
+  font-size: var(--text-h3);
   margin: 0 0 4px;
 }
 .history-panel .muted {

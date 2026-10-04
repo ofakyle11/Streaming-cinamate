@@ -6,7 +6,7 @@ import RouteAnnouncer from './RouteAnnouncer';
 
 function Page({ title, modal = false }: { title: string; modal?: boolean }) {
   useEffect(() => {
-    document.title = `${title} · Last Frame`;
+    document.title = `${title} · Lastframe.tv`;
   }, [title]);
   const navigate = useNavigate();
   return (
@@ -81,19 +81,19 @@ describe('RouteAnnouncer', () => {
     fireEvent.click(link);
     await flushTick();
     expect(screen.getByRole('heading', { name: 'Search' })).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Navigated to Search · Last Frame');
+    expect(screen.getByRole('status')).toHaveTextContent('Navigated to Search · Lastframe.tv');
     expect(document.activeElement).toBe(document.getElementById('main'));
 
     fireEvent.click(screen.getByRole('link', { name: 'Go home' }));
     await flushTick();
-    expect(screen.getByRole('status')).toHaveTextContent('Navigated to Home · Last Frame');
+    expect(screen.getByRole('status')).toHaveTextContent('Navigated to Home · Lastframe.tv');
   });
 
   it('waits for a late title (lazy route) before announcing', async () => {
     function LatePage() {
       useEffect(() => {
         const t = window.setTimeout(() => {
-          document.title = 'Late · Last Frame';
+          document.title = 'Late · Lastframe.tv';
         }, 300);
         return () => window.clearTimeout(t);
       }, []);
@@ -119,7 +119,7 @@ describe('RouteAnnouncer', () => {
     await act(async () => {
       vi.advanceTimersByTime(300);
     });
-    expect(screen.getByRole('status')).toHaveTextContent('Navigated to Late · Last Frame');
+    expect(screen.getByRole('status')).toHaveTextContent('Navigated to Late · Lastframe.tv');
   });
 
   it('ignores hash-only changes', async () => {
@@ -138,7 +138,7 @@ describe('RouteAnnouncer', () => {
     const inside = screen.getByRole('button', { name: 'Inside modal' });
     act(() => inside.focus());
     await flushTick();
-    expect(screen.getByRole('status')).toHaveTextContent('Navigated to Search · Last Frame');
+    expect(screen.getByRole('status')).toHaveTextContent('Navigated to Search · Lastframe.tv');
     expect(document.activeElement).toBe(inside);
   });
 });
