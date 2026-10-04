@@ -120,6 +120,11 @@ translucent backgrounds and `backdrop-filter` blur. The global `prefers-reduced-
 in `theme.css` switches off animations and transitions everywhere, so new motion only needs
 extra handling if it's driven by JS (for example, the hero rotation).
 
+Under the Lumen brand the tokens are split in two: `tokens.css` holds the shared tokens and
+the light theme values, and `themes.css` redefines the colour tokens for dark (device
+preference, or an explicit `data-theme` on `<html>`). Phase 1 ships with
+`data-theme="dark"` as the default; phase 2 adds the theme switch.
+
 ## Brand
 
 - **One source.** `components/brand/marks.ts` holds four mark directions (Monogram, Frame,

@@ -1,88 +1,146 @@
-/* Last Frame design tokens.
-   Single source of truth for colors, glass, radii and motion.
-   Legacy names (--bg, --text, --radius, --ease, ...) are kept as aliases so
-   existing selectors keep rendering identically. */
+/* Lastframe.tv design tokens (Lumen).
+   Single source of truth for colour, surfaces, glass, radii, motion and focus.
+   This file holds the shared tokens and the LIGHT theme values; themes.css
+   redefines the colour tokens for the dark theme (device preference or an
+   explicit data-theme="dark" on <html>). Components must only ever use these
+   names; never a literal colour. Legacy names (--bg, --text, --radius, --ease,
+   ...) are kept as aliases so existing selectors keep rendering. */
 :root {
-  /* ---------- colors ---------- */
-  --color-bg: #0b0b12;
-  --color-text: #f4f4f8;
-  --color-text-soft: #d6d6e0;
-  --color-muted: #a9a9bb;
-  --color-accent: #e50914;
-  --color-violet: #7c3aed;
-  --color-cyan: #06b6d4;
-  --color-success: #46d369;
-  --color-danger: #e50914;
-  --color-danger-soft: #ff8a8f;
-  --color-on-light: #000;
-  --color-surface: rgba(20, 20, 32, 0.6);
-  --color-surface-solid: rgb(20, 20, 32);
-  --color-scrim: rgba(0, 0, 0, 0.5);
+  color-scheme: light;
+
+  /* ---------- canvas and text ---------- */
+  --color-bg: #f6f5ff; /* Cloud */
+  --color-text: #141126; /* Ink */
+  --color-text-soft: #4a4766;
+  --color-muted: #666384; /* tertiary text; passes AA on bg, surface and tint only */
+
+  /* ---------- accent ---------- */
+  --color-accent: #5b47e0; /* Violet: buttons, links, focus on light */
+  --color-accent-hover: #4e3bd1;
+  --color-accent-text: #4030b8; /* link and selected-chip text */
+  --color-on-accent: #ffffff;
+  --color-accent-soft: #eceafb;
+
+  /* ---------- brand (decoration only on light; never text) ---------- */
+  --brand-lavender: #9b8cff;
+  --brand-grad-a: #6f5bf5;
+  --brand-grad-b: #5ccbff;
+  --brand-gradient: linear-gradient(135deg, var(--brand-grad-a), var(--brand-grad-b));
+  --color-sky: #6fd3ff; /* light end of the gradient */
+  --color-sky-tint: rgba(111, 211, 255, 0.12); /* "tonight" rows */
+
+  /* ---------- the Ink screen (same in both themes) ----------
+     Surfaces that stay dark whatever the theme, such as the hero inset.
+     Every fg value passes AA on Ink: fg 17.1:1, soft 9.8:1, muted 4.6:1. */
+  --color-ink: #141126;
+  --color-ink-fg: #f6f5ff;
+  --color-ink-fg-soft: #bdb9d8;
+  --color-ink-fg-muted: #948fb3;
+  --color-ink-accent: #9b8cff; /* Lavender on Ink, 6.7:1 */
+  --color-ink-scrim: rgba(14, 11, 30, 0.85);
+
+  /* ---------- status ---------- */
+  --color-success: #17754c;
+  --color-warn: #8f5a00;
+  --color-danger: #c0392b;
+  --color-danger-soft: #c0392b;
+  --color-rating: #f5c518; /* IMDb gold, a third-party colour */
+
+  /* ---------- surfaces ---------- */
+  --color-surface: #ffffff;
+  --color-surface-2: #eceafb;
+  --color-surface-3: #e2dff7;
+  --color-surface-solid: #ffffff;
+  --color-tint: #eceafb; /* selected and sunken */
+  --color-control-selected: #ffffff; /* the raised, checked segment of a control */
+  --color-scrim: rgba(20, 17, 38, 0.45);
+  --color-scrim-strong: rgba(20, 17, 38, 0.8); /* behind text over bright imagery */
+  /* Text colour to use on top of --color-text (e.g. an Ink button on light). */
+  --color-on-text: var(--color-bg);
+  --color-on-light: var(--color-on-text);
 
   /* ---------- glass ---------- */
-  --glass-bg: rgba(255, 255, 255, 0.06);
-  --glass-bg-faint: rgba(255, 255, 255, 0.03);
-  --glass-bg-strong: rgba(15, 15, 25, 0.55);
-  /* Text-bearing glass laid over arbitrary imagery (posters). Even over pure
-     white it keeps --color-text at 9.9:1 and --color-text-soft at 7.5:1 (docs/A11Y.md). */
-  --glass-bg-legible: rgba(12, 12, 20, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-border-strong: rgba(255, 255, 255, 0.25);
-  --glass-blur: blur(18px) saturate(160%);
-  --glass-blur-soft: blur(10px);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  --glass-highlight: rgba(255, 255, 255, 0.3);
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-faint: rgba(255, 255, 255, 0.3);
+  --glass-bg-strong: rgba(255, 255, 255, 0.86);
+  /* Text-bearing glass laid over arbitrary imagery. Over pure black it
+     composites to about #e0e0e0: Ink 14.0:1, text-soft 6.7:1 (muted is not
+     allowed on it). */
+  --glass-bg-legible: rgba(255, 255, 255, 0.88);
+  --color-on-glass: var(--color-text);
+  --color-on-glass-soft: var(--color-text-soft);
+  --glass-border: rgba(20, 17, 38, 0.1);
+  --glass-border-strong: rgba(20, 17, 38, 0.18);
+  --glass-blur: blur(12px) saturate(140%);
+  --glass-blur-soft: blur(8px);
+  --glass-shadow: 0 1px 2px rgba(20, 17, 38, 0.06), 0 4px 12px rgba(20, 17, 38, 0.06);
+  --glass-highlight: rgba(255, 255, 255, 0.6);
+
+  /* ---------- shadows / glows ---------- */
+  --shadow-1: 0 1px 2px rgba(20, 17, 38, 0.06), 0 4px 12px rgba(20, 17, 38, 0.06);
+  --shadow-2: 0 2px 4px rgba(20, 17, 38, 0.06), 0 16px 40px rgba(20, 17, 38, 0.14);
+  --shadow-card-hover: var(--shadow-2), 0 0 0 1px rgba(91, 71, 224, 0.25);
+  --glow-accent: 0 8px 24px rgba(91, 71, 224, 0.35);
+  --glow-light: 0 8px 24px rgba(20, 17, 38, 0.25);
+  --room-light: radial-gradient(60vw 40vw at 85% -10%, rgba(155, 140, 255, 0.16), transparent);
 
   /* ---------- radii ---------- */
   --radius-xs: 4px;
-  --radius-sm: 10px;
+  --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --radius-xl: 20px;
+  --radius-xl: 24px;
   --radius-pill: 999px;
 
   /* ---------- motion: easings ---------- */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1); /* ease-out-expo: enter */
+  --ease-exit: cubic-bezier(0.4, 0, 0.6, 1); /* leave faster and plainer */
+  --ease-toggle: cubic-bezier(0.34, 1.2, 0.64, 1); /* the only overshoot, toggles only */
+  --ease-out: var(--ease-enter);
+  --ease-spring: var(--ease-toggle);
   --ease-standard: ease;
   --ease-in-out: ease-in-out;
 
   /* ---------- motion: durations ---------- */
-  --dur-fast: 0.2s;
-  --dur-base: 0.3s;
-  --dur-medium: 0.4s;
-  --dur-slow: 0.6s;
+  --dur-feedback: 0.1s;
+  --dur-micro: 0.16s;
+  --dur-component: 0.24s;
+  --dur-layout: 0.4s;
+  --dur-page: 0.6s;
+  --dur-sweep: 0.9s;
+  --dur-fast: var(--dur-micro);
+  --dur-base: var(--dur-component);
+  --dur-medium: var(--dur-layout);
+  --dur-slow: var(--dur-page);
   --dur-slower: 0.8s;
   --dur-hero: 1.2s;
+  --dur-leave: var(--dur-micro);
 
   /* ---------- focus ---------- */
-  --focus-ring-color: rgba(244, 244, 248, 0.9);
-  --focus-ring-glow: rgba(124, 58, 237, 0.55);
+  --focus-ring-color: var(--color-accent);
+  --focus-ring-glow: rgba(91, 71, 224, 0.35);
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
 
-  /* ---------- shadows / glows ---------- */
-  --shadow-card-hover: 0 0 0 1px rgba(255, 255, 255, 0.25), 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(124, 58, 237, 0.45);
-  --glow-accent: 0 0 18px rgba(229, 9, 20, 0.6);
-  --glow-light: 0 0 24px rgba(255, 255, 255, 0.45);
-
-  /* ---------- profile avatar gradients ---------- */
-  --avatar-aurora: linear-gradient(135deg, #e50914, #7c3aed);
-  --avatar-lagoon: linear-gradient(135deg, #06b6d4, #3b82f6);
-  --avatar-dusk: linear-gradient(135deg, #7c3aed, #ec4899);
-  --avatar-ember: linear-gradient(135deg, #f97316, #e50914);
-  --avatar-meadow: linear-gradient(135deg, #22c55e, #06b6d4);
-  --avatar-gold: linear-gradient(135deg, #facc15, #f97316);
-  --avatar-nebula: linear-gradient(135deg, #312e81, #06b6d4);
-  --avatar-rose: linear-gradient(135deg, #fb7185, #f59e0b);
+  /* ---------- profile avatar gradients (ids are stored in profiles; keep names) ---------- */
+  --avatar-aurora: linear-gradient(135deg, #6f5bf5, #5ccbff);
+  --avatar-lagoon: linear-gradient(135deg, #6fd3ff, #4030b8);
+  --avatar-dusk: linear-gradient(135deg, #5b47e0, #e5739a);
+  --avatar-ember: linear-gradient(135deg, #f2b75c, #c0392b);
+  --avatar-meadow: linear-gradient(135deg, #17754c, #6fd3ff);
+  --avatar-gold: linear-gradient(135deg, #f9c784, #8f5a00);
+  --avatar-nebula: linear-gradient(135deg, #141126, #5b47e0);
+  --avatar-rose: linear-gradient(135deg, #ff8fa3, #f9c784);
 
   /* ---------- legacy aliases (do not remove) ---------- */
   --bg: var(--color-bg);
   --text: var(--color-text);
   --muted: var(--color-muted);
   --accent: var(--color-accent);
-  --violet: var(--color-violet);
-  --cyan: var(--color-cyan);
+  --violet: var(--color-accent);
+  --color-violet: var(--color-accent);
+  --cyan: var(--color-sky);
+  --color-cyan: var(--color-sky);
   --radius: var(--radius-lg);
-  --ease: var(--ease-out);
+  --ease: var(--ease-enter);
 }

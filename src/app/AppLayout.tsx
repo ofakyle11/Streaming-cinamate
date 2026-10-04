@@ -26,11 +26,6 @@ export default function AppLayout() {
       <a className="skip-link glass" href="#main" onClick={skipToContent}>
         Skip to content
       </a>
-      <div className="aurora" aria-hidden>
-        <span />
-        <span />
-        <span />
-      </div>
       <Navbar />
       <div id="main" className="main-target" tabIndex={-1}>
         <ErrorBoundary resetKey={location.pathname}>
