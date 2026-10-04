@@ -1,4 +1,4 @@
-/* Mobile primary navigation (<= 760px).
+/* Mobile and tablet primary navigation (<= 1024px, the plan's tablet breakpoint).
    theme.css hides `.nav-links` at this width; the menu toggle reveals the same
    list as a glass dropdown under the navbar. Desktop layout is untouched. */
 
@@ -10,10 +10,72 @@
   cursor: pointer;
 }
 
-@media (max-width: 760px) {
+/* Theme control slots: one in the header (desktop), one as the first row of
+   the menu sheet (<= 1024px). Only one is shown at a time. */
+.navbar .nav-theme-menu {
+  display: none;
+}
+.navbar .nav-theme-desktop {
+  display: inline-flex;
+}
+/* Nothing in the bar may wrap; between 1025 and 1200px the links and search tighten
+   so the theme control fits beside them. */
+.navbar .logo,
+.navbar .nav-links a {
+  white-space: nowrap;
+}
+@media (min-width: 1025px) and (max-width: 1200px) {
+  .navbar {
+    gap: 20px;
+  }
+  .navbar .nav-links {
+    gap: 14px;
+  }
+  .navbar .nav-right {
+    gap: 10px;
+  }
+  .navbar .search {
+    width: 120px;
+  }
+  .navbar .search:focus {
+    width: 160px;
+  }
+}
+
+/* Tablets keep a roomier search field than phones. */
+@media (min-width: 761px) and (max-width: 1024px) {
+  .navbar .search {
+    width: 160px;
+  }
+  .navbar .search:focus {
+    width: 200px;
+  }
+}
+
+@media (max-width: 1024px) {
   .navbar {
     gap: 12px;
     padding: 10px 14px;
+  }
+  .navbar .nav-theme-desktop {
+    display: none;
+  }
+  .navbar .nav-links.is-open .nav-theme-menu {
+    display: flex;
+    justify-content: center;
+    padding: 6px 8px 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--glass-border);
+    cursor: default;
+  }
+  .navbar .nav-links.is-open .nav-theme-menu .theme-toggle,
+  .navbar .nav-links.is-open .nav-theme-menu .theme-toggle-group {
+    display: flex;
+    width: 100%;
+  }
+  .navbar .nav-links.is-open .nav-theme-menu .theme-toggle-option {
+    flex: 1;
+    min-height: 44px;
   }
   .navbar .nav-right {
     gap: 10px;

@@ -48,7 +48,9 @@ src/
     brand-kit.css     /brand deck, lockup + wordmark styles (imported by BrandPage.tsx)
     errors.css        Error card + offline banner (imported by errors/ components)
     a11y.css          Skip link, focus rings, main target, .sr-only (imported by AppLayout.tsx)
-    nav.css           Mobile primary nav toggle + glass dropdown (imported by Navbar.tsx)
+    nav.css           Mobile primary nav toggle + glass dropdown, theme control slots (imported by Navbar.tsx)
+    theme-toggle.css  ThemeToggle segmented control + theme view transition (imported by ThemeToggle.tsx)
+  theme/              theme.ts (lf.theme storage, resolve, applyTheme + theme-color metas), useTheme.ts (store hook, setTheme)
   test/               Vitest setup and integration tests
   services/db/sync.ts        Pure store <-> row mapping + last-write-wins merge
   services/db/syncEngine.ts  startCloudSync: initial pull, merge, debounced upserts, persisted retry queue
@@ -103,7 +105,8 @@ The production CSP in `netlify.toml` allows `https://*.supabase.co` and `wss://*
 
 ## PWA
 
-`vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Lastframe.tv" (theme `#0b0b12`), icons generated at build
+`vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Lastframe.tv" (theme and background Cloud `#f6f5ff`;
+`injectThemeColor` is off because `index.html` carries two `theme-color` metas), icons generated at build
 from `public/logo.svg` via `pwa-assets.config.ts`, generateSW service worker precaching the app shell and caching
 images cache-first (`lf-images`, 250 entries / 30 days). `main.tsx` captures `beforeinstallprompt`; the Account
 page's `InstallAppCard` offers "Install app" (manual Add to Home Screen hint on iOS). The SW is build-only.
@@ -123,8 +126,14 @@ extra handling if it's driven by JS (for example, the hero rotation).
 
 Under the Lumen brand the tokens are split in two: `tokens.css` holds the shared tokens and
 the light theme values, and `themes.css` redefines the colour tokens for dark (device
-preference, or an explicit `data-theme` on `<html>`). Phase 1 ships with
-`data-theme="dark"` as the default; phase 2 adds the theme switch.
+preference, or an explicit `data-theme` on `<html>`). Light is the default and follows the
+device. `public/theme-init.js` (first script in `<head>`, allowed by the `script-src 'self'` CSP)
+reads the saved choice from `localStorage` key `lf.theme` and sets `data-theme` before paint;
+`src/theme/useTheme.ts` is the React side of the same store and `ThemeToggle` (System / Light /
+Dark) is in the Navbar: header on desktop, first row of the menu sheet at <=1024px (the plan's tablet breakpoint; the menu
+breakpoint moved from 760 to 1024 so the header never overflows on tablets). The manifest's
+`theme_color`/`background_color` are static, so an installed app that was set to Dark shows a Cloud
+splash for a moment before `theme-init.js` runs; that is a platform limitation, not a bug.
 
 ### Type
 
@@ -155,7 +164,7 @@ tracking); `theme.css` applies them to `body`, headings, code and form controls 
   path for Safari pinned tabs) and `icons/icon.svg` / `logo.svg` (the full-bleed app icon).
   `node scripts/generate-icons.mjs` rasterises
   `favicon-32.png` and `apple-touch-icon.png` with a local headless Chromium. `index.html`
-  sets `theme-color` `#0b0b12`.
+  sets the `theme-color` metas (Cloud `#f6f5ff` light, Ink `#141126` dark).
 - **Brand kit (`/brand`, `pages/BrandPage.tsx`)**: a ten-page guideline deck laid out like a
   printed brand book, presenting four alternative mark directions (Monogram, Frame, Strip,
   Countdown) and four colourways. `components/brand/marks.ts` holds them as path data on a
@@ -225,7 +234,7 @@ hidden polite live region. If the lazily loaded page hasn't set `document.title`
 then announces anyway. While an `[aria-modal="true"]` dialog is open it still announces but
 doesn't move focus.
 
-**Mobile nav.** At <=760px `theme.css` hides `.nav-links`, and `Navbar` shows a menu toggle
+**Mobile nav.** At <=1024px `theme.css` hides `.nav-links`, and `Navbar` shows a menu toggle
 (`aria-expanded`, `aria-controls` pointing at the links list). Opening it shows the same list
 as a glass dropdown under the navbar (`nav.css`, 44px tap targets, reduced-motion safe). It
 closes on Escape or an outside click, returning focus to the toggle, and on any route change.

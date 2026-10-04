@@ -1,0 +1,97 @@
+/* ThemeToggle: a segmented radio group (System / Light / Dark) on glass.
+   Tokens only. The checked option carries the raised surface; only paint
+   properties (background, colour) transition, so nothing animates layout or
+   shadow. Reduced motion is handled globally in theme.css (all transitions off). */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+}
+.theme-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  border: 1px solid var(--glass-border);
+}
+.theme-toggle-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-soft);
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  position: relative;
+  transition:
+    background var(--dur-component) var(--ease-enter),
+    color var(--dur-component) var(--ease-enter);
+}
+.theme-toggle-option:hover {
+  color: var(--color-text);
+}
+.theme-toggle-option:hover:not(.is-checked) {
+  background: var(--glass-bg);
+}
+.theme-toggle-option.is-checked {
+  background: var(--color-control-selected);
+  color: var(--color-text);
+  /* Shadow for the raised look; the hairline gives the 3:1 boundary in dark, where the
+     surface steps are close together. */
+  box-shadow:
+    inset 0 0 0 1px var(--glass-border-strong),
+    var(--shadow-1);
+}
+.theme-toggle-option:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.theme-toggle-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.theme-toggle-icon svg {
+  display: block;
+}
+
+/* Header slot (desktop): icon only, labels stay as the accessible name.
+   Same recipe as .sr-only in a11y.css, scoped to this breakpoint. */
+.navbar .nav-theme-desktop .theme-toggle-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.navbar .nav-theme-desktop .theme-toggle-option {
+  padding: 0 9px;
+}
+
+/* View transition for the theme switch: the new theme grows as a circle from
+   the control (ThemeToggle animates ::view-transition-new(root) with the Web
+   Animations API). The old snapshot stays put and the default cross-fade is off.
+   Scoped to html[data-vt="theme"], set for the duration of the switch, so route
+   transitions added later keep their own animation. */
+html[data-vt='theme']::view-transition-old(root),
+html[data-vt='theme']::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html[data-vt='theme']::view-transition-old(root) {
+  z-index: 1;
+}
+html[data-vt='theme']::view-transition-new(root) {
+  z-index: 2;
+}

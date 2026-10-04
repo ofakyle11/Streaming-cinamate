@@ -1,10 +1,12 @@
 <!doctype html>
-<!-- Phase 1 keeps dark as the default theme until phase 2 adds the theme switch. -->
-<html lang="en" data-theme="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#141126" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f5ff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141126" />
+    <!-- Theme bootstrap: applies the saved theme (localStorage "lf.theme") to <html> and the metas above before first paint. Keep it the first script, after the metas. -->
+    <script src="/theme-init.js"></script>
     <link rel="preload" href="/fonts/gabarito-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preconnect" href="https://image.tmdb.org" />

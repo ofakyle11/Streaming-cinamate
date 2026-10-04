@@ -4,6 +4,7 @@ import ProfileMenu from '../features/profiles/ProfileMenu';
 import BrandMark from './brand/BrandMark';
 import { useActiveBrand } from './brand/activeBrand';
 import IconButton from './ui/IconButton';
+import ThemeToggle from './ui/ThemeToggle';
 import '../styles/nav.css';
 
 const links = [
@@ -106,6 +107,10 @@ export default function Navbar() {
         </span>
       </IconButton>
       <ul id={MENU_ID} ref={listRef} className={`nav-links${menuOpen ? ' is-open' : ''}`}>
+        {/* Phones and tablets (<=1024px): the theme control is the first row of the menu sheet. */}
+        <li className="nav-theme nav-theme-menu">
+          <ThemeToggle />
+        </li>
         {links.map((l) => (
           <li key={l.to}>
             <NavLink
@@ -123,6 +128,10 @@ export default function Navbar() {
         ))}
       </ul>
       <div className="nav-right">
+        {/* Desktop (>1024px): left of search. Hidden below that, where the menu sheet has it. */}
+        <div className="nav-theme nav-theme-desktop">
+          <ThemeToggle />
+        </div>
         <form role="search" onSubmit={submitSearch}>
           <input
             className="search glass"
