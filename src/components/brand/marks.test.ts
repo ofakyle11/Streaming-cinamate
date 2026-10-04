@@ -11,12 +11,7 @@ import stripLockup from '../../../public/brand/lf-strip-lockup.svg?raw';
 import countdownMark from '../../../public/brand/lf-countdown-mark.svg?raw';
 import countdownIcon from '../../../public/brand/lf-countdown-icon.svg?raw';
 import countdownLockup from '../../../public/brand/lf-countdown-lockup.svg?raw';
-import favicon from '../../../public/favicon.svg?raw';
-import maskIcon from '../../../public/mask-icon.svg?raw';
-import maskableIcon from '../../../public/icons/icon.svg?raw';
-import logo from '../../../public/logo.svg?raw';
 import {
-  ACTIVE_BRAND,
   COLOURWAYS,
   MARKS,
   appIconSvg,
@@ -40,11 +35,11 @@ const COMMITTED: Record<MarkId, { mark: string; icon: string; lockup: string }> 
 };
 
 describe('marks', () => {
-  it('defines four marks and four colourways with unique ids', () => {
+  it('defines four marks and five colourways with unique ids', () => {
     expect(MARKS).toHaveLength(4);
-    expect(COLOURWAYS).toHaveLength(4);
+    expect(COLOURWAYS).toHaveLength(5);
     expect(new Set(MARKS.map((m) => m.id)).size).toBe(4);
-    expect(new Set(COLOURWAYS.map((c) => c.id)).size).toBe(4);
+    expect(new Set(COLOURWAYS.map((c) => c.id)).size).toBe(5);
     expect(MARKS.map((m) => m.index)).toEqual(['01', '02', '03', '04']);
   });
 
@@ -96,8 +91,8 @@ describe('marks', () => {
 
   it('lockupSvg carries the wordmark as text next to the mark', () => {
     const svg = lockupSvg({ mark: 'strip' });
-    expect(svg).toContain('>LAST FRAME</text>');
-    expect(svg).toContain('<title id="lf-title">Last Frame</title>');
+    expect(svg).toContain('>LASTFRAME.TV</text>');
+    expect(svg).toContain('<title id="lf-title">Lastframe.tv</title>');
     expect((svg.match(/<linearGradient/g) ?? []).length).toBe(1);
   });
 
@@ -108,7 +103,7 @@ describe('marks', () => {
         icon: `lf-${id}-icon.svg`,
         lockup: `lf-${id}-lockup.svg`,
       });
-      const title = `Last Frame ${name} mark`;
+      const title = `Lastframe.tv ${name} mark`;
       expect(COMMITTED[id].mark).toBe(markSvg({ mark: id, variant: 'bare', title }));
       expect(COMMITTED[id].icon).toBe(markSvg({ mark: id, variant: 'tile', size: 512, title }));
       expect(COMMITTED[id].lockup).toBe(lockupSvg({ mark: id }));
@@ -116,7 +111,7 @@ describe('marks', () => {
   });
 
   it('appIconSvg scales the glyphs into a 512 tile and monoSvg paints everything black', () => {
-    const rounded = appIconSvg({ mark: 'strip', shape: 'rounded', title: 'Last Frame' });
+    const rounded = appIconSvg({ mark: 'strip', shape: 'rounded', title: 'Lastframe.tv' });
     expect(rounded).toContain('viewBox="0 0 512 512"');
     expect(rounded).toContain('translate(256 256) scale(6) translate(-32 -32)');
     expect(rounded).toContain('a112 112 0 0 1');
@@ -131,14 +126,5 @@ describe('marks', () => {
     expect(mono).toContain('stroke-width="0.75"');
     expect(mono).not.toContain('stroke-width="1.5"');
     expect(monoSvg({ mark: 'countdown' })).toContain('stroke-width="4"');
-  });
-
-  it('the app icons in public/ are drawn from ACTIVE_BRAND (run the generators)', () => {
-    const { mark, colourway } = ACTIVE_BRAND;
-    const title = 'Last Frame';
-    expect(favicon).toBe(markSvg({ mark, colourway, variant: 'tile', size: 64, title }));
-    expect(maskIcon).toBe(monoSvg({ mark }));
-    expect(maskableIcon).toBe(appIconSvg({ mark, colourway, shape: 'bleed', title }));
-    expect(logo).toBe(appIconSvg({ mark, colourway, shape: 'rounded', title }));
   });
 });

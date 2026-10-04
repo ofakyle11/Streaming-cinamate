@@ -8,7 +8,7 @@ describe('BrandMark', () => {
   it('renders each mark as a named image by default', () => {
     for (const m of MARKS) {
       const { unmount } = render(<BrandMark mark={m.id} />);
-      const img = screen.getByRole('img', { name: `Last Frame ${m.name} mark` });
+      const img = screen.getByRole('img', { name: `Lastframe.tv ${m.name} mark` });
       expect(img).toHaveAttribute('data-mark', m.id);
       expect(img.querySelectorAll('path').length).toBeGreaterThan(0);
       unmount();
@@ -47,8 +47,8 @@ describe('BrandMark', () => {
 describe('Lockup', () => {
   it('is one image named after the brand, with a decorative mark and the wordmark', () => {
     render(<Lockup mark="monogram" size={48} />);
-    const img = screen.getByRole('img', { name: 'Last Frame' });
-    expect(img).toHaveTextContent('LAST FRAME');
+    const img = screen.getByRole('img', { name: 'Lastframe.tv' });
+    expect(img).toHaveTextContent('LASTFRAME.TV');
     expect(img.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(img).toHaveStyle({ '--lf-size': '48px' });
   });
@@ -60,6 +60,6 @@ describe('Lockup', () => {
 
   it('Wordmark renders the brand name in caps', () => {
     render(<Wordmark size={20} />);
-    expect(screen.getByText('LAST FRAME')).toHaveStyle({ fontSize: '20px' });
+    expect(screen.getByText('LASTFRAME.TV')).toHaveStyle({ fontSize: '20px' });
   });
 });

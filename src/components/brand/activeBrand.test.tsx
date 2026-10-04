@@ -59,16 +59,20 @@ describe('useActiveBrand', () => {
     expect(result.current.isPreview).toBe(false);
   });
 
-  it('drives the Navbar mark', () => {
+  it('swaps the Navbar mark only while a preview is set', () => {
     render(
       <MemoryRouter>
         <Navbar />
       </MemoryRouter>,
     );
-    const logo = screen.getByRole('link', { name: 'Last Frame home' });
-    expect(logo.querySelector('svg')).toHaveAttribute('data-mark', ACTIVE_BRAND.mark);
+    const logo = screen.getByRole('link', { name: 'Lastframe.tv home' });
+    // The shipped Lumen mark, until a kit preview swaps in an alternative.
+    expect(logo.querySelector('svg')).not.toBeNull();
+    expect(logo.querySelector('[data-mark]')).toBeNull();
     act(() => setBrandPreview({ mark: 'strip', colourway: 'ember' }));
     expect(logo.querySelector('svg')).toHaveAttribute('data-mark', 'strip');
+    act(() => clearBrandPreview());
+    expect(logo.querySelector('[data-mark]')).toBeNull();
   });
 });
 

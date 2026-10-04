@@ -89,7 +89,7 @@ describe('Navbar discovery links', () => {
 describe('Navbar Lumen hooks', () => {
   it('marks the logo link as the header logo slot', () => {
     renderAt('/');
-    expect(nav().getByRole('link', { name: 'Last Frame home' })).toHaveAttribute(
+    expect(nav().getByRole('link', { name: 'Lastframe.tv home' })).toHaveAttribute(
       'data-logo-slot',
       'header',
     );

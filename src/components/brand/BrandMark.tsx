@@ -44,7 +44,7 @@ export default function BrandMark({
   const gradId = `${uid}-grad`;
   const shineId = `${uid}-shine`;
   const titleId = `${uid}-title`;
-  const name = title ?? `Last Frame ${def.name} mark`;
+  const name = title ?? `Lastframe.tv ${def.name} mark`;
 
   const onGradientTile = variant === 'tile-gradient';
   const glyph = onGradientTile ? LIGHT : `url(#${gradId})`;

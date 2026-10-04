@@ -43,7 +43,7 @@ export default function AppLayout() {
       <OfflineBanner />
       <RouteAnnouncer />
       <footer className="footer">
-        Lastframe.tv · <Link to="/brand">Brand kit</Link>
+        <span>Lastframe.tv</span> · <Link to="/brand">Brand kit</Link>
       </footer>
     </>
   );

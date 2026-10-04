@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import ProfileMenu from '../features/profiles/ProfileMenu';
 import BrandMark from './brand/BrandMark';
+import LogoMark from './brand/LogoMark';
 import { useActiveBrand } from './brand/activeBrand';
 import IconButton from './ui/IconButton';
 import ThemeToggle from './ui/ThemeToggle';
@@ -97,8 +98,21 @@ export default function Navbar() {
         data-logo-slot="header"
         viewTransition
       >
-        <LogoMark size={30} decorative />
-        <span className="logo-wordmark">Lastframe<span className="logo-tv">.tv</span></span>
+        {/* The Lumen mark ships; a brand-kit preview (set on /brand) swaps in that option. */}
+        {brand.isPreview ? (
+          <BrandMark
+            mark={brand.mark}
+            colourway={brand.colourway}
+            size={30}
+            decorative
+            className="logo-mark"
+          />
+        ) : (
+          <LogoMark size={30} decorative />
+        )}
+        <span className="logo-wordmark">
+          Lastframe<span className="logo-tv">.tv</span>
+        </span>
       </Link>
       <IconButton
         ref={toggleRef}

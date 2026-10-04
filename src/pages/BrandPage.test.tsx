@@ -27,7 +27,7 @@ describe('BrandPage', () => {
 
   it('renders the deck with four logo options and the shipped direction selected by default', () => {
     renderAt();
-    expect(document.title).toBe('Brand kit · Last Frame');
+    expect(document.title).toBe('Brand kit · Lastframe.tv');
     expect(screen.getByRole('heading', { level: 1, name: /Brand\s*kit/ })).toBeInTheDocument();
     const buttons = options().getAllByRole('button');
     expect(buttons.map((b) => b.getAttribute('aria-pressed'))).toEqual([
@@ -95,9 +95,9 @@ describe('BrandPage', () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
     renderAt('/brand?option=strip&colour=dusk');
-    fireEvent.click(screen.getByRole('button', { name: 'Copy Signal #e50914' }));
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith('#e50914'));
-    expect(await screen.findByRole('button', { name: 'Copy Signal #e50914' })).toHaveTextContent(
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Violet #5b47e0' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('#5b47e0'));
+    expect(await screen.findByRole('button', { name: 'Copy Violet #5b47e0' })).toHaveTextContent(
       'Copied',
     );
     fireEvent.click(screen.getAllByRole('button', { name: 'Copy SVG' })[0]);
@@ -110,7 +110,7 @@ describe('BrandPage', () => {
   it('labels every lockup and mark once, and hides mockup copies', () => {
     renderAt();
     // The headline lockups are images with the brand name.
-    expect(screen.getAllByRole('img', { name: 'Last Frame' }).length).toBeGreaterThan(2);
+    expect(screen.getAllByRole('img', { name: 'Lastframe.tv' }).length).toBeGreaterThan(2);
     // Mockups are decorative wrappers; nothing inside them is exposed.
     const navMock = document.querySelector('.bk-navbar');
     expect(navMock).toHaveAttribute('aria-hidden', 'true');
@@ -125,7 +125,7 @@ describe('BrandPage', () => {
     window.localStorage.removeItem('lf.brand');
     renderAt('/brand?option=frame&colour=lagoon');
     const group = within(screen.getByRole('group', { name: 'App preview' }));
-    expect(group.getByText(/shipped default/)).toBeInTheDocument();
+    expect(group.getByText(/Lumen mark/)).toBeInTheDocument();
     fireEvent.click(group.getByRole('button', { name: 'Try it in the app' }));
     expect(window.localStorage.getItem('lf.brand')).toBe(
       JSON.stringify({ mark: 'frame', colourway: 'lagoon' }),
@@ -133,8 +133,8 @@ describe('BrandPage', () => {
     expect(group.getByText(/02 \/ Frame · Lagoon/)).toBeInTheDocument();
     expect(group.getByText(/preview in this browser/)).toBeInTheDocument();
     expect(group.getByRole('button', { name: 'Showing in the app' })).toBeDisabled();
-    fireEvent.click(group.getByRole('button', { name: 'Back to default' }));
+    fireEvent.click(group.getByRole('button', { name: 'Back to Lumen' }));
     expect(window.localStorage.getItem('lf.brand')).toBeNull();
-    expect(group.getByText(/shipped default/)).toBeInTheDocument();
+    expect(group.getByText(/Lumen mark/)).toBeInTheDocument();
   });
 });

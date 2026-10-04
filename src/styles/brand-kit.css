@@ -4,6 +4,7 @@
 
 /* ---------- lockup + wordmark (shared with any future navbar use) ---------- */
 .lf-wordmark {
+  font-family: var(--font-display);
   font-weight: 900;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -80,6 +81,7 @@
 
 /* ---------- voices ---------- */
 .bk-display {
+  font-family: var(--font-display);
   font-size: clamp(1.9rem, 4.6vw, 3.4rem);
   font-weight: 900;
   line-height: 0.98;
@@ -106,7 +108,7 @@
   -webkit-text-fill-color: transparent;
 }
 .bk-mono {
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.95rem;
   line-height: 1.6;
   color: var(--color-text-soft);
@@ -340,7 +342,7 @@
   height: 32px;
   display: grid;
   place-items: center;
-  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--color-text);
   background: rgba(124, 58, 237, 0.35);
@@ -506,7 +508,7 @@
   gap: 12px;
 }
 .bk-roles code {
-  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--color-text-soft);
 }
@@ -741,7 +743,7 @@
   min-width: 0;
 }
 .bk-file-name code {
-  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.78rem;
   color: var(--color-muted);
   overflow-wrap: anywhere;

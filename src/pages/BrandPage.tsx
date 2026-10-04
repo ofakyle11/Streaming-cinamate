@@ -24,36 +24,64 @@ import '../styles/brand-kit.css';
 
 const KIT_EDITION = 'October 2026';
 
-/** Colour tokens shown on the colour slide (values from src/styles/tokens.css). */
+/** Lumen colour tokens shown on the colour slide (light-theme values from src/styles/tokens.css). */
 const COLOUR_TOKENS = [
   {
-    name: 'Night',
-    hex: '#0b0b12',
+    name: 'Cloud',
+    hex: '#f6f5ff',
     token: '--color-bg',
-    role: 'Background. Every surface starts here.',
+    role: 'Light background. Every surface starts here.',
+    light: false,
   },
-  { name: 'Snow', hex: '#f4f4f8', token: '--color-text', role: 'Primary text and the wordmark.' },
   {
-    name: 'Soft',
-    hex: '#d6d6e0',
+    name: 'Ink',
+    hex: '#141126',
+    token: '--color-ink',
+    role: 'Text on light, and the dark theme and hero screens.',
+    light: true,
+  },
+  {
+    name: 'Dusk',
+    hex: '#4a4766',
     token: '--color-text-soft',
-    role: 'Secondary text over imagery.',
+    role: 'Secondary text.',
+    light: true,
   },
-  { name: 'Mist', hex: '#a9a9bb', token: '--color-muted', role: 'Metadata, labels, quiet UI.' },
   {
-    name: 'Signal',
-    hex: '#e50914',
-    token: '--color-accent',
-    role: 'The accent. Gradient end, destructive actions.',
+    name: 'Haze',
+    hex: '#666384',
+    token: '--color-muted',
+    role: 'Metadata, labels, quiet UI.',
+    light: true,
   },
   {
     name: 'Violet',
-    hex: '#7c3aed',
-    token: '--color-violet',
-    role: 'Gradient start, focus glow, aurora.',
+    hex: '#5b47e0',
+    token: '--color-accent',
+    role: 'The accent: buttons, links and focus.',
+    light: true,
   },
-  { name: 'Cyan', hex: '#06b6d4', token: '--color-cyan', role: 'Aurora highlight, info states.' },
-  { name: 'Go', hex: '#46d369', token: '--color-success', role: 'Match score and success states.' },
+  {
+    name: 'Lumen',
+    hex: '#6f5bf5',
+    token: '--brand-grad-a',
+    role: 'Brand gradient start and the logo.',
+    light: true,
+  },
+  {
+    name: 'Sky',
+    hex: '#5ccbff',
+    token: '--brand-grad-b',
+    role: 'Brand gradient end and the lens of light.',
+    light: false,
+  },
+  {
+    name: 'Go',
+    hex: '#17754c',
+    token: '--color-success',
+    role: 'Match score and success states.',
+    light: true,
+  },
 ] as const;
 
 const SLIDES = [
@@ -90,7 +118,7 @@ function Slide({ id, children, className }: SlideProps) {
       aria-labelledby={`${id}-heading`}
     >
       <div className="bk-strip" aria-hidden="true">
-        <span>Last Frame</span>
+        <span>Lastframe.tv</span>
         <span>{slide.section}</span>
         <span>{slide.status}</span>
       </div>
@@ -111,7 +139,7 @@ export default function BrandPage() {
   useMeta({
     title: 'Brand kit',
     description:
-      'Last Frame brand kit: four logo directions, colourways, logo use, typography, colour and downloadable SVG files.',
+      'Lastframe.tv brand kit: the Lumen identity, four alternative logo directions, colourways, logo use, typography, colour and downloadable SVG files.',
   });
   const [params, setParams] = useSearchParams();
   const optionParam = params.get('option');
@@ -123,7 +151,7 @@ export default function BrandPage() {
   const files = assetFiles(markId);
   const { toast } = useOptionalToast();
   const active = useActiveBrand();
-  const isActive = active.mark === markId && active.colourway === colourwayId;
+  const isActive = active.isPreview && active.mark === markId && active.colourway === colourwayId;
   const activeMark = getMark(active.mark);
   const activeColourway = getColourway(active.colourway);
   const [copied, setCopied] = useState<string | null>(null);
@@ -180,16 +208,25 @@ export default function BrandPage() {
                 for one name.
               </p>
               <p className="bk-lead">
-                Identity, colour and expression for Last Frame. A first edition for review: pick an
-                option and a colourway below and every page follows.
+                Identity, colour and expression for Lastframe.tv. The app ships the Lumen mark;
+                these are four alternative directions. Pick an option and a colourway below and
+                every page follows.
               </p>
               <div className="bk-preview" role="group" aria-label="App preview">
                 <p className="bk-note" aria-live="polite">
-                  The app is showing{' '}
-                  <strong>
-                    {activeMark.index} / {activeMark.name} · {activeColourway.name}
-                  </strong>
-                  {active.isPreview ? ' (preview in this browser)' : ' (shipped default)'}.
+                  {active.isPreview ? (
+                    <>
+                      The app is showing{' '}
+                      <strong>
+                        {activeMark.index} / {activeMark.name} · {activeColourway.name}
+                      </strong>{' '}
+                      (preview in this browser).
+                    </>
+                  ) : (
+                    <>
+                      The app is showing <strong>the Lumen mark</strong> (shipped).
+                    </>
+                  )}
                 </p>
                 <div className="bk-preview-actions">
                   <button
@@ -202,7 +239,7 @@ export default function BrandPage() {
                   </button>
                   {active.isPreview && (
                     <button type="button" className="btn ghost sm" onClick={active.clearPreview}>
-                      Back to default
+                      Back to Lumen
                     </button>
                   )}
                 </div>
@@ -406,7 +443,7 @@ export default function BrandPage() {
             <div className="bk-type-row">
               <dt>
                 <span className="bk-label">01 / Display</span>
-                <span className="bk-type-name">Inter Black, caps</span>
+                <span className="bk-type-name">Gabarito, caps</span>
               </dt>
               <dd>
                 <p className="bk-display bk-display--sample">It ends on the last frame.</p>
@@ -419,7 +456,7 @@ export default function BrandPage() {
             <div className="bk-type-row">
               <dt>
                 <span className="bk-label">02 / Text</span>
-                <span className="bk-type-name">Inter Regular / Medium</span>
+                <span className="bk-type-name">Figtree Regular / Medium</span>
               </dt>
               <dd>
                 <p className="bk-type-body">
@@ -434,7 +471,7 @@ export default function BrandPage() {
             <div className="bk-type-row">
               <dt>
                 <span className="bk-label">03 / Metadata</span>
-                <span className="bk-type-name">System mono</span>
+                <span className="bk-type-name">DM Mono</span>
               </dt>
               <dd>
                 <p className="bk-mono bk-type-meta">2h 14m · 2026 · PG-13 · 97% match</p>
@@ -483,9 +520,9 @@ export default function BrandPage() {
             </tbody>
           </table>
           <p className="bk-footnote">
-            Inter ships with the app as a self-hosted variable font (latin subset, one 48 KB file,
-            SIL Open Font License), so all three roles render as shown. The system UI font stands in
-            only until it loads.
+            Gabarito, Figtree and DM Mono are self-hosted with the app (latin and latin-ext subsets,
+            SIL Open Font License, licences in public/fonts/). A metric-matched fallback face stands
+            in until each one loads.
           </p>
         </Slide>
 
@@ -502,7 +539,7 @@ export default function BrandPage() {
               <li
                 key={c.hex}
                 className="bk-swatch"
-                style={{ background: c.hex, color: i < 1 || i > 3 ? '#f4f4f8' : '#0b0b12' }}
+                style={{ background: c.hex, color: c.light ? '#f6f5ff' : '#141126' }}
               >
                 <span className="bk-swatch-index">{String(i + 1).padStart(2, '0')}</span>
                 <span className="bk-swatch-name">{c.name}</span>
@@ -613,7 +650,7 @@ export default function BrandPage() {
                   size={60}
                   decorative
                 />
-                <span>Last Frame</span>
+                <span>Lastframe.tv</span>
               </div>
               <figcaption className="bk-label">Home screen icon</figcaption>
             </figure>
@@ -651,9 +688,9 @@ export default function BrandPage() {
                 {mark.index} / {mark.name}.
               </p>
               <p className="bk-note">
-                The download links carry the Aurora colourway, the one the shipped brand uses. The
-                copy buttons use the colourway selected above ({colourway.name}) so any combination
-                can be pasted into a design tool.
+                The download links carry the Lumen colourway, the kit's default. The copy buttons
+                use the colourway selected above ({colourway.name}) so any combination can be pasted
+                into a design tool.
               </p>
             </div>
             <ul className="bk-files">
@@ -678,7 +715,7 @@ export default function BrandPage() {
                         markSvg({
                           mark: markId,
                           colourway: colourwayId,
-                          title: `Last Frame ${mark.name} mark`,
+                          title: `Lastframe.tv ${mark.name} mark`,
                         }),
                       )
                     }
@@ -716,7 +753,7 @@ export default function BrandPage() {
                           colourway: colourwayId,
                           variant: 'tile',
                           size: 512,
-                          title: `Last Frame ${mark.name} app icon`,
+                          title: `Lastframe.tv ${mark.name} app icon`,
                         }),
                       )
                     }
@@ -755,8 +792,8 @@ export default function BrandPage() {
           </div>
           <p className="bk-footnote">
             Files are generated from one source (src/components/brand/marks.ts) by
-            scripts/generate-brand-assets.mjs. The lockup's wordmark is live text in Inter, so it
-            takes the system font where Inter is not installed.
+            scripts/generate-brand-assets.mjs. The lockup's wordmark is live text in Gabarito, so it
+            takes the system font where Gabarito is not installed.
           </p>
         </Slide>
       </div>

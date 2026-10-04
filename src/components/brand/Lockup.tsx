@@ -27,7 +27,7 @@ export interface LockupProps {
   size?: number;
   /** Horizontal (mark then wordmark) or stacked (mark above wordmark). */
   orientation?: 'horizontal' | 'stacked';
-  /** Accessible name for the whole lockup. Defaults to "Last Frame". */
+  /** Accessible name for the whole lockup. Defaults to "Lastframe.tv". */
   label?: string;
   /** Hide from assistive tech (e.g. a reflection or a mockup already described). */
   decorative?: boolean;
@@ -40,7 +40,7 @@ export default function Lockup({
   colourway = DEFAULT_COLOURWAY,
   size = 40,
   orientation = 'horizontal',
-  label = 'Last Frame',
+  label = 'Lastframe.tv',
   decorative = false,
   className,
 }: LockupProps) {

@@ -1,5 +1,5 @@
 /**
- * Brand kit source of truth: the four proposed Last Frame marks and the four
+ * Brand kit source of truth: the four alternative Lastframe.tv marks and the five
  * colourways, as plain path data on a 64x64 grid.
  *
  * Everything that draws a mark reads from here so the pieces cannot drift:
@@ -12,7 +12,7 @@
  */
 
 export type MarkId = 'monogram' | 'frame' | 'strip' | 'countdown';
-export type ColourwayId = 'aurora' | 'lagoon' | 'dusk' | 'ember';
+export type ColourwayId = 'lumen' | 'aurora' | 'lagoon' | 'dusk' | 'ember';
 
 /** How a mark sits on its background. */
 export type MarkVariant =
@@ -152,10 +152,16 @@ export const MARKS: readonly MarkDef[] = [
 
 export const COLOURWAYS: readonly ColourwayDef[] = [
   {
+    id: 'lumen',
+    name: 'Lumen',
+    stops: ['#6f5bf5', '#5ccbff'],
+    note: 'Violet into sky. The Lumen brand gradient (--brand-grad-a, --brand-grad-b).',
+  },
+  {
     id: 'aurora',
     name: 'Aurora',
     stops: ['#7c3aed', '#e50914'],
-    note: 'Violet into signal red. The current brand gradient (--color-violet, --color-accent).',
+    note: 'Violet into signal red. The original Last Frame gradient, before Lumen.',
   },
   {
     id: 'lagoon',
@@ -178,13 +184,13 @@ export const COLOURWAYS: readonly ColourwayDef[] = [
 ];
 
 /**
- * The direction the app ships with. Change it here, then run
- * `node scripts/generate-brand-assets.mjs && node scripts/generate-icons.mjs`
- * to refresh the static icons; the Navbar and the kit pick it up on their own.
+ * The kit's default selection, and what a cleared preview falls back to. The
+ * app itself ships the Lumen mark (LogoMark.tsx); these four directions are
+ * alternatives that /brand can preview in the Navbar (see activeBrand.ts).
  */
 export const ACTIVE_BRAND: { readonly mark: MarkId; readonly colourway: ColourwayId } = {
   mark: 'countdown',
-  colourway: 'aurora',
+  colourway: 'lumen',
 };
 
 export const DEFAULT_MARK: MarkId = ACTIVE_BRAND.mark;
@@ -367,17 +373,17 @@ export function monoSvg({ mark, title }: Pick<MarkSvgOptions, 'mark' | 'title'>)
 }
 
 /** Wordmark text and the letter-spacing/weight the kit proposes for it. */
-export const WORDMARK = 'LAST FRAME';
-export const WORDMARK_FONT = "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+export const WORDMARK = 'LASTFRAME.TV';
+export const WORDMARK_FONT = "Gabarito, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 /**
  * Standalone horizontal lockup: mark on the left, wordmark on the right.
- * The wordmark is live text, so it takes the viewer's Inter/system font.
+ * The wordmark is live text, so it takes Gabarito where installed, else the system font.
  */
 export function lockupSvg({
   mark,
   colourway = DEFAULT_COLOURWAY,
-  title = 'Last Frame',
+  title = 'Lastframe.tv',
 }: Pick<MarkSvgOptions, 'mark' | 'colourway' | 'title'>): string {
   const inner = markSvg({ mark, colourway, variant: 'bare' })
     .replace(/^<svg[^>]*>/, '')
