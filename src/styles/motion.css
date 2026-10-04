@@ -1,0 +1,135 @@
+/* Lumen motion: light moves, objects stay.
+   Four moves only: a sweep, a glow coming up, a shadow deepening, an 8px rise.
+   Transform and opacity only; enter with --ease-enter, leave with --ease-exit;
+   only --ease-toggle overshoots. Durations: --dur-feedback 100, --dur-micro 160,
+   --dur-component 240, --dur-layout 400, --dur-page 600, --dur-sweep 900.
+   Named exceptions to the 8px / no-loop rule: the bottom sheet slides in from
+   the bottom edge (that is what a sheet is), loading spinners rotate while a
+   lookup is pending, and the poster you tap morphs into the title page
+   artwork through the lf-artwork view transition (the plan's route rule).
+   Everything here is switched off under prefers-reduced-motion (theme.css
+   zeroes every animation and transition; the rules at the end restore the
+   end frames). */
+
+/* ---------- the four moves ---------- */
+@keyframes lf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes lf-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes lf-screen {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* One-shot highlight band (used on the primary button hover and the hero art). */
+@keyframes lf-sweep {
+  from {
+    transform: translateX(-30%);
+  }
+  to {
+    transform: translateX(520%);
+  }
+}
+@keyframes lf-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Page-load choreography: stagger by --i (0..4), 50ms apart. */
+.lf-rise {
+  animation: lf-rise var(--dur-page) var(--ease-enter) both;
+  animation-delay: calc(var(--lf-delay, 0ms) + var(--i, 0) * 50ms);
+}
+.lf-fade {
+  animation: lf-fade var(--dur-layout) var(--ease-enter) both;
+  animation-delay: var(--lf-delay, 0ms);
+}
+
+/* ---------- primary button: one sweep on hover, press to 0.97 ---------- */
+.btn.primary {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn.primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 25%;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: translateX(-30%);
+  opacity: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn.primary:hover::after,
+  .btn.primary:focus-visible::after {
+    opacity: 1;
+    animation: lf-sweep var(--dur-sweep) var(--ease-exit) 1 both;
+  }
+}
+
+/* ---------- route transitions (react-router viewTransition) ---------- */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root) {
+  animation: lf-fade var(--dur-component) var(--ease-exit) reverse both;
+}
+::view-transition-new(root) {
+  animation: lf-fade var(--dur-layout) var(--ease-enter) both;
+}
+/* The poster that was clicked morphs into the title page artwork. */
+::view-transition-group(lf-artwork) {
+  animation-duration: var(--dur-layout);
+  animation-timing-function: var(--ease-enter);
+}
+::view-transition-old(lf-artwork),
+::view-transition-new(lf-artwork) {
+  object-fit: cover;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ---------- reduced motion: a designed still ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .lf-rise,
+  .lf-fade {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .btn.primary::after {
+    display: none;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

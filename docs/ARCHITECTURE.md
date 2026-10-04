@@ -43,8 +43,11 @@ src/
   styles/
     tokens.css        Design tokens (color, radius, blur, motion)
     primitives.css    Styles for ui/ primitives
-    theme.css         Imports tokens + primitives; app styles; prefers-reduced-motion overrides
-    brand.css         Navbar brand-mark hover styles (imported by Navbar.tsx)
+    themes.css        Dark theme overrides of the colour tokens (media query and data-theme forms)
+    theme.css         Imports tokens + themes + primitives; base, glass, shared buttons, pages, modal/sheet
+    surfaces.css      Responsive system: 480/1024 breakpoints, gutters, safe areas, fluid type, pill buttons, 44px targets
+    motion.css        The motion system: the four moves, load stagger, button sweep, view transitions, reduced-motion stills
+    brand.css         LogoMark styles (imported by LogoMark.tsx)
     brand-kit.css     /brand deck, lockup + wordmark styles (imported by BrandPage.tsx)
     errors.css        Error card + offline banner (imported by errors/ components)
     a11y.css          Skip link, focus rings, main target, .sr-only (imported by AppLayout.tsx)
@@ -147,6 +150,44 @@ allows fonts from `'self'` only. Components use the type tokens in `tokens.css`
 (`--font-display`, `--font-body`, `--font-mono`, the `--text-*` fluid scale, weights and
 tracking); `theme.css` applies them to `body`, headings, code and form controls and styles the
 `.logo` wordmark ("Lastframe" in Gabarito 700 with `.logo-tv` in the accent).
+
+### Surfaces (phase 5)
+
+`surfaces.css` is the one place that knows the breakpoints: phone is `max-width: 480px`,
+tablet is `max-width: 1024px`, desktop is everything above. It exposes layout tokens
+(`--gutter`, `--container`, `--nav-h`, `--nav-top`, `--hero-inset`, `--card-w`, the
+`--safe-*` insets and the `--fs-*` type sizes) that components read instead of writing
+their own media queries. Blur is a desktop treatment: phones and tablets get solid
+surfaces, as do `prefers-reduced-transparency` and the `perf-lite` class that
+`src/lib/perfLite.ts` sets on `<html>` for low-memory or data-saver devices.
+
+The home hero is an Ink screen (`.hero-screen`, always dark, using the `--color-ink-*`
+tokens) inset 24px into the page on tablet and desktop and full-bleed on phones. Dialogs
+(`.modal-backdrop > [role="dialog"]`) are a centred card on desktop and a bottom sheet with
+a drag handle at 1024px and below; `useSheetDismiss` adds swipe-down to close from the handle
+or the dialog header, which carry `touch-action: none` so the browser never claims the pan.
+
+Load order matters for ties: component CSS imported by the eager graph (the navbar, the
+profile menu) is bundled before `theme.css`, `surfaces.css` and `motion.css`, so an
+equal-specificity rule in a component file loses to the shared one. A component that
+overrides a shared rule adds a class to the selector (for example
+`.modal-backdrop > .profile-editor.sheet`) rather than relying on order.
+
+### Motion (phase 5)
+
+`motion.css` holds the whole vocabulary: an 8px rise, a fade, a screen settle and a
+one-shot sweep, on transform and opacity only. Enter with `--ease-enter`, leave with
+`--ease-exit`; only `--ease-toggle` overshoots. Staggered entrances use `.lf-rise` with
+`--i` (0 to 4, 50ms apart). Hover effects live under `(hover: hover) and (pointer: fine)`;
+touch gets a 100ms press to 0.97. Route changes use React Router's `viewTransition`
+(a 240ms fade out, 400ms fade in) and the clicked poster carries the `lf-artwork`
+view-transition name so it morphs into the title page backdrop. An entrance animation on a surface that
+also gets inline, hover or press transforms (cards, dialogs) fills `backwards`, never
+`forwards` or `both`: a filled end frame would outrank those transforms for the life of the
+element. Pure entrances with nothing to compete with (`.lf-rise`, `.lf-fade`) may fill `both`. Under
+`prefers-reduced-motion` every surface renders its end frame. Three named exceptions to the
+8px / no-loop rule: the bottom sheet slides in from the bottom edge, loading spinners rotate
+while a lookup is pending, and the poster-to-backdrop morph on route change.
 
 ## Brand
 

@@ -134,7 +134,7 @@
   border-radius: 50%;
 }
 .skeleton.card {
-  width: 170px;
+  width: var(--card-w);
   aspect-ratio: 2 / 3;
   flex: 0 0 auto;
 }
@@ -195,10 +195,7 @@
   }
 }
 
-@media (max-width: 760px) {
-  .skeleton.card {
-    width: 120px;
-  }
+@media (max-width: 480px) {
   .toast-region {
     left: 16px;
     right: 16px;

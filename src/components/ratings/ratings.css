@@ -126,11 +126,17 @@
     opacity var(--dur-base) var(--ease-out),
     transform var(--dur-medium) var(--ease-out);
 }
-.card:hover .card-rate,
 .card:focus-within .card-rate {
   opacity: 1;
   transform: none;
   pointer-events: auto;
+}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .card-rate {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
 }
 .card-rate-stars {
   padding: 2px 4px;
@@ -153,8 +159,8 @@
   }
 }
 
-/* Narrow cards (120px at <=760px): tighten the overlay so it fits. */
-@media (max-width: 760px) {
+/* Narrow cards (120px at <=480px): tighten the overlay so it fits. */
+@media (max-width: 480px) {
   .card-rate {
     top: 4px;
     left: 4px;

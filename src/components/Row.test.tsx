@@ -91,7 +91,10 @@ describe('Row', () => {
     fakeOverflow();
     renderRow();
     expect(screen.getByRole('button', { name: /left/i })).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.getByRole('button', { name: /right/i })).toHaveAttribute('aria-disabled', 'false');
+    expect(screen.getByRole('button', { name: /right/i })).toHaveAttribute(
+      'aria-disabled',
+      'false',
+    );
   });
 
   it('hides the arrows when the content does not overflow', () => {
@@ -147,6 +150,16 @@ describe('Row', () => {
     renderRow();
     expect(screen.getByRole('region', { name: 'Trending Now' })).not.toHaveClass('in');
   });
+
+  it('staggers cards 50ms apart and caps the delay at the fifth card (200ms)', () => {
+    renderRow();
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.card'));
+    expect(cards).toHaveLength(6);
+    expect(cards[0].style.transitionDelay).toBe('0ms');
+    expect(cards[1].style.transitionDelay).toBe('50ms');
+    expect(cards[4].style.transitionDelay).toBe('200ms');
+    expect(cards[5].style.transitionDelay).toBe(cards[4].style.transitionDelay);
+  });
 });
 
 describe('Row focus retention', () => {
@@ -160,7 +173,9 @@ describe('Row focus retention', () => {
   it('moves focus to the card now at the same index when the focused card is removed', () => {
     const { rerender } = render(rowAt(ITEMS));
     // Focus a control inside card 3 (not its link) to mirror a remove/thumb button press.
-    const btn = within(link(3).closest('.card') as HTMLElement).getByRole('button', { name: /I like Title 3/ });
+    const btn = within(link(3).closest('.card') as HTMLElement).getByRole('button', {
+      name: /I like Title 3/,
+    });
     act(() => btn.focus());
     rerender(rowAt(ITEMS.filter((m) => m.id !== 3)));
     expect(link(4)).toHaveFocus();
@@ -196,7 +211,8 @@ describe('Row focus retention', () => {
   it('scrolls the new target into view instantly under reduced motion', () => {
     setReducedMotion(true);
     const scrollIntoView = vi.fn();
-    (HTMLElement.prototype as HTMLElement & { scrollIntoView: unknown }).scrollIntoView = scrollIntoView;
+    (HTMLElement.prototype as HTMLElement & { scrollIntoView: unknown }).scrollIntoView =
+      scrollIntoView;
     const { rerender } = render(rowAt(ITEMS));
     act(() => link(1).focus());
     rerender(rowAt(ITEMS.slice(1)));

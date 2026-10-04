@@ -24,12 +24,19 @@ const REGIONS: { id: WatchRegion; label: string }[] = [
   { id: 'CA', label: 'Canada' },
 ];
 
-
 function ProviderChip({ p, svc }: { p: TmdbWatchProvider; svc: TmdbService }) {
   return (
     <li className="provider glass">
       {p.logo_path ? (
-        <img className="provider-logo" src={svc.imageUrl(p.logo_path, 'w342')} alt="" loading="lazy" decoding="async" width={30} height={30} />
+        <img
+          className="provider-logo"
+          src={svc.imageUrl(p.logo_path, 'w342')}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          width={30}
+          height={30}
+        />
       ) : (
         <span className="provider-logo provider-monogram" aria-hidden>
           {initials(p.provider_name)}
@@ -41,14 +48,26 @@ function ProviderChip({ p, svc }: { p: TmdbWatchProvider; svc: TmdbService }) {
 }
 
 /** Where to watch: provider offers by region (US/CA) with the required JustWatch attribution. */
-export default function WhereToWatch({ mediaType, titleId, title, svc = defaultTmdb, initialRegion }: Props) {
+export default function WhereToWatch({
+  mediaType,
+  titleId,
+  title,
+  svc = defaultTmdb,
+  initialRegion,
+}: Props) {
   const [region, setRegion] = useState<WatchRegion>(() => initialRegion ?? defaultWatchRegion());
   const state = useWatchProviders(mediaType, titleId, region, svc);
 
   return (
-    <section className="title-section where-to-watch glass" aria-labelledby="title-wtw-heading">
+    <section
+      id="where-to-watch"
+      className="title-section where-to-watch glass"
+      aria-labelledby="title-wtw-heading"
+    >
       <div className="wtw-head">
-        <h2 id="title-wtw-heading">Where to watch</h2>
+        <h2 id="title-wtw-heading" tabIndex={-1}>
+          Where to watch
+        </h2>
         <div className="region-toggle" role="radiogroup" aria-label="Region">
           {REGIONS.map((r) => (
             <button
@@ -73,10 +92,13 @@ export default function WhereToWatch({ mediaType, titleId, title, svc = defaultT
             <Skeleton height={44} />
           </div>
         )}
-        {state.status === 'error' && <p className="muted">Streaming availability is unavailable right now.</p>}
+        {state.status === 'error' && (
+          <p className="muted">Streaming availability is unavailable right now.</p>
+        )}
         {state.status === 'ready' && !hasOffers(state.data) && (
           <p className="muted">
-            {title} isn’t available to stream, rent or buy in {REGIONS.find((r) => r.id === region)?.label} yet.
+            {title} isn’t available to stream, rent or buy in{' '}
+            {REGIONS.find((r) => r.id === region)?.label} yet.
           </p>
         )}
         {state.status === 'ready' && state.data && hasOffers(state.data) && (
@@ -96,7 +118,12 @@ export default function WhereToWatch({ mediaType, titleId, title, svc = defaultT
               );
             })}
             {state.data.link && (
-              <a className="page-link wtw-link" href={state.data.link} target="_blank" rel="noopener noreferrer">
+              <a
+                className="page-link wtw-link"
+                href={state.data.link}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 All options on TMDB
               </a>
             )}

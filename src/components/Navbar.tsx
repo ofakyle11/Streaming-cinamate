@@ -90,7 +90,13 @@ export default function Navbar() {
 
   return (
     <nav className={`navbar glass ${scrolled ? 'scrolled' : ''}`} aria-label="Primary">
-      <Link to="/" className="logo logo--with-mark" aria-label="Lastframe.tv home">
+      <Link
+        to="/"
+        className="logo logo--with-mark"
+        aria-label="Lastframe.tv home"
+        data-logo-slot="header"
+        viewTransition
+      >
         <LogoMark size={30} decorative />
         <span className="logo-wordmark">Lastframe<span className="logo-tv">.tv</span></span>
       </Link>
@@ -121,6 +127,7 @@ export default function Navbar() {
               }
               aria-current={isNavLinkActive(l.to, true, location.search) ? 'page' : 'false'}
               onClick={() => setOpenOnPath(null)}
+              viewTransition
             >
               {l.label}
             </NavLink>
@@ -138,6 +145,8 @@ export default function Navbar() {
             type="search"
             placeholder="Search"
             aria-label="Search titles"
+            enterKeyHint="search"
+            autoComplete="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />

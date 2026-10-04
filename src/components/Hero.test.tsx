@@ -135,7 +135,7 @@ describe('Hero trailer preview', () => {
 const heading = () => screen.getByRole('heading', { level: 1 });
 
 describe('Hero actions', () => {
-  it('Play opens the trailer dialog, records a trailer view and pauses the preview', async () => {
+  it('Trailer opens the trailer dialog, records a trailer view and pauses the preview', async () => {
     const track = vi.spyOn(analytics, 'track');
     render(<Hero featured={[WITH_TRAILER, WITHOUT_TRAILER]} onMore={() => {}} />);
     await advance(TRAILER_DELAY_MS + 100);
@@ -143,7 +143,7 @@ describe('Hero actions', () => {
     const post = vi.fn();
     Object.defineProperty(iframe, 'contentWindow', { value: { postMessage: post } });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Trailer' }));
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent(`${WITH_TRAILER.title} trailer`);
     expect(dialog.querySelector('iframe')!.src).toContain('aqz-KE-bpKQ');
@@ -171,22 +171,36 @@ describe('Hero actions', () => {
     );
   });
 
-  it('Play looks up a trailer that has not resolved yet', async () => {
+  it('Trailer looks up a trailer that has not resolved yet', async () => {
     render(<Hero featured={[WITH_TRAILER]} onMore={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Trailer' }));
     await advance(500);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
-  it('Play falls back to the title page when there is no trailer', async () => {
+  it('Trailer falls back to the title page when there is no trailer', async () => {
     const onOpenTitle = vi.fn();
     render(<Hero featured={[WITHOUT_TRAILER]} onMore={() => {}} onOpenTitle={onOpenTitle} />);
     await advance(500);
-    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Trailer' }));
     await advance(500);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(onOpenTitle).toHaveBeenCalledWith(WITHOUT_TRAILER);
     expect(selectViews(useLastFrameStore.getState())).toHaveLength(0);
+  });
+
+  it('Where to watch calls onMore with the featured title', () => {
+    const onMore = vi.fn();
+    render(<Hero featured={[WITH_TRAILER]} onMore={onMore} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Where to watch' }));
+    expect(onMore).toHaveBeenCalledWith(WITH_TRAILER);
+    expect(screen.queryByRole('button', { name: /more info/i })).not.toBeInTheDocument();
+  });
+
+  it('labels the score "Fit N" with no percent sign', () => {
+    render(<Hero featured={[WITH_TRAILER]} onMore={() => {}} />);
+    expect(screen.getByText(`Fit ${WITH_TRAILER.match}`)).toBeInTheDocument();
+    expect(screen.queryByText(/match/i)).not.toBeInTheDocument();
   });
 
   it('builds a YouTube video for the trailer modal from a key', () => {
@@ -240,19 +254,19 @@ describe('Hero slideshow', () => {
 
   it('pauses while the pointer is over the card or focus is inside it', async () => {
     render(<Hero featured={slides} onMore={() => {}} />);
-    const card = heading().closest('.hero-card')!;
+    const card = heading().closest('.hero-copy')!;
 
     fireEvent.pointerEnter(card);
     await advance(SLIDE_INTERVAL_MS * 2);
     expect(heading()).toHaveTextContent(slides[0].title);
     fireEvent.pointerLeave(card);
 
-    const moreInfo = screen.getByRole('button', { name: /more info/i });
-    fireEvent.focus(moreInfo);
+    const myList = screen.getByRole('button', { name: /my list/i });
+    fireEvent.focus(myList);
     await advance(SLIDE_INTERVAL_MS * 2);
     expect(heading()).toHaveTextContent(slides[0].title);
 
-    fireEvent.blur(moreInfo);
+    fireEvent.blur(myList);
     await advance(SLIDE_INTERVAL_MS + 10);
     expect(heading()).toHaveTextContent(slides[1].title);
   });
@@ -273,14 +287,16 @@ describe('Hero trailer dialog footer', () => {
         <Hero featured={[WITH_TRAILER]} onMore={() => {}} />
       </ToastProvider>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Trailer' }));
     await advance(500); // mock trailer lookup resolves
     return screen.getByRole('dialog');
   }
 
   it('contains a My List toggle that updates the store', async () => {
     const dialog = await openDialog();
-    const add = within(dialog).getByRole('button', { name: `Add ${WITH_TRAILER.title} to My List` });
+    const add = within(dialog).getByRole('button', {
+      name: `Add ${WITH_TRAILER.title} to My List`,
+    });
     fireEvent.click(add);
     expect(selectIsInWatchlist(WITH_TRAILER.id)(useLastFrameStore.getState())).toBe(true);
     expect(
@@ -356,7 +372,7 @@ describe('Hero carousel semantics', () => {
   });
 });
 
-describe('Hero Play pending state', () => {
+describe('Hero Trailer pending state', () => {
   it('ignores repeat clicks and shows a busy state while the lookup is pending', async () => {
     let resolve: (v: TmdbVideo[]) => void = () => {};
     const pending = new Promise<TmdbVideo[]>((r) => {
@@ -367,20 +383,22 @@ describe('Hero Play pending state', () => {
     render(<Hero featured={[WITH_TRAILER]} onMore={() => {}} svc={svc} />);
     const before = videos.mock.calls.length; // background key lookup from useTrailerKey
 
-    const play = screen.getByRole('button', { name: 'Play' });
-    expect(play).not.toHaveAttribute('aria-busy');
-    fireEvent.click(play);
-    fireEvent.click(play);
+    const trailerBtn = screen.getByRole('button', { name: 'Trailer' });
+    expect(trailerBtn).not.toHaveAttribute('aria-busy');
+    fireEvent.click(trailerBtn);
+    fireEvent.click(trailerBtn);
     expect(videos).toHaveBeenCalledTimes(before + 1);
-    expect(play).toHaveAttribute('aria-busy', 'true');
-    expect(play).toHaveAttribute('aria-disabled', 'true');
+    expect(trailerBtn).toHaveAttribute('aria-busy', 'true');
+    expect(trailerBtn).toHaveAttribute('aria-disabled', 'true');
+    // Still named "Trailer" while pending.
+    expect(screen.getByRole('button', { name: 'Trailer' })).toBe(trailerBtn);
 
     await act(async () => {
       resolve(MOCK_VIDEOS[WITH_TRAILER.id] ?? []);
       await pending;
     });
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
-    expect(play).not.toHaveAttribute('aria-busy');
+    expect(trailerBtn).not.toHaveAttribute('aria-busy');
     expect(videos).toHaveBeenCalledTimes(before + 1);
   });
 });

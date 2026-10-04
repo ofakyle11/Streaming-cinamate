@@ -13,11 +13,13 @@ interface Props {
   onSelect?: (m: Movie) => void;
   /** Optional per-card overlay passed to MovieCard's `extraAction` slot. */
   cardExtra?: (m: Movie) => ReactNode;
+  /** Passed to every card; false on pages whose backdrop already carries `lf-artwork`. */
+  artworkTransition?: boolean;
 }
 
 const cardKey = (m: Movie) => `${m.mediaType}-${m.id}`;
 
-export default function Row({ title, items, onSelect, cardExtra }: Props) {
+export default function Row({ title, items, onSelect, cardExtra, artworkTransition }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -40,7 +42,7 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
           io.disconnect();
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0.15 },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -95,7 +97,10 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
     const el = trackRef.current;
     if (!el) return;
     if ((dir === -1 && track.atStart) || (dir === 1 && track.atEnd)) return;
-    el.scrollBy({ left: dir * el.clientWidth * ROW_SCROLL_STEP, behavior: reduceMotion ? 'auto' : 'smooth' });
+    el.scrollBy({
+      left: dir * el.clientWidth * ROW_SCROLL_STEP,
+      behavior: reduceMotion ? 'auto' : 'smooth',
+    });
   };
 
   return (
@@ -115,15 +120,23 @@ export default function Row({ title, items, onSelect, cardExtra }: Props) {
         >
           <span aria-hidden="true">‹</span>
         </button>
-        <div className="track" id={trackId} ref={trackRef} role="group" aria-label={title} {...focusKeeper}>
+        <div
+          className="track"
+          id={trackId}
+          ref={trackRef}
+          role="group"
+          aria-label={title}
+          {...focusKeeper}
+        >
           {items.map((m, i) => (
             <MovieCard
               key={cardKey(m)}
               movie={m}
-              delay={i * 60}
+              delay={Math.min(i, 4) * 50}
               onSelect={onSelect}
               extraAction={cardExtra?.(m)}
               rovingProps={getItemProps(i)}
+              artworkTransition={artworkTransition}
             />
           ))}
         </div>

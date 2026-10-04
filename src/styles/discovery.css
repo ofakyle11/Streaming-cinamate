@@ -21,7 +21,7 @@
 .discovery-skel-track { display: flex; gap: 14px; overflow: hidden; padding: 24px 4px; }
 .discovery-skel-card.skeleton.card { border-radius: var(--radius-md); }
 
-@media (max-width: 760px) {
+@media (max-width: 480px) {
   .discovery-head { margin: 0 16px 20px; padding: 18px; }
   .discovery-state { margin: 0 16px; }
   .discovery-skel-row { padding: 0 16px; }
