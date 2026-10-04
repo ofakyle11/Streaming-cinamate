@@ -244,7 +244,13 @@ function pathList(ds: string[], attrs: string): string {
  * The glyph layers of a mark on the 64-grid. `glyph` paints the fill/stroke
  * layers; `light` paints the light layers (with the usual 35% faint variants).
  */
-function layerMarkup(def: MarkDef, glyph: string, light: string, faintOpacity = 0.35): string {
+function layerMarkup(
+  def: MarkDef,
+  glyph: string,
+  light: string,
+  faintOpacity = 0.35,
+  faintStrokeWidth = 1.5,
+): string {
   const faint = faintOpacity === 1 ? '' : ` fill-opacity="${faintOpacity}"`;
   const faintStroke = faintOpacity === 1 ? '' : ` stroke-opacity="${faintOpacity}"`;
   return (
@@ -256,7 +262,7 @@ function layerMarkup(def: MarkDef, glyph: string, light: string, faintOpacity = 
     pathList(def.layers.faint, `fill="${light}"${faint}`) +
     pathList(
       def.layers.faintStroke,
-      `fill="none" stroke="${light}"${faintStroke} stroke-width="1.5" stroke-linecap="round"`,
+      `fill="none" stroke="${light}"${faintStroke} stroke-width="${faintStrokeWidth}" stroke-linecap="round"`,
     ) +
     pathList(def.layers.light, `fill="${light}"`)
   );
@@ -343,10 +349,21 @@ export function appIconSvg({
   );
 }
 
-/** Single-colour silhouette (Safari pinned tab `mask-icon`): every layer in black. */
+/** Faint strokes go hairline-thin in the silhouette, since it cannot use opacity. */
+const MONO_FAINT_STROKE_WIDTH = 0.75;
+
+/**
+ * Single-colour silhouette (Safari pinned tab `mask-icon`): every layer in
+ * black. A mask icon is one flat colour, so the 35% detail layers would read
+ * as heavy as the main shape; their strokes are drawn at a hairline instead.
+ */
 export function monoSvg({ mark, title }: Pick<MarkSvgOptions, 'mark' | 'title'>): string {
   const def = getMark(mark);
-  return svgOpen('0 0 64 64', undefined, title) + layerMarkup(def, '#000', '#000', 1) + `</svg>\n`;
+  return (
+    svgOpen('0 0 64 64', undefined, title) +
+    layerMarkup(def, '#000', '#000', 1, MONO_FAINT_STROKE_WIDTH) +
+    `</svg>\n`
+  );
 }
 
 /** Wordmark text and the letter-spacing/weight the kit proposes for it. */

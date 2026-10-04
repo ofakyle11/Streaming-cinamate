@@ -127,6 +127,10 @@ describe('marks', () => {
     expect(mono).not.toMatch(/url\(#|opacity|#f4f4f8/);
     expect(mono).toContain('fill="#000"');
     expect(mono).toContain('stroke="#000"');
+    // Detail strokes are hairlines in the silhouette; the main strokes keep their weight.
+    expect(mono).toContain('stroke-width="0.75"');
+    expect(mono).not.toContain('stroke-width="1.5"');
+    expect(monoSvg({ mark: 'countdown' })).toContain('stroke-width="4"');
   });
 
   it('the app icons in public/ are drawn from ACTIVE_BRAND (run the generators)', () => {
