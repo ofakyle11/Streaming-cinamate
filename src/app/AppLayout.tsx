@@ -26,11 +26,6 @@ export default function AppLayout() {
       <a className="skip-link glass" href="#main" onClick={skipToContent}>
         Skip to content
       </a>
-      <div className="aurora" aria-hidden>
-        <span />
-        <span />
-        <span />
-      </div>
       <Navbar />
       <div id="main" className="main-target" tabIndex={-1}>
         <ErrorBoundary resetKey={location.pathname}>
@@ -48,7 +43,7 @@ export default function AppLayout() {
       <OfflineBanner />
       <RouteAnnouncer />
       <footer className="footer">
-        Last Frame · lastframe.tv · <Link to="/brand">Brand kit</Link>
+        <span>Lastframe.tv</span> · <Link to="/brand">Brand kit</Link>
       </footer>
     </>
   );

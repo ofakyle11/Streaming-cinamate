@@ -1,45 +1,237 @@
+/* ---------- card ---------- */
+/* Lumen poster card: rises 8px into place after its row (stagger via the inline
+   delay set by Row.tsx), scales to 1.03 with a deeper shadow and a lagging sky
+   highlight on hover, presses to 0.97 on touch. Transform, opacity and a
+   shadow-to-shadow swap only. */
+.card {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--card-w);
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  scroll-snap-align: start;
+  background: var(--color-surface-2);
+  box-shadow: var(--shadow-1);
+  opacity: 0;
+  /* The entrance offset lives on `translate`, so it never competes with the
+     hover/press `transform` (Row.css also clears it for the first two rows). */
+  translate: 0 8px;
+  /* Hover leaves with the exit values; the hover state swaps in the enter values. */
+  transition:
+    transform var(--dur-micro) var(--ease-exit),
+    box-shadow var(--dur-micro) var(--ease-exit);
+}
+/* Entrance: once the row is in, each card rises over --dur-layout. It is an
+   animation (fill backwards) rather than a transition so the hover transition
+   above is never held hostage by the 400ms rise; the stagger is the inline
+   delay set by Row.tsx (50ms apart, capped at five cards). */
+.row.in .card {
+  opacity: 1;
+  translate: none;
+  animation: lf-rise var(--dur-layout) var(--ease-enter) backwards;
+}
+/* Soft highlight that lags the pointer by --dur-micro. */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--color-sky) 18%, transparent),
+    transparent 60%
+  );
+  transition: opacity var(--dur-micro) var(--ease-exit);
+}
+.card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.card-info {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  font-size: 0.75rem;
+  background: var(--glass-bg-legible);
+  color: var(--color-on-glass);
+  transform: translateY(120%);
+  transition: transform var(--dur-component) var(--ease-exit);
+}
+.card-info span {
+  color: var(--color-on-glass-soft);
+}
+
 /* Poster cards: a .card wrapper holding the router link (/title/:type/:id) plus
    sibling overlays -- the My List toggle (top-left) and the rating overlay
    (top-right, see ratings/ratings.css). Buttons cannot live inside a link. */
-.card-link { display: block; width: 100%; height: 100%; color: inherit; text-decoration: none; }
-.card-link:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: calc(-1 * var(--focus-ring-width));
-  border-radius: inherit; box-shadow: inset 0 0 0 5px var(--focus-ring-glow);
+.card-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
 }
-.card:focus-within .card-info { transform: none; }
-.row.in .card:focus-within { transform: translateY(-8px) scale(1.04); z-index: 3; }
+.card-link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 5px var(--focus-ring-glow);
+}
+/* Keyboard focus reveals the info on every input type. */
+.row.in .card:focus-within {
+  transform: scale(1.03);
+  box-shadow: var(--shadow-card-hover);
+  z-index: 3;
+  transition:
+    transform var(--dur-component) var(--ease-enter),
+    box-shadow var(--dur-component) var(--ease-enter);
+}
+.card:focus-within .card-info {
+  transform: none;
+  transition: transform var(--dur-component) var(--ease-enter);
+}
+
+/* ---------- hover: pointers that hover only ---------- */
+@media (hover: hover) and (pointer: fine) {
+  .row.in .card:hover {
+    transform: scale(1.03);
+    box-shadow: var(--shadow-card-hover);
+    z-index: 3;
+    transition:
+      transform var(--dur-component) var(--ease-enter),
+      box-shadow var(--dur-component) var(--ease-enter);
+  }
+  .card:hover::after {
+    opacity: 1;
+    transition: opacity var(--dur-component) var(--ease-enter) var(--dur-micro);
+  }
+  .card:hover .card-info {
+    transform: none;
+    transition: transform var(--dur-component) var(--ease-enter);
+  }
+}
+
+/* ---------- touch: press, no overlay, info stays hidden (the link's aria-label carries the title) ---------- */
+@media (hover: none) {
+  .row.in .card:active {
+    transform: scale(0.97);
+    transition-duration: var(--dur-feedback);
+  }
+  .card::after {
+    display: none;
+  }
+}
 
 /* ---------- My List toggle (hover / focus reveal) ---------- */
-/* Top-left so it never overlaps the rating overlay's thumbs pill (top-right). */
+/* Top-left so it never overlaps the rating overlay's thumbs pill (top-right).
+   40px is the floor for an overlay control on a 120px card. */
 .card-list-btn {
-  position: absolute; top: 6px; left: 6px; z-index: 2;
-  background: var(--glass-bg-strong); border: 1px solid var(--glass-border-strong);
-  -webkit-backdrop-filter: var(--glass-blur-soft); backdrop-filter: var(--glass-blur-soft);
-  color: var(--color-text); font-weight: 700;
-  opacity: 0; transform: scale(0.8);
-  transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-base) var(--ease-spring),
-    background var(--dur-fast), border-color var(--dur-fast);
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border-strong);
+  -webkit-backdrop-filter: var(--glass-blur-soft);
+  backdrop-filter: var(--glass-blur-soft);
+  color: var(--color-text);
+  font-weight: 700;
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity var(--dur-micro) var(--ease-exit),
+    transform var(--dur-micro) var(--ease-exit),
+    background var(--dur-micro),
+    border-color var(--dur-micro);
 }
-.card:hover .card-list-btn,
 .card:focus-within .card-list-btn,
-.card-list-btn.is-listed { opacity: 1; transform: none; }
-.card-list-btn:hover { transform: scale(1.12); }
-.card-list-btn.is-listed { border-color: var(--color-success); color: var(--color-success); }
+.card-list-btn.is-listed {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--dur-component) var(--ease-enter),
+    transform var(--dur-component) var(--ease-enter),
+    background var(--dur-micro),
+    border-color var(--dur-micro);
+}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .card-list-btn {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--dur-component) var(--ease-enter),
+      transform var(--dur-component) var(--ease-enter),
+      background var(--dur-micro),
+      border-color var(--dur-micro);
+  }
+  .card-list-btn:hover {
+    transform: scale(1.03);
+  }
+}
+.card-list-btn.is-listed {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
 
 /* Touch screens have no hover: keep the toggle visible. */
 @media (hover: none) {
-  .card-list-btn { opacity: 1; transform: none; }
+  .card-list-btn {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Size the rating overlay to its content so its box never covers (and steals
    clicks from) the My List toggle on the left. */
-.card .card-rate { left: auto; }
+.card .card-rate {
+  left: auto;
+}
 
-@media (max-width: 760px) {
-  .card-list-btn { top: 4px; left: 4px; }
+@media (max-width: 480px) {
+  .card-list-btn {
+    top: 4px;
+    left: 4px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .row.in .card:focus-within { transform: none; }
-  .card-list-btn, .card-list-btn:hover { transform: none; transition: none; }
+  .row.in .card,
+  .row.in .card:hover,
+  .row.in .card:focus-within,
+  .row.in .card:active {
+    animation: none;
+    opacity: 1;
+    translate: none;
+    transform: none;
+  }
+  .card::after {
+    display: none;
+  }
+  .card-list-btn,
+  .card-list-btn:hover {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Score label on the card overlay: the Fit number in the accent text colour. */
+.card-info .fit {
+  color: var(--color-accent-text);
+  font-weight: 600;
+  font-style: normal;
 }

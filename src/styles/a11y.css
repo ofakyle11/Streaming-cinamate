@@ -44,7 +44,7 @@ a.skip-link:focus-visible {
 
 /* ---------- rows / cards: keyboard parity with hover ---------- */
 .row.in .card:focus-visible {
-  transform: translateY(-8px) scale(1.08);
+  transform: scale(1.03);
   z-index: 3;
   transition-delay: 0ms !important;
 }
@@ -61,11 +61,6 @@ a.skip-link:focus-visible {
   background: var(--glass-bg-legible);
 }
 .card .card-info span {
-  color: var(--color-text-soft);
-}
-
-/* Meta text over hero imagery: soft text instead of muted (see A11Y.md). */
-.hero-card .meta {
   color: var(--color-text-soft);
 }
 

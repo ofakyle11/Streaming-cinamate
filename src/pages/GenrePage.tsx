@@ -74,7 +74,7 @@ export default function GenrePage() {
   const genreName = data?.genre?.name ?? known?.genre?.name;
   useMeta({
     title: notFound ? 'Genre not found' : genreName ? `${genreName}` : 'Genre',
-    description: genreName ? `Browse ${genreName} films and series on Last Frame.` : 'Browse titles by genre.',
+    description: genreName ? `Browse ${genreName} films and series on Lastframe.tv.` : 'Browse titles by genre.',
     noindex: notFound,
   });
 

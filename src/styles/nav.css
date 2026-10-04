@@ -1,29 +1,204 @@
-/* Mobile primary navigation (<= 760px).
-   theme.css hides `.nav-links` at this width; the menu toggle reveals the same
-   list as a glass dropdown under the navbar. Desktop layout is untouched. */
+/* Lumen navbar: one floating glass pill at three sizes.
+   desktop >= 1025px   mark + wordmark, inline links
+   tablet  <= 1024px   mark + wordmark, links in a sheet under the bar
+   phone   <= 480px    mark only, search collapses to an icon, 56px bar
+   Layout tokens (--nav-h, --nav-top, --nav-inset, --safe-*, --tap) come from
+   surfaces.css; the lf-fade / lf-rise keyframes from motion.css. */
 
+/* ---------- the pill ---------- */
+.navbar {
+  position: fixed;
+  top: calc(var(--nav-top) + var(--safe-top));
+  left: calc(var(--nav-inset) + var(--safe-left));
+  right: calc(var(--nav-inset) + var(--safe-right));
+  z-index: 50;
+  box-sizing: border-box;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 32px);
+  padding: 0 clamp(14px, 2vw, 24px);
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  animation: lf-fade var(--dur-layout) var(--ease-enter) both;
+  transition:
+    background var(--dur-layout) var(--ease-enter),
+    box-shadow var(--dur-layout) var(--ease-enter);
+}
+.navbar.scrolled {
+  background: var(--glass-bg-strong);
+  box-shadow: var(--shadow-1);
+}
+
+/* ---------- logo ---------- */
+.logo {
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 1.05rem;
+  color: var(--color-text);
+  transition: color var(--dur-micro) var(--ease-enter);
+}
+a.logo,
+a.logo:hover {
+  text-decoration: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .logo:hover {
+    color: var(--color-accent-text);
+  }
+}
+
+/* ---------- links (desktop: inline) ---------- */
+.nav-links {
+  display: flex;
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+  color: var(--color-text-soft);
+}
+.nav-links li {
+  cursor: pointer;
+}
+.nav-links a {
+  color: var(--color-text-soft);
+  text-decoration: none;
+  transition: color var(--dur-micro) var(--ease-enter);
+}
+.nav-links a.active {
+  color: var(--color-text);
+}
+@media (hover: hover) and (pointer: fine) {
+  .nav-links a:hover {
+    color: var(--color-text);
+  }
+}
+@media (min-width: 1025px) {
+  .nav-links a.active {
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
+  }
+}
+
+/* ---------- right cluster: theme toggle (phase 2), search, avatar ---------- */
+.nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.search {
+  box-sizing: border-box;
+  width: 160px;
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: max(16px, 1rem);
+  color: var(--color-text);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  outline: none;
+}
+/* Width is a layout change, never animated. */
+.search:focus {
+  width: 240px;
+}
+a.avatar {
+  display: block;
+}
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+}
+
+/* ---------- menu toggle (hidden on desktop) ---------- */
 .navbar .nav-toggle {
   display: none;
   flex-shrink: 0;
+  width: var(--tap);
+  height: var(--tap);
   color: var(--color-text);
   font-size: 1.1rem;
   cursor: pointer;
 }
 
-@media (max-width: 760px) {
+/* Theme control slots: one in the header (desktop), one as the first row of
+   the menu sheet (phone and tablet). Only one is shown at a time. */
+.navbar .nav-theme-menu {
+  display: none;
+}
+.navbar .nav-theme-desktop {
+  display: inline-flex;
+}
+/* Nothing in the bar may wrap; between 1025 and 1200px the links and search tighten
+   so the theme control fits beside them. */
+.navbar .logo,
+.navbar .nav-links a {
+  white-space: nowrap;
+}
+@media (min-width: 1025px) and (max-width: 1200px) {
   .navbar {
-    gap: 12px;
-    padding: 10px 14px;
+    gap: 20px;
+  }
+  .navbar .nav-links {
+    gap: 14px;
   }
   .navbar .nav-right {
     gap: 10px;
   }
+  .navbar .search {
+    width: 120px;
+  }
+  .navbar .search:focus {
+    width: 160px;
+  }
+}
 
+/* ---------- tablet and phone: links move into a sheet ---------- */
+@media (max-width: 1024px) {
+  .navbar .nav-theme-desktop {
+    display: none;
+  }
+  .navbar .nav-links.is-open .nav-theme-menu {
+    display: flex;
+    justify-content: center;
+    padding: 6px 8px 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--glass-border);
+    cursor: default;
+  }
+  .navbar .nav-links.is-open .nav-theme-menu .theme-toggle,
+  .navbar .nav-links.is-open .nav-theme-menu .theme-toggle-group {
+    display: flex;
+    width: 100%;
+  }
+  .navbar .nav-links.is-open .nav-theme-menu .theme-toggle-option {
+    flex: 1;
+    min-height: var(--tap);
+  }
   .navbar .nav-toggle {
     display: inline-flex;
   }
+  .nav-links {
+    display: none;
+  }
+  /* The field gives way first so the bar never overflows on narrow tablets
+     and large phones in landscape (481 to 560px). */
+  .search {
+    width: clamp(var(--tap), 18vw, 140px);
+    min-width: 0;
+  }
+  .search:focus {
+    width: clamp(120px, 30vw, 200px);
+  }
 
-  /* Overrides theme.css `.nav-links { display: none }` while open. */
+  /* The sheet: a solid surface under the bar (no blur below desktop). */
   .navbar .nav-links.is-open {
     display: flex;
     flex-direction: column;
@@ -32,47 +207,113 @@
     top: calc(100% + 8px);
     left: 0;
     right: 0;
+    box-sizing: border-box;
+    max-height: calc(100vh - var(--nav-top) - var(--nav-h) - var(--safe-top) - 24px);
+    max-height: calc(100dvh - var(--nav-top) - var(--nav-h) - var(--safe-top) - 24px);
+    overflow: auto;
     margin: 0;
     padding: 8px;
+    padding-bottom: calc(8px + var(--safe-bottom));
     border-radius: var(--radius-xl);
-    background: var(--glass-bg-legible);
+    background: var(--color-surface-solid);
     border: 1px solid var(--glass-border);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--glass-shadow);
+    box-shadow: var(--shadow-2);
     font-size: 1rem;
     color: var(--color-text-soft);
-    animation: nav-menu-in var(--dur-base) var(--ease-out);
+    animation: nav-sheet-in var(--dur-component) var(--ease-enter) both;
   }
-
+  /* phase 2: the first row of the sheet is reserved for the theme control. */
   .navbar .nav-links.is-open a {
-    display: block;
-    min-height: 44px;
-    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    min-height: var(--tap);
+    padding: 10px 14px;
     border-radius: var(--radius-md);
   }
-
-  .navbar .nav-links.is-open a:hover,
   .navbar .nav-links.is-open a.active {
+    background: var(--color-tint);
     color: var(--color-text);
-    background: var(--glass-bg);
+  }
+  .navbar .nav-links.is-open a:active {
+    transform: scale(0.97);
+    transition: transform var(--dur-feedback) var(--ease-exit);
+  }
+}
+@media (max-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .navbar .nav-links.is-open a:hover {
+    background: var(--color-tint);
+    color: var(--color-text);
   }
 }
 
-/* Narrow phones (375px): show only the logo mark so the toggle, search and
-   avatar fit on one line. The link keeps its name via aria-label. */
+/* Between the phone bar and a 600px tablet there is no room for the profile name. */
+@media (max-width: 600px) {
+  .navbar .profile-trigger-name {
+    display: none;
+  }
+}
+
+/* ---------- phone: mark only, icon-sized search ---------- */
 @media (max-width: 480px) {
+  .navbar {
+    gap: 8px;
+  }
+  .navbar .nav-right {
+    gap: 8px;
+  }
+  /* Only the mark; the link keeps its name via aria-label. */
   .navbar .logo.logo--with-mark {
     font-size: 0;
     letter-spacing: 0;
     gap: 0;
   }
+  /* Collapsed to a round field with a magnifier drawn by the form; the
+     placeholder returns once it expands on focus. */
+  .nav-right form[role='search'] {
+    position: relative;
+  }
+  .nav-right form[role='search']::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: 20px;
+    height: 20px;
+    margin: auto;
+    background: var(--color-text-soft);
+    -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/></svg>")
+      center / contain no-repeat;
+    mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/></svg>")
+      center / contain no-repeat;
+    pointer-events: none;
+  }
+  .nav-right form[role='search']:focus-within::before,
+  .nav-right form[role='search']:has(.search:not(:placeholder-shown))::before {
+    display: none;
+  }
+  .search {
+    width: var(--tap);
+    min-height: var(--tap);
+    padding: 8px 12px;
+    color: transparent;
+  }
+  .search::placeholder {
+    color: transparent;
+  }
+  .search:focus,
+  .search:not(:placeholder-shown) {
+    width: 160px;
+    color: var(--color-text);
+  }
+  .search:focus::placeholder {
+    color: var(--color-muted);
+  }
 }
 
-@keyframes nav-menu-in {
+/* ---------- motion ---------- */
+@keyframes nav-sheet-in {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -81,10 +322,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .navbar,
   .navbar .nav-links.is-open {
     animation: none;
+    opacity: 1;
+    transform: none;
   }
-  .navbar .nav-toggle:hover {
+  .navbar .nav-links.is-open a:active {
     transform: none;
   }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useMyListToggle } from '../../hooks/useMyListToggle';
+import { useSheetDismiss } from '../../hooks/useSheetDismiss';
 import type { Movie, TmdbVideo } from '../../services';
 import type { Thumb } from '../../state/store';
 import ThumbsControl from '../ratings/ThumbsControl';
@@ -19,7 +20,13 @@ interface Props {
   onThumbChange?: (thumb: Thumb | null) => void;
 }
 
-function TrailerFooter({ movie, onThumbChange }: { movie: Movie; onThumbChange?: (thumb: Thumb | null) => void }) {
+function TrailerFooter({
+  movie,
+  onThumbChange,
+}: {
+  movie: Movie;
+  onThumbChange?: (thumb: Thumb | null) => void;
+}) {
   const { inList, toggle } = useMyListToggle(movie, 'modal');
   return (
     <footer className="trailer-foot">
@@ -33,18 +40,35 @@ function TrailerFooter({ movie, onThumbChange }: { movie: Movie; onThumbChange?:
       >
         <span aria-hidden>{inList ? '✓' : '＋'}</span> My List
       </Button>
-      <ThumbsControl titleId={movie.id} mediaType={movie.mediaType} title={movie.title} size="sm" onChange={onThumbChange} />
+      <ThumbsControl
+        titleId={movie.id}
+        mediaType={movie.mediaType}
+        title={movie.title}
+        size="sm"
+        onChange={onThumbChange}
+      />
     </footer>
   );
 }
 
 function prefersReducedMotion() {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return (
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
 }
 
-export default function TrailerModal({ video, title, poster, onClose, movie, onThumbChange }: Props) {
+export default function TrailerModal({
+  video,
+  title,
+  poster,
+  onClose,
+  movie,
+  onThumbChange,
+}: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  // Phone and tablet: the dialog is a bottom sheet; drag it down to close.
+  useSheetDismiss(dialogRef, onClose);
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -86,12 +110,13 @@ export default function TrailerModal({ video, title, poster, onClose, movie, onT
     <div className="modal-backdrop trailer-backdrop" onClick={onClose}>
       <div
         ref={dialogRef}
-        className="trailer-modal glass"
+        className="trailer-modal sheet glass"
         role="dialog"
         aria-modal="true"
         aria-labelledby="trailer-title"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="sheet-handle" aria-hidden />
         <header className="trailer-head">
           <h2 id="trailer-title">{video.name || `${title} trailer`}</h2>
           <IconButton ref={closeRef} label="Close trailer" onClick={onClose}>
@@ -108,7 +133,12 @@ export default function TrailerModal({ video, title, poster, onClose, movie, onT
               referrerPolicy="strict-origin-when-cross-origin"
             />
           ) : (
-            <div className="trailer-placeholder" style={{ backgroundImage: poster ? `url("${poster.replace(/["\\\n]/g, '')}")` : undefined }}>
+            <div
+              className="trailer-placeholder"
+              style={{
+                backgroundImage: poster ? `url("${poster.replace(/["\\\n]/g, '')}")` : undefined,
+              }}
+            >
               <div className="trailer-placeholder-card glass">
                 <span className="trailer-placeholder-icon" aria-hidden>
                   ▶

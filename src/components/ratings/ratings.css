@@ -1,78 +1,199 @@
 /* Ratings (w2-ratings): thumbs up/down, compact stars and the card hover overlay.
    Built on tokens.css; glass surfaces, spring motion, reduced-motion safe. */
 :root {
-  --rate-star: #f5c518;
+  --rate-star: var(--color-rating);
   --rate-up: var(--color-success);
   --rate-down: var(--color-accent);
 }
 
 /* ---------- thumbs ---------- */
 .thumbs {
-  display: inline-flex; align-items: center; gap: 2px; padding: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
   border-radius: var(--radius-pill);
 }
 .thumb-btn {
-  display: inline-grid; place-items: center; border-radius: 50%;
-  color: var(--color-text-soft); background: transparent;
-  transition: color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard),
-    transform var(--dur-fast) var(--ease-spring);
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-text-soft);
+  background: transparent;
+  transition:
+    color var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-enter);
 }
-.thumb-btn:hover { color: var(--color-text); background: var(--glass-bg); transform: scale(1.1); }
-.thumb-btn:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset); }
-.thumb-btn.on.up { color: var(--rate-up); background: var(--glass-bg); }
-.thumb-btn.on.down { color: var(--rate-down); background: var(--glass-bg); }
-.thumb-btn.on .thumb-icon { animation: thumb-pop var(--dur-medium) var(--ease-spring); }
-.thumb-icon.down { transform: rotate(180deg); }
-.thumbs-md .thumb-btn { width: 40px; height: 40px; font-size: 1.15rem; }
-.thumbs-sm .thumb-btn { width: 30px; height: 30px; font-size: 0.9rem; }
-.thumbs-sm { background: var(--glass-bg-strong); }
+.thumb-btn:hover {
+  color: var(--color-text);
+  background: var(--glass-bg);
+  transform: scale(1.03);
+}
+.thumb-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.thumb-btn.on.up {
+  color: var(--rate-up);
+  background: var(--glass-bg);
+}
+.thumb-btn.on.down {
+  color: var(--rate-down);
+  background: var(--glass-bg);
+}
+.thumb-btn.on .thumb-icon {
+  animation: thumb-pop var(--dur-medium) var(--ease-toggle);
+}
+.thumb-icon.down {
+  transform: rotate(180deg);
+}
+.thumbs-md .thumb-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 1.15rem;
+}
+.thumbs-sm .thumb-btn {
+  width: 30px;
+  height: 30px;
+  font-size: 0.9rem;
+}
+.thumbs-sm {
+  background: var(--glass-bg-strong);
+}
 
-@keyframes thumb-pop { 0% { scale: 0.6; } 60% { scale: 1.25; } 100% { scale: 1; } }
+@keyframes thumb-pop {
+  0% {
+    scale: 0.9;
+  }
+  60% {
+    scale: 1.04;
+  }
+  100% {
+    scale: 1;
+  }
+}
 
 /* ---------- compact stars ---------- */
-.mini-stars { display: flex; justify-content: center; }
-.mini-star {
-  width: 20px; height: 22px; font-size: 0.95rem; line-height: 1; padding: 0;
-  color: var(--glass-border-strong); background: transparent;
-  transition: color var(--dur-fast), transform var(--dur-fast) var(--ease-spring);
+.mini-stars {
+  display: flex;
+  justify-content: center;
 }
-.mini-star.on { color: var(--rate-star); }
-.mini-stars:hover .mini-star { color: var(--rate-star); }
-.mini-stars .mini-star:hover ~ .mini-star { color: var(--glass-border-strong); }
-.mini-star:hover { transform: scale(1.2); }
-.mini-star:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring-color); border-radius: var(--radius-xs); }
+.mini-star {
+  width: 20px;
+  height: 22px;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0;
+  color: var(--glass-border-strong);
+  background: transparent;
+  transition:
+    color var(--dur-fast),
+    transform var(--dur-fast) var(--ease-enter);
+}
+.mini-star.on {
+  color: var(--rate-star);
+}
+.mini-stars:hover .mini-star {
+  color: var(--rate-star);
+}
+.mini-stars .mini-star:hover ~ .mini-star {
+  color: var(--glass-border-strong);
+}
+.mini-star:hover {
+  transform: scale(1.03);
+}
+.mini-star:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  border-radius: var(--radius-xs);
+}
 
 /* ---------- card hover overlay ---------- */
 .card-rate {
-  position: absolute; top: 6px; left: 6px; right: 6px; z-index: 2;
-  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
-  opacity: 0; transform: translateY(-8px); pointer-events: none;
-  transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-medium) var(--ease-out);
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-medium) var(--ease-out);
 }
-.card:hover .card-rate,
-.card:focus-within .card-rate { opacity: 1; transform: none; pointer-events: auto; }
-.card-rate-stars { padding: 2px 4px; border-radius: var(--radius-pill); background: var(--glass-bg-strong); }
+.card:focus-within .card-rate {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .card-rate {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+.card-rate-stars {
+  padding: 2px 4px;
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg-strong);
+}
 
 /* Touch devices have no hover: keep a compact thumbs pill visible, hide stars. */
 @media (hover: none) {
-  .card-rate { opacity: 1; transform: none; pointer-events: auto; }
-  .card-rate-stars { display: none; }
-  .card:focus-within .card-rate-stars { display: block; }
+  .card-rate {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  .card-rate-stars {
+    display: none;
+  }
+  .card:focus-within .card-rate-stars {
+    display: block;
+  }
 }
 
-/* Narrow cards (120px at <=760px): tighten the overlay so it fits. */
-@media (max-width: 760px) {
-  .card-rate { top: 4px; left: 4px; right: 4px; }
-  .thumbs-sm .thumb-btn { width: 28px; height: 28px; }
-  .mini-star { width: 19px; }
+/* Narrow cards (120px at <=480px): tighten the overlay so it fits. */
+@media (max-width: 480px) {
+  .card-rate {
+    top: 4px;
+    left: 4px;
+    right: 4px;
+  }
+  .thumbs-sm .thumb-btn {
+    width: 28px;
+    height: 28px;
+  }
+  .mini-star {
+    width: 19px;
+  }
 }
 
 /* ---------- title page ---------- */
-.title-actions .thumbs-md { padding: 3px; }
+.title-actions .thumbs-md {
+  padding: 3px;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .thumb-btn, .mini-star, .card-rate { transition: none; }
-  .thumb-btn:hover, .mini-star:hover { transform: none; }
-  .thumb-btn.on .thumb-icon { animation: none; }
-  .card-rate { transform: none !important; }
+  .thumb-btn,
+  .mini-star,
+  .card-rate {
+    transition: none;
+  }
+  .thumb-btn:hover,
+  .mini-star:hover {
+    transform: none;
+  }
+  .thumb-btn.on .thumb-icon {
+    animation: none;
+  }
+  .card-rate {
+    transform: none !important;
+  }
 }

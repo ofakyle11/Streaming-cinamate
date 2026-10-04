@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 
-export const SITE_NAME = 'Last Frame';
+export const SITE_NAME = 'Lastframe.tv';
 export const DEFAULT_DESCRIPTION =
-  'Last Frame — discover films and TV series, see where to watch them and keep your watchlist in one place.';
+  'Lastframe.tv — discover films and TV series, see where to watch them and keep your watchlist in one place.';
 export const DEFAULT_IMAGE = '/apple-touch-icon.png';
 
 export interface MetaOptions {
-  /** Page title, rendered as "<title> · Last Frame". Omit for the bare site name. */
+  /** Page title, rendered as "<title> · Lastframe.tv". Omit for the bare site name. */
   title?: string;
   /** Meta/OG/Twitter description. Falls back to the site default. */
   description?: string;

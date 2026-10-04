@@ -2,41 +2,45 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b0b12" />
-    <link rel="preconnect" href="https://image.tmdb.org" />
-    <link rel="dns-prefetch" href="https://image.tmdb.org" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f5ff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141126" />
+    <!-- Theme bootstrap: applies the saved theme (localStorage "lf.theme") to <html> and the metas above before first paint. Keep it the first script, after the metas. -->
+    <script src="/theme-init.js"></script>
     <link
       rel="preload"
-      href="/fonts/inter/InterVariable-latin.woff2"
+      href="/fonts/gabarito-latin.woff2"
       as="font"
       type="font/woff2"
       crossorigin
     />
+    <link rel="preload" href="/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preconnect" href="https://image.tmdb.org" />
+    <link rel="dns-prefetch" href="https://image.tmdb.org" />
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="mask-icon" href="/mask-icon.svg" color="#e50914" />
+    <link rel="mask-icon" href="/mask-icon.svg" color="#5b47e0" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
-    <title>Last Frame</title>
+    <title>Lastframe.tv</title>
     <meta
       name="description"
-      content="Last Frame — discover films and TV series, see where to watch them and keep your watchlist in one place."
+      content="Lastframe.tv — discover films and TV series, see where to watch them and keep your watchlist in one place."
     />
-    <meta property="og:site_name" content="Last Frame" />
+    <meta property="og:site_name" content="Lastframe.tv" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Last Frame" />
+    <meta property="og:title" content="Lastframe.tv" />
     <meta
       property="og:description"
-      content="Last Frame — discover films and TV series, see where to watch them and keep your watchlist in one place."
+      content="Lastframe.tv — discover films and TV series, see where to watch them and keep your watchlist in one place."
     />
     <meta property="og:url" content="https://lastframe.tv/" />
     <link rel="canonical" href="https://lastframe.tv/" />
     <meta property="og:image" content="https://lastframe.tv/apple-touch-icon.png" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Last Frame" />
+    <meta name="twitter:title" content="Lastframe.tv" />
     <meta
       name="twitter:description"
-      content="Last Frame — discover films and TV series, see where to watch them and keep your watchlist in one place."
+      content="Lastframe.tv — discover films and TV series, see where to watch them and keep your watchlist in one place."
     />
     <meta name="twitter:image" content="https://lastframe.tv/apple-touch-icon.png" />
   </head>

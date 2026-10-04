@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FocusEvent,
+} from 'react';
 import {
   analytics as defaultAnalytics,
   tmdb as defaultTmdb,
@@ -8,6 +15,7 @@ import {
   type TmdbVideo,
 } from '../services';
 import { IconButton, useOptionalToast } from './ui';
+import LogoMark from './brand/LogoMark';
 import TrailerModal from './title/TrailerModal';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { useInView } from '../hooks/useInView';
@@ -31,10 +39,13 @@ export const TRAILER_DELAY_MS = 3000;
 /** Auto-advance interval for the carousel (paused while a trailer plays). */
 export const SLIDE_INTERVAL_MS = 7000;
 
+/** Stagger index for the `.lf-rise` load choreography (motion.css). */
+const rise = (i: number) => ({ '--i': i }) as CSSProperties;
+
 interface Props {
   featured: Movie[];
   onMore: (m: Movie) => void;
-  /** Play fallback when the slide has no trailer (Home navigates to the title page). Defaults to `onMore`. */
+  /** Trailer fallback when the slide has no trailer (Home navigates to the title page). Defaults to `onMore`. */
   onOpenTitle?: (m: Movie) => void;
   /** Service overrides (tests). */
   svc?: TmdbService;
@@ -55,7 +66,7 @@ export default function Hero({
   const [requestedId, setRequestedId] = useState<number | null>(null);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [muted, setMuted] = useState(true);
-  /** Full-screen trailer opened from the Play button. */
+  /** Full-screen trailer opened from the Trailer button. */
   const [trailer, setTrailer] = useState<{ movie: Movie; video: TmdbVideo } | null>(null);
   /** User pressed the slideshow pause button (WCAG 2.2.2). */
   const [userPaused, setUserPaused] = useState(false);
@@ -66,7 +77,7 @@ export default function Hero({
    * spams screen readers), 'polite' after the user picks a slide or pauses.
    */
   const [announce, setAnnounce] = useState(false);
-  /** Id of the slide whose Play is waiting on a trailer lookup. */
+  /** Id of the slide whose Trailer button is waiting on a trailer lookup. */
   const [pendingPlayId, setPendingPlayId] = useState<number | null>(null);
 
   const heroRef = useRef<HTMLElement>(null);
@@ -82,9 +93,9 @@ export default function Hero({
   const { toast } = useOptionalToast();
   const trailerOpen = trailer !== null;
   const paused = userPaused || hovering || focusWithin || trailerOpen;
-  /** Cancels an in-flight Play lookup on unmount / slide change. */
+  /** Cancels an in-flight trailer lookup on unmount / slide change. */
   const playLookupRef = useRef(0);
-  /** Synchronous guard so repeat Play clicks never start another lookup. */
+  /** Synchronous guard so repeat Trailer clicks never start another lookup. */
   const playPendingRef = useRef(false);
   useEffect(() => () => void (playLookupRef.current += 1), []);
 
@@ -121,7 +132,11 @@ export default function Hero({
 
   const openTrailer = (m: Movie, key: string) => {
     recordView(m, 'trailer');
-    track(AnalyticsEvents.playTrailer, { id: m.id, mediaType: m.mediaType, source: 'hero' }, analytics);
+    track(
+      AnalyticsEvents.playTrailer,
+      { id: m.id, mediaType: m.mediaType, source: 'hero' },
+      analytics,
+    );
     // Silence and pause the background preview while the full trailer plays.
     sendCommand('pauseVideo');
     sendCommand('mute');
@@ -129,7 +144,7 @@ export default function Hero({
     setTrailer({ movie: m, video: trailerVideoFromKey(key, m.title) });
   };
 
-  /** Drops any in-flight Play lookup and its pending state. */
+  /** Drops any in-flight trailer lookup and its pending state. */
   const cancelPlayLookup = () => {
     playLookupRef.current += 1;
     playPendingRef.current = false;
@@ -162,11 +177,15 @@ export default function Hero({
     (thumb: Thumb | null) => {
       const m = trailer?.movie;
       if (!m) return;
-      track(thumbEvent(thumb), {
-        id: m.id,
-        mediaType: m.mediaType,
-        source: 'hero',
-      }, analytics);
+      track(
+        thumbEvent(thumb),
+        {
+          id: m.id,
+          mediaType: m.mediaType,
+          source: 'hero',
+        },
+        analytics,
+      );
       if (thumb === 'up') toast(`Glad you liked ${m.title}`, { kind: 'success' });
       else if (thumb === 'down') toast(`Got it — we’ll show fewer titles like ${m.title}`);
       else toast(`Removed your thumb for ${m.title}`);
@@ -221,127 +240,147 @@ export default function Hero({
         aria-roledescription="carousel"
         aria-label="Featured titles"
       >
-        {featured.map((m, i) => (
-          <div
-            key={m.id}
-            className={`hero-bg ${i === index % count ? 'active' : ''}`}
-            style={{ backgroundImage: `url(${m.backdrop})` }}
-          />
-        ))}
-        {showTrailer && trailerKey && (
-          <div className={`hero-trailer${trailerReady ? ' ready' : ''}`} data-testid="hero-trailer">
-            <iframe
-              key={trailerKey}
-              ref={iframeRef}
-              src={youTubeEmbedUrl(trailerKey, origin)}
-              title={`${movie.title} trailer preview`}
-              allow="autoplay; encrypted-media; picture-in-picture"
-              referrerPolicy="strict-origin-when-cross-origin"
-              tabIndex={-1}
-              aria-hidden="true"
-              onLoad={handleIframeLoad}
+        <div className="hero-screen">
+          {featured.map((m, i) => (
+            <div
+              key={m.id}
+              className={`hero-bg ${i === index % count ? 'active' : ''}`}
+              style={{ backgroundImage: `url(${m.backdrop})` }}
             />
-          </div>
-        )}
-        <div className="hero-fade" />
-        <div
-          className="hero-card glass"
-          key={movie.id}
-          role="group"
-          aria-roledescription="slide"
-          aria-label={slideLabel}
-          onPointerEnter={() => setHovering(true)}
-          onPointerLeave={() => setHovering(false)}
-          onFocus={() => setFocusWithin(true)}
-          onBlur={handleBlur}
-        >
-          <h1>{movie.title}</h1>
-          <div className="meta">
-            <span className="match">{movie.match}% Match</span>
-            <span>{movie.year}</span>
-            {movie.rating && <span className="badge">{movie.rating}</span>}
-            <span>{movie.genres.join(' · ')}</span>
-          </div>
-          <p>{movie.description}</p>
-          <div className="actions">
-            <button
-              type="button"
-              className={`btn primary hero-play${playPending ? ' is-pending' : ''}`}
-              onClick={() => play(movie)}
-              aria-busy={playPending || undefined}
-              aria-disabled={playPending || undefined}
+          ))}
+          {showTrailer && trailerKey && (
+            <div
+              className={`hero-trailer${trailerReady ? ' ready' : ''}`}
+              data-testid="hero-trailer"
             >
-              {playPending ? (
-                <span className="hero-play-spinner" aria-hidden />
-              ) : (
-                <span aria-hidden>▶</span>
-              )}{' '}
-              Play
-            </button>
-            <HeroListButton movie={movie} />
-            <button type="button" className="btn glass" onClick={() => onMore(movie)}>
-              <span aria-hidden>ⓘ</span> More Info
-            </button>
-          </div>
-        </div>
-        {trailerKey && (
-          <div className="hero-trailer-controls">
-            {reducedMotion && (
-              <IconButton
-                label={showTrailer ? 'Stop trailer preview' : 'Play trailer preview'}
-                aria-pressed={showTrailer}
-                onClick={() => setRequestedId(showTrailer ? null : movie.id)}
-              >
-                {showTrailer ? '■' : '▶'}
-              </IconButton>
-            )}
-            {showTrailer && (
-              <IconButton
-                label={muted ? 'Unmute trailer' : 'Mute trailer'}
-                aria-pressed={!muted}
-                onClick={toggleMute}
-              >
-                <SpeakerIcon muted={muted} />
-              </IconButton>
-            )}
-          </div>
-        )}
-        <div className="hero-nav">
-          <div className="hero-dots" role="group" aria-label="Choose featured title">
-            {featured.map((m, i) => (
-              <button
-                key={m.id}
-                type="button"
-                className={i === current ? 'active' : ''}
-                onClick={() => goTo(i)}
-                aria-label={i === current ? `Showing ${m.title}` : `Show ${m.title}`}
-                aria-current={i === current ? 'true' : undefined}
+              <iframe
+                key={trailerKey}
+                ref={iframeRef}
+                src={youTubeEmbedUrl(trailerKey, origin)}
+                title={`${movie.title} trailer preview`}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                referrerPolicy="strict-origin-when-cross-origin"
+                tabIndex={-1}
+                aria-hidden="true"
+                onLoad={handleIframeLoad}
               />
-            ))}
-          </div>
-          {slideshowControls && (
-            <IconButton
-              className="hero-pause"
-              size="sm"
-              label={userPaused ? 'Play slideshow' : 'Pause slideshow'}
-              aria-pressed={userPaused}
-              onClick={() => {
-                // Announce slides only once the user has taken control of the carousel.
-                setAnnounce(!userPaused);
-                setUserPaused((p) => !p);
-              }}
-            >
-              <span aria-hidden>{userPaused ? '▶' : '❚❚'}</span>
-            </IconButton>
+            </div>
           )}
-        </div>
-        <div
-          className="hero-sr-only"
-          data-testid="hero-live"
-          aria-live={announce ? 'polite' : 'off'}
-          aria-atomic="true"
-        >
-          {slideLabel}
+          {/* One-shot light band across the screen on mount (outside the keyed slide so it never replays). */}
+          <div className="hero-sweep" aria-hidden />
+          <div className="hero-fade" />
+          <div
+            className="hero-copy"
+            onPointerEnter={() => setHovering(true)}
+            onPointerLeave={() => setHovering(false)}
+            onFocus={() => setFocusWithin(true)}
+            onBlur={handleBlur}
+          >
+            {/* The animated Lumen mark (phase 4): lens, one sweep and a breathing halo on the
+                Ink screen. Outside the keyed slide so its load choreography plays once per
+                mount, not on every slide change. */}
+            <div className="hero-lockup lf-rise" data-logo-slot="hero" style={rise(0)}>
+              <LogoMark variant="hero" size={64} decorative />
+            </div>
+            <div
+              className="hero-slide"
+              key={movie.id}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={slideLabel}
+            >
+              <h1 className="lf-rise" style={rise(1)}>
+                {movie.title}
+              </h1>
+              <div className="meta lf-rise" style={rise(2)}>
+                <span className="fit">Fit {movie.match}</span>
+                <span>{movie.year}</span>
+                {movie.rating && <span className="badge">{movie.rating}</span>}
+                <span>{movie.genres.join(' · ')}</span>
+              </div>
+              <p className="lf-rise" style={rise(3)}>
+                {movie.description}
+              </p>
+              <div className="actions lf-rise" style={rise(4)}>
+                <button
+                  type="button"
+                  className="btn primary hero-cta"
+                  onClick={() => onMore(movie)}
+                >
+                  Where to watch
+                </button>
+                <button
+                  type="button"
+                  className={`btn glass hero-trailer-btn${playPending ? ' is-pending' : ''}`}
+                  onClick={() => play(movie)}
+                  aria-busy={playPending || undefined}
+                  aria-disabled={playPending || undefined}
+                >
+                  {playPending && <span className="hero-trailer-spinner" aria-hidden />}
+                  Trailer
+                </button>
+                <HeroListButton movie={movie} />
+              </div>
+            </div>
+          </div>
+          {trailerKey && (
+            <div className="hero-trailer-controls">
+              {reducedMotion && (
+                <IconButton
+                  label={showTrailer ? 'Stop trailer preview' : 'Play trailer preview'}
+                  aria-pressed={showTrailer}
+                  onClick={() => setRequestedId(showTrailer ? null : movie.id)}
+                >
+                  {showTrailer ? '■' : '▶'}
+                </IconButton>
+              )}
+              {showTrailer && (
+                <IconButton
+                  label={muted ? 'Unmute trailer' : 'Mute trailer'}
+                  aria-pressed={!muted}
+                  onClick={toggleMute}
+                >
+                  <SpeakerIcon muted={muted} />
+                </IconButton>
+              )}
+            </div>
+          )}
+          <div className="hero-nav">
+            <div className="hero-dots" role="group" aria-label="Choose featured title">
+              {featured.map((m, i) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={i === current ? 'active' : ''}
+                  onClick={() => goTo(i)}
+                  aria-label={i === current ? `Showing ${m.title}` : `Show ${m.title}`}
+                  aria-current={i === current ? 'true' : undefined}
+                />
+              ))}
+            </div>
+            {slideshowControls && (
+              <IconButton
+                className="hero-pause"
+                label={userPaused ? 'Play slideshow' : 'Pause slideshow'}
+                aria-pressed={userPaused}
+                onClick={() => {
+                  // Announce slides only once the user has taken control of the carousel.
+                  setAnnounce(!userPaused);
+                  setUserPaused((p) => !p);
+                }}
+              >
+                <span aria-hidden>{userPaused ? '▶' : '❚❚'}</span>
+              </IconButton>
+            )}
+          </div>
+          <div
+            className="hero-sr-only"
+            data-testid="hero-live"
+            aria-live={announce ? 'polite' : 'off'}
+            aria-atomic="true"
+          >
+            {slideLabel}
+          </div>
         </div>
       </section>
       {trailer && (

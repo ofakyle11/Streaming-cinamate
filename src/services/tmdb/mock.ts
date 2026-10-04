@@ -45,7 +45,7 @@ interface Seed {
   o: string;
 }
 
-/** 60 fictional titles. Every name is invented for Last Frame. */
+/** 60 fictional titles. Every name is invented for Lastframe.tv. */
 const SEEDS: Seed[] = [
   { t: 'Neon Drift', g: [878, 28], type: 'movie', o: 'A courier in a rain-soaked megacity discovers the package she is carrying is a copy of her own memories.' },
   { t: 'The Glass Horizon', g: [18, 9648], type: 'movie', o: 'Two estranged sisters reunite at a coastal observatory to settle their late father’s unfinished experiment.' },

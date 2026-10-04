@@ -46,7 +46,10 @@ describe('Navbar discovery links', () => {
     fireEvent.click(link);
     await waitFor(() => expect(screen.getByTestId('location').textContent).toBe(href), T);
     // Wait for titles to load, then make sure it is not the genre 404.
-    await waitFor(() => expect(screen.getAllByRole('link', { name: /\(\d{4}\)$/ }).length).toBeGreaterThan(0), T);
+    await waitFor(
+      () => expect(screen.getAllByRole('link', { name: /\(\d{4}\)$/ }).length).toBeGreaterThan(0),
+      T,
+    );
     expect(screen.queryByRole('heading', { name: /genre not found/i })).toBeNull();
   });
 
@@ -80,6 +83,26 @@ describe('Navbar discovery links', () => {
   it('highlights New & Popular on /new', () => {
     renderAt('/new');
     expect(nav().getByRole('link', { name: 'New & Popular' })).toHaveClass('active');
+  });
+});
+
+describe('Navbar Lumen hooks', () => {
+  it('marks the logo link as the header logo slot', () => {
+    renderAt('/');
+    expect(nav().getByRole('link', { name: 'Lastframe.tv home' })).toHaveAttribute(
+      'data-logo-slot',
+      'header',
+    );
+  });
+
+  it('renders every nav link with the view transition enabled', async () => {
+    renderAt('/');
+    for (const name of ['Home', 'Series', 'Films', 'New & Popular', 'My List']) {
+      expect(nav().getByRole('link', { name })).toBeInTheDocument();
+    }
+    // A viewTransition navigation still lands (jsdom has no startViewTransition).
+    fireEvent.click(nav().getByRole('link', { name: 'My List' }));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/my-list'), T);
   });
 });
 

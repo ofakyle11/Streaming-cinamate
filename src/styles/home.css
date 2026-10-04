@@ -1,43 +1,100 @@
 /* Home page: skeleton rows, per-row errors and the page-level error panel.
-   Built on tokens.css; keeps the glass-motion look of .row / .hero. */
+   Built on tokens.css and surfaces.css; the rows sit under the hero screen. */
 
-.home-rows.no-hero { margin-top: 0; padding-top: 110px; }
+.home-rows {
+  margin-top: 24px;
+}
+.home-rows.no-hero {
+  margin-top: 0;
+  padding-top: calc(var(--nav-top) + var(--nav-h) + var(--safe-top) + 24px);
+}
 
 /* ---------- skeleton rows ---------- */
-.row-skeleton .track { overflow: hidden; }
+.row-skeleton .track {
+  overflow: hidden;
+}
 
-/* ---------- hero skeleton ---------- */
-.hero-skeleton { background: linear-gradient(160deg, var(--glass-bg), var(--glass-bg-faint)); }
-.hero-skeleton-card { display: flex; flex-direction: column; gap: 12px; width: min(520px, 90vw); }
-.hero-skeleton-title.skeleton.text { height: 2.4rem; width: 80%; }
+/* ---------- hero skeleton: the Ink screen with the copy block's shape ---------- */
+.hero-skeleton {
+  animation: none;
+  background: var(--color-ink, #141126);
+}
+.hero-skeleton-copy {
+  gap: 12px;
+}
+.hero-skeleton-copy .skeleton {
+  background: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 10%, transparent);
+}
+.hero-skeleton-lockup.skeleton {
+  border-radius: var(--radius-lg);
+}
+.hero-skeleton-title.skeleton.text {
+  height: 2.4rem;
+  width: 80%;
+}
+.hero-skeleton-pill.skeleton {
+  border-radius: var(--radius-pill);
+}
 
 /* ---------- per-row error ---------- */
 .row-error-card {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
-  margin: 24px 4px; padding: 16px 20px; border-radius: var(--radius-lg);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 4px;
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
   border-left: 3px solid var(--color-danger);
   animation: row-error-in var(--dur-medium) var(--ease-out);
 }
-.row-error-card p { color: var(--color-text-soft); line-height: 1.4; }
-.row-error-detail { color: var(--color-muted); }
-@keyframes row-error-in { from { opacity: 0; transform: translateY(8px); } }
+.row-error-card p {
+  color: var(--color-text-soft);
+  line-height: 1.4;
+}
+.row-error-detail {
+  color: var(--color-muted);
+}
+@keyframes row-error-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
 
 /* ---------- page-level error ---------- */
 .home-error {
-  max-width: 520px; margin: 0 auto; padding: 28px; border-radius: var(--radius-xl);
-  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
-  animation: spring var(--dur-slow) var(--ease-spring);
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 28px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  animation: spring var(--dur-slow) var(--ease-enter);
 }
-.home-error h1 { font-size: 1.5rem; }
-.home-error p { color: var(--color-text-soft); }
+.home-error h1 {
+  font-size: 1.5rem;
+}
+.home-error p {
+  color: var(--color-text-soft);
+}
 
-@media (max-width: 760px) {
-  .home-rows.no-hero { padding-top: 96px; }
-  .row-error-card { padding: 14px 16px; }
-  .home-error { margin: 0 16px; padding: 22px; }
-  .hero-skeleton-card { width: auto; }
+@media (max-width: 480px) {
+  .row-error-card {
+    padding: 14px 16px;
+  }
+  .home-error {
+    margin: 0 16px;
+    padding: 22px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .row-error-card, .home-error { animation: none; }
+  .row-error-card,
+  .home-error {
+    animation: none;
+  }
 }

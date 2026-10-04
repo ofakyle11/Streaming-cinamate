@@ -1,100 +1,377 @@
-/* Hero trailer preview: muted YouTube embed faded in behind the glass card.
-   Layering inside .hero: .hero-bg -> .hero-trailer -> .hero-fade -> .hero-card / controls. */
+/* ---------- hero: an Ink screen set into a bright room ----------
+   .hero is the room (page background, nav clearance and --hero-inset on three sides);
+   .hero-screen is the rounded, clipped Ink panel that holds the backdrop, the trailer
+   preview, a one-shot light sweep, the Ink scrim, the copy and the controls.
+   Layering inside .hero-screen: .hero-bg -> .hero-trailer -> .hero-sweep -> .hero-fade
+   -> .hero-copy / .hero-trailer-controls / .hero-nav. */
+.hero {
+  position: relative;
+  padding: calc(var(--nav-top) + var(--nav-h) + var(--safe-top) + var(--hero-inset))
+    var(--hero-inset) 0;
+}
+.hero-screen {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hero-radius);
+  background: var(--color-ink, #141126);
+  color: var(--color-ink-fg, #f6f5ff);
+  height: min(
+    calc(100vh - var(--nav-top) - var(--nav-h) - var(--safe-top) - var(--hero-inset) * 2),
+    820px
+  );
+  height: min(
+    calc(100dvh - var(--nav-top) - var(--nav-h) - var(--safe-top) - var(--hero-inset) * 2),
+    820px
+  );
+  min-height: 520px;
+  /* The screen's light in a bright room: a shadow plus a lavender glow. */
+  box-shadow:
+    var(--shadow-2),
+    0 30px 80px -20px color-mix(in srgb, var(--brand-grad-a) 45%, transparent);
+  animation: lf-screen var(--dur-hero) var(--ease-enter) both;
+  animation-delay: 100ms;
+}
+/* Lights down: a rim light instead of a cast shadow. Written twice, exactly like themes.css. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .hero-screen {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--brand-lavender) 22%, transparent),
+      0 24px 80px color-mix(in srgb, var(--brand-lavender) 14%, transparent);
+  }
+}
+:root[data-theme='dark'] .hero-screen {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-lavender) 22%, transparent),
+    0 24px 80px color-mix(in srgb, var(--brand-lavender) 14%, transparent);
+}
 
+/* Backdrop: crossfades over --dur-hero, never scales. */
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transform: none;
+  transition: opacity var(--dur-hero) var(--ease-enter);
+}
+.hero-bg.active {
+  opacity: 1;
+}
+
+/* Ink scrim so the copy never depends on the artwork. */
+.hero-fade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to top, var(--color-ink-scrim, rgba(14, 11, 30, 0.85)) 0%, transparent 60%),
+    linear-gradient(to right, var(--color-ink-scrim, rgba(14, 11, 30, 0.85)), transparent 65%);
+}
+
+/* One-shot light band that crosses the screen once per mount. */
+.hero-sweep {
+  position: absolute;
+  inset: 0;
+  width: 25%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  transform: translateX(-30%);
+  animation: lf-sweep var(--dur-sweep) var(--ease-exit) 1 both;
+  animation-delay: 200ms;
+}
+
+/* ---------- copy block: bottom-left, directly on the screen ---------- */
+.hero-copy {
+  --lf-delay: 300ms;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  max-width: 640px;
+  padding: clamp(24px, 5vw, 48px);
+  display: grid;
+  gap: 12px;
+  color: var(--color-ink-fg, #f6f5ff);
+}
+.hero-lockup {
+  display: flex;
+  align-items: center;
+}
+/* The keyed slide: remounts per title so the copy re-rises; the lockup above does not. */
+.hero-slide {
+  display: grid;
+  gap: 12px;
+}
+.hero-copy h1 {
+  font-size: var(--fs-hero);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: var(--color-ink-fg, #f6f5ff);
+}
+.hero-copy p {
+  max-width: 46ch;
+  line-height: 1.55;
+  color: var(--color-ink-fg-soft, #bdb9d8);
+}
+.hero-copy .meta {
+  color: var(--color-ink-fg-soft, #bdb9d8);
+}
+.hero-copy .fit {
+  color: var(--color-ink-accent, #9b8cff);
+  font-weight: 600;
+}
+.hero-copy .badge {
+  border-color: var(--color-ink-fg-soft, #bdb9d8);
+}
+
+/* Actions: Where to watch / Trailer / My List wrap instead of overflowing. */
+.hero-copy .actions {
+  flex-wrap: wrap;
+}
+.hero-copy .actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+/* Everything on the Ink screen is theme-invariant, the primary CTA included. */
+.hero-copy .btn.primary {
+  background: var(--color-ink-accent, #9b8cff);
+  color: var(--color-ink, #141126);
+}
+/* Glass secondaries sit on Ink in both themes: an Ink-safe look. */
+.hero-copy .btn.glass,
+.hero-trailer-controls .icon-btn,
+.hero-nav .icon-btn {
+  background: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 35%, transparent);
+  color: var(--color-ink-fg, #f6f5ff);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hero-copy .btn.primary:hover {
+    background: color-mix(in srgb, var(--color-ink-accent, #9b8cff) 85%, white);
+  }
+  .hero-copy .btn.glass:hover,
+  .hero-trailer-controls .icon-btn:hover,
+  .hero-nav .icon-btn:hover {
+    background: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 16%, transparent);
+  }
+}
+.hero-copy .hero-list-btn.is-listed {
+  border-color: var(--color-success);
+}
+.hero-copy .btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ---------- trailer preview: muted YouTube embed faded in behind the scrim ---------- */
 .hero-trailer {
-  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
   container-type: size;
   opacity: 0;
-  transition: opacity var(--dur-hero) var(--ease-out);
+  transition: opacity var(--dur-hero) var(--ease-enter);
 }
 /* Small extra delay hides YouTube's initial black frame / spinner. */
-.hero-trailer.ready { opacity: 1; transition-delay: var(--dur-slow); }
-
+.hero-trailer.ready {
+  opacity: 1;
+  transition-delay: var(--dur-page);
+}
 /* 16:9 "object-fit: cover" for the iframe, slightly over-scaled to crop YouTube chrome. */
 .hero-trailer iframe {
-  position: absolute; top: 50%; left: 50%;
-  width: max(100cqw, 177.78cqh); height: max(100cqh, 56.25cqw);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100cqw, 177.78cqh);
+  height: max(100cqh, 56.25cqw);
   transform: translate(-50%, -50%) scale(1.2);
-  border: 0; pointer-events: none;
+  border: 0;
+  pointer-events: none;
 }
 
-/* Keep the backdrop from Ken-Burns-zooming behind a playing trailer. */
-.hero.has-trailer .hero-bg.active { animation-play-state: paused; }
-
+/* ---------- controls: bottom-right inside the screen ---------- */
 .hero-trailer-controls {
-  position: absolute; z-index: 3; right: 5vw; bottom: calc(18vh + 28px);
-  display: flex; gap: 10px;
-  animation: hero-controls-in var(--dur-medium) var(--ease-out);
+  position: absolute;
+  z-index: 3;
+  right: clamp(16px, 4vw, 32px);
+  bottom: calc(clamp(16px, 4vw, 32px) + 56px);
+  display: flex;
+  gap: 10px;
+  animation: lf-rise var(--dur-layout) var(--ease-enter) both;
 }
-.hero-trailer-controls .icon-btn { color: var(--color-text); }
-.hero-trailer-controls .icon-btn[aria-pressed="true"] { background: var(--glass-bg-strong); border-color: var(--glass-border-strong); }
+.hero-trailer-controls .icon-btn[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 55%, transparent);
+}
 .hero-trailer-controls .icon-btn:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
   box-shadow: 0 0 0 6px var(--focus-ring-glow);
 }
-@keyframes hero-controls-in { from { opacity: 0; transform: translateY(8px); } }
 
-/* Actions: Play / My List / More Info wrap instead of overflowing the card. */
-.hero-card .actions { flex-wrap: wrap; }
-.hero-card .actions .btn { display: inline-flex; align-items: center; gap: 6px; }
-.hero-card .hero-list-btn.is-listed { border-color: var(--color-success); }
-.hero-card .btn:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-}
-
-/* Dots + slideshow pause control share one row (overrides the bare .hero-dots placement). */
+/* Dots + slideshow pause control share one row. */
 .hero-nav {
-  position: absolute; z-index: 3; right: 5vw; bottom: 18vh;
-  display: flex; align-items: center; gap: 12px;
+  position: absolute;
+  z-index: 3;
+  right: clamp(16px, 4vw, 32px);
+  bottom: clamp(16px, 4vw, 32px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.hero-nav .hero-dots { position: static; }
+.hero-dots {
+  display: flex;
+  gap: 0;
+}
+/* A 10px dot drawn inside a 44px-tall tappable box (background-clip keeps the
+   padding transparent). */
+.hero-dots button {
+  box-sizing: content-box;
+  width: 10px;
+  height: 10px;
+  padding: 17px 4px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 35%, transparent);
+  background-clip: content-box;
+  transition: background var(--dur-component) var(--ease-enter);
+}
+.hero-dots button.active {
+  width: 28px;
+  background: var(--color-ink-fg, #f6f5ff);
+  background-clip: content-box;
+}
 .hero-nav .hero-dots button:focus-visible,
 .hero-nav .icon-btn:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
-.hero-pause { color: var(--color-text); font-size: 0.7rem; letter-spacing: -1px; }
-.hero-pause[aria-pressed="true"] { background: var(--glass-bg-strong); border-color: var(--glass-border-strong); }
-
-@media (max-width: 760px) {
-  /* Card spans the width on phones; park the controls top-right under the navbar. */
-  .hero-trailer-controls { top: 84px; right: 16px; bottom: auto; }
-
-  /* Stack: card, then the dots/pause row, both clear of the rows that overlap
-     the hero's bottom 10vh (.rows { margin-top: -10vh }). */
-  .hero-nav { left: 16px; right: 16px; bottom: calc(10vh + 12px); justify-content: center; }
-  .hero-card { bottom: calc(10vh + 60px); }
-  .hero-card p {
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
-    margin: 8px 0 14px;
-  }
-  .hero-card .actions { gap: 8px; }
-  .hero-card .actions .btn { flex: 1 1 auto; justify-content: center; padding: 10px 14px; }
+.hero-pause {
+  font-size: 0.7rem;
+  letter-spacing: -1px;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-trailer, .hero-trailer.ready { transition: none; }
-  .hero-trailer-controls { animation: none; }
+.hero-pause[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-ink-fg, #f6f5ff) 55%, transparent);
 }
 
 /* Carousel a11y: visually hidden live region announcing the current slide. */
 .hero-sr-only {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-/* Play while the trailer key is being looked up: busy, non-interactive look. */
-.hero-card .hero-play.is-pending { cursor: progress; opacity: 0.8; }
-.hero-card .hero-play.is-pending:hover { transform: none; }
-.hero-play-spinner {
-  display: inline-block; width: 0.9em; height: 0.9em; flex: none; box-sizing: border-box;
-  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
-  animation: hero-play-spin 0.8s linear infinite;
+/* Trailer while its key is being looked up: busy, non-interactive look. */
+.hero-copy .hero-trailer-btn.is-pending {
+  cursor: progress;
+  opacity: 0.8;
 }
-@keyframes hero-play-spin { to { transform: rotate(360deg); } }
+.hero-copy .hero-trailer-btn.is-pending:hover {
+  transform: none;
+}
+.hero-trailer-spinner {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  flex: none;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: hero-trailer-spin 0.8s linear infinite;
+}
+@keyframes hero-trailer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- tablet and below ---------- */
+@media (max-width: 1024px) {
+  .hero-screen {
+    height: min(72vh, 720px);
+    height: min(72dvh, 720px);
+    min-height: 480px;
+  }
+}
+
+/* ---------- phone: full-bleed screen ---------- */
+@media (max-width: 480px) {
+  /* The screen runs under the floating header pill: true full-bleed. */
+  .hero {
+    padding-top: 0;
+  }
+  .hero-screen {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 560px;
+    box-shadow: none;
+  }
+  .hero-copy {
+    max-width: none;
+    padding: 16px;
+    /* Leave room for the dots/pause row under the CTAs. */
+    padding-bottom: calc(16px + 44px + var(--safe-bottom));
+  }
+  .hero-copy p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+  }
+  .hero-copy .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .hero-copy .actions .btn {
+    width: 100%;
+  }
+  .hero-trailer-controls {
+    top: calc(var(--nav-top) + var(--nav-h) + var(--safe-top) + 12px);
+    right: 12px;
+    bottom: auto;
+  }
+  .hero-nav {
+    left: 16px;
+    right: 16px;
+    bottom: calc(12px + var(--safe-bottom));
+    justify-content: center;
+  }
+}
+
+/* ---------- reduced motion: a designed still ---------- */
 @media (prefers-reduced-motion: reduce) {
+  .hero-sweep {
+    display: none;
+  }
+  .hero-screen,
+  .hero-copy > *,
+  .hero-slide > *,
+  .hero-trailer-controls {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .hero-trailer,
+  .hero-trailer.ready {
+    transition: none;
+  }
   /* Static "loading" ring: a partial circle with no rotation. */
-  .hero-play-spinner { animation: none; }
+  .hero-trailer-spinner {
+    animation: none;
+  }
 }

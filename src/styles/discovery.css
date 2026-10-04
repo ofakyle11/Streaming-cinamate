@@ -6,10 +6,10 @@
   margin: 0 5vw 28px; padding: 24px 28px; border-radius: var(--radius-xl);
   animation: spring var(--dur-slow) var(--ease-out);
 }
-.discovery-head h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); line-height: 1.1; }
+.discovery-head h1 { font-size: var(--text-h1); }
 .discovery-head .muted { color: var(--color-muted); margin-top: 6px; }
 .discovery-eyebrow {
-  color: var(--color-muted); text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; margin-bottom: 4px;
+  color: var(--color-muted); text-transform: uppercase; font-family: var(--font-mono); letter-spacing: var(--tracking-label); font-size: var(--text-xs); margin-bottom: 4px;
 }
 
 .discovery-state {
@@ -21,7 +21,7 @@
 .discovery-skel-track { display: flex; gap: 14px; overflow: hidden; padding: 24px 4px; }
 .discovery-skel-card.skeleton.card { border-radius: var(--radius-md); }
 
-@media (max-width: 760px) {
+@media (max-width: 480px) {
   .discovery-head { margin: 0 16px 20px; padding: 18px; }
   .discovery-state { margin: 0 16px; }
   .discovery-skel-row { padding: 0 16px; }

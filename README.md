@@ -1,6 +1,6 @@
-# Last Frame
+# Lastframe.tv
 
-Last Frame is a film and TV discovery web app. You can browse trending and popular titles,
+Lastframe.tv is a film and TV discovery web app. You can browse trending and popular titles,
 open a title for details, and keep a watchlist, history and ratings for each profile. It is a single-page app (Vite + React 18 +
 TypeScript) styled with plain CSS in a **glass-motion** design language: translucent,
 blurred panels over a dark cinematic background, with motion that switches off under
@@ -19,12 +19,12 @@ blurred panels over a dark cinematic background, with motion that switches off u
 - **Billing is mock-only**: there is no real payment processing and no Stripe SDK or keys.
 - **Resilience**: route and in-layout error boundaries with a retry card, an offline banner,
   and fetch retry with exponential backoff for live adapters.
-- **Brand kit** at `/brand`: four logo directions and four colourways to compare, with logo
-  use, typography, colour tokens, treatments, mockups and downloadable SVGs. The choice is in
-  the URL (`/brand?option=strip&colour=lagoon`), so a combination can be shared for review,
-  and "Try it in the app" previews it across the app in your browser.
-- **Brand, SEO and accessibility**: the Countdown mark (`ACTIVE_BRAND` in
-  `src/components/brand/marks.ts`), self-hosted Inter, SVG/PNG favicons, per-page
+- **Brand kit** at `/brand`: four alternative logo directions and five colourways to
+  compare against the shipped Lumen mark, with logo use, typography, colour tokens,
+  treatments, mockups and downloadable SVGs. The choice is in the URL
+  (`/brand?option=strip&colour=lagoon`), so a combination can be shared for review, and
+  "Try it in the app" previews it in the navbar and favicon in your browser.
+- **Brand, SEO and accessibility**: the animated Lumen mark, SVG/PNG favicons, per-page
   `<title>` and OpenGraph/Twitter meta, `robots.txt` and `sitemap.xml`, a skip link, ARIA
   landmarks and a target of WCAG 2.2 AA (see [docs/A11Y.md](docs/A11Y.md)).
 - **Mobile first**: the layout works down to 375px wide.

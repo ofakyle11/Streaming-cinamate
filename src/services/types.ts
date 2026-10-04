@@ -1,5 +1,5 @@
 /**
- * Service contracts for Last Frame.
+ * Service contracts for Lastframe.tv.
  * Every external dependency is expressed as an interface here; `index.ts` picks a
  * live or mock implementation. Mocks MUST work with no env vars at all.
  */

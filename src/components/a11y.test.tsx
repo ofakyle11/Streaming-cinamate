@@ -58,9 +58,11 @@ function Screen() {
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}>
-        Play trailer
+        Trailer
       </button>
-      {open && <TrailerModal video={video} title="Bravo" poster="" onClose={() => setOpen(false)} />}
+      {open && (
+        <TrailerModal video={video} title="Bravo" poster="" onClose={() => setOpen(false)} />
+      )}
     </>
   );
 }
@@ -68,7 +70,7 @@ function Screen() {
 describe('TrailerModal dialog a11y', () => {
   it('is a labelled modal dialog that traps focus, closes on Escape and restores focus', () => {
     render(<Screen />);
-    const opener = screen.getByRole('button', { name: 'Play trailer' });
+    const opener = screen.getByRole('button', { name: 'Trailer' });
     act(() => opener.focus());
     fireEvent.click(opener);
 

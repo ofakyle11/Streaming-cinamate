@@ -19,11 +19,14 @@ const ctx = (destination: string, pathname: string, origin = 'self') => {
 };
 
 describe('pwa manifest', () => {
-  it('names the app Last Frame with the brand theme colour', () => {
-    expect(pwaManifest.name).toBe('Last Frame');
-    expect(pwaManifest.short_name).toBe('Last Frame');
-    expect(pwaManifest.theme_color).toBe('#0b0b12');
-    expect(pwaManifest.background_color).toBe('#0b0b12');
+  it('names the app Lastframe.tv with the brand theme colour', () => {
+    expect(pwaManifest.name).toBe('Lastframe.tv');
+    expect(pwaManifest.short_name).toBe('Lastframe.tv');
+    expect(pwaManifest.description).toBe(
+      'Discover films and series, see where to watch them and keep your watchlist in one place.',
+    );
+    expect(pwaManifest.theme_color).toBe('#f6f5ff');
+    expect(pwaManifest.background_color).toBe('#f6f5ff');
     expect(pwaManifest.display).toBe('standalone');
     expect(pwaManifest.start_url).toBe('/');
   });
@@ -31,6 +34,10 @@ describe('pwa manifest', () => {
   it('generates icons from the SVG logo mark', () => {
     expect(PWA_LOGO_SOURCE).toBe('public/logo.svg');
     expect(pwaOptions.pwaAssets).toMatchObject({ config: true, overrideManifestIcons: true });
+  });
+
+  it('leaves the theme-color metas to index.html and theme-init.js', () => {
+    expect(pwaOptions.pwaAssets).toMatchObject({ injectThemeColor: false });
   });
 });
 
@@ -40,7 +47,16 @@ describe('isImageRequest', () => {
   });
 
   it('matches fetches of image files by extension', () => {
-    for (const p of ['/a.png', '/b.JPG', '/c.jpeg', '/d.webp', '/e.avif', '/f.gif', '/logo.svg', '/favicon.ico']) {
+    for (const p of [
+      '/a.png',
+      '/b.JPG',
+      '/c.jpeg',
+      '/d.webp',
+      '/e.avif',
+      '/f.gif',
+      '/logo.svg',
+      '/favicon.ico',
+    ]) {
       expect(isImageRequest(ctx('', p))).toBe(true);
     }
   });
@@ -74,10 +90,13 @@ describe('isImageRequest', () => {
     const src = isImageRequest.toString();
     expect(src).not.toMatch(/\bPWA_|\bIMAGE_CACHE/);
   });
-
 });
 
 describe('workbox runtime caching', () => {
+  it('precaches the self-hosted font files so the installed app has its type offline', () => {
+    expect(pwaWorkbox.globPatterns?.some((p) => /\bwoff2\b/.test(p))).toBe(true);
+  });
+
   it('caches images cache-first with bounded expiry', () => {
     const rule = pwaWorkbox.runtimeCaching?.[0];
     expect(rule?.urlPattern).toBe(isImageRequest);

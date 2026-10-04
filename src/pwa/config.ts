@@ -6,7 +6,9 @@
  */
 import type { ManifestOptions, VitePWAOptions } from 'vite-plugin-pwa';
 
-export const PWA_THEME_COLOR = '#0b0b12';
+/** Cloud: the light theme is the default, so the install splash and manifest chrome are light.
+ *  The in-page theme-color metas (index.html, public/theme-init.js) follow the live theme. */
+export const PWA_THEME_COLOR = '#f6f5ff';
 
 /** Source SVG for the generated icon set (relative to the project root). */
 export const PWA_LOGO_SOURCE = 'public/logo.svg';
@@ -16,9 +18,10 @@ export const IMAGE_CACHE_MAX_ENTRIES = 250;
 export const IMAGE_CACHE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 export const pwaManifest: Partial<ManifestOptions> = {
-  name: 'Last Frame',
-  short_name: 'Last Frame',
-  description: 'Stream films and series with Last Frame.',
+  name: 'Lastframe.tv',
+  short_name: 'Lastframe.tv',
+  description:
+    'Discover films and series, see where to watch them and keep your watchlist in one place.',
   id: '/',
   start_url: '/',
   scope: '/',
@@ -97,7 +100,8 @@ export const pwaOptions: Partial<VitePWAOptions> = {
   pwaAssets: {
     config: true,
     overrideManifestIcons: true,
-    injectThemeColor: true,
+    // Off: index.html carries two theme-color metas (light and dark) that theme-init.js keeps in step.
+    injectThemeColor: false,
     includeHtmlHeadLinks: true,
   },
   workbox: pwaWorkbox,

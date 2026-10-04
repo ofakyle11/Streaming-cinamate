@@ -1,10 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 
 describe('App', () => {
-  it('renders the Last Frame footer', () => {
+  it('renders the Lastframe.tv footer', () => {
     render(<App />);
-    expect(screen.getByText(/Last Frame · lastframe.tv/i)).toBeInTheDocument();
+    const footer = screen.getByRole('contentinfo');
+    expect(within(footer).getByText('Lastframe.tv')).toBeInTheDocument();
   });
 });

@@ -2,86 +2,193 @@
    Built on tokens.css; keeps the glass-motion look of .page-card / .row. */
 
 .mylist-page {
-  min-height: 70vh; padding: 110px 5vw 48px;
-  display: flex; flex-direction: column; gap: 24px;
+  min-height: 70vh;
+  padding: 110px 5vw 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .mylist-header {
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-  padding: 22px 26px; border-radius: var(--radius-xl);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 22px 26px;
+  border-radius: var(--radius-xl);
   animation: spring var(--dur-slow) var(--ease-out);
 }
-.mylist-header h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin-bottom: 4px; }
-.mylist-header .muted, .mylist-page .muted { color: var(--color-muted); }
-
-.mylist-sort { display: inline-flex; align-items: center; gap: 10px; color: var(--color-muted); font-size: 0.9rem; }
-.mylist-sort select {
-  font: inherit; color: var(--color-text); padding: 8px 12px; border-radius: var(--radius-sm);
-  background: var(--glass-bg-strong); cursor: pointer;
+.mylist-header h1 {
+  font-size: var(--text-h1);
+  margin-bottom: 4px;
 }
-.mylist-sort option { background: var(--color-surface-solid); color: var(--color-text); }
+.mylist-header .muted,
+.mylist-page .muted {
+  color: var(--color-muted);
+}
+
+.mylist-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+.mylist-sort select {
+  font: inherit;
+  color: var(--color-text);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg-strong);
+  cursor: pointer;
+}
+.mylist-sort option {
+  background: var(--color-surface-solid);
+  color: var(--color-text);
+}
 
 /* ---------- grid ---------- */
 .mylist-grid {
-  list-style: none; display: grid; gap: 18px;
+  list-style: none;
+  display: grid;
+  gap: 18px;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 }
-.mylist-grid > li { min-width: 0; }
+.mylist-grid > li {
+  min-width: 0;
+}
 .mylist-grid .card,
-.mylist-grid .skeleton.card { width: 100%; }
+.mylist-grid .skeleton.card {
+  width: 100%;
+}
 /* Outside a .row the cards have no reveal trigger; fade them in on mount instead. */
 .mylist-grid .card {
-  opacity: 1; transform: none;
+  opacity: 1;
+  transform: none;
   animation: mylist-in var(--dur-slow) var(--ease-out) backwards;
 }
 .mylist-grid .card:hover,
 .mylist-grid .card:focus-within {
-  transform: translateY(-6px) scale(1.04); z-index: 3; transition-delay: 0ms;
+  transform: scale(1.03);
+  z-index: 3;
+  transition-delay: 0ms;
   box-shadow: var(--shadow-card-hover);
 }
-@keyframes mylist-in { from { opacity: 0; transform: translateY(16px) scale(0.97); } }
+@keyframes mylist-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
 
 /* ---------- empty / error ---------- */
 .mylist-empty {
-  align-self: center; width: min(560px, 100%); padding: 40px 28px; border-radius: var(--radius-xl);
-  display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
+  align-self: center;
+  width: min(560px, 100%);
+  padding: 40px 28px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
   animation: spring var(--dur-slow) var(--ease-out);
 }
-.mylist-empty h2 { font-size: 1.4rem; }
-.mylist-empty p { line-height: 1.5; }
-.mylist-empty-icon { font-size: 2.6rem; animation: mylist-float 3.2s var(--ease-in-out) infinite alternate; }
-.mylist-empty-plus {
-  display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; margin: 0 2px;
-  border-radius: 50%; border: 1px solid var(--glass-border-strong); background: var(--glass-bg);
-  color: var(--color-text); font-weight: 700;
+.mylist-empty h2 {
+  font-size: 1.4rem;
 }
-.mylist-empty-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
-.mylist-empty-actions a { text-decoration: none; }
-@keyframes mylist-float { to { transform: translateY(-6px); } }
+.mylist-empty p {
+  line-height: 1.5;
+}
+.mylist-empty-icon {
+  font-size: 2.6rem;
+  animation: mylist-float 3.2s var(--ease-in-out) infinite alternate;
+}
+.mylist-empty-plus {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  margin: 0 2px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border-strong);
+  background: var(--glass-bg);
+  color: var(--color-text);
+  font-weight: 700;
+}
+.mylist-empty-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+}
+.mylist-empty-actions a {
+  text-decoration: none;
+}
+@keyframes mylist-float {
+  to {
+    transform: translateY(-6px);
+  }
+}
 
-.mylist-missing { font-size: 0.9rem; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.mylist-missing {
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
 
 .mylist-sr-only {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---------- small screens (375px) ---------- */
-@media (max-width: 760px) {
-  .mylist-page { padding: 96px 16px 40px; gap: 18px; }
-  .mylist-header { padding: 18px; }
-  .mylist-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 12px; }
-  .mylist-empty { padding: 32px 18px; }
+@media (max-width: 480px) {
+  .mylist-page {
+    padding: 96px 16px 40px;
+    gap: 18px;
+  }
+  .mylist-header {
+    padding: 18px;
+  }
+  .mylist-grid {
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 12px;
+  }
+  .mylist-empty {
+    padding: 32px 18px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mylist-header, .mylist-empty, .mylist-empty-icon, .mylist-grid .card { animation: none; }
-  .mylist-grid .card:hover, .mylist-grid .card:focus-within { transform: none; }
+  .mylist-header,
+  .mylist-empty,
+  .mylist-empty-icon,
+  .mylist-grid .card {
+    animation: none;
+  }
+  .mylist-grid .card:hover,
+  .mylist-grid .card:focus-within {
+    transform: none;
+  }
 }
 
 /* Headings take programmatic focus (tabIndex=-1) when the last focused card is removed. */
 .mylist-page h1[tabindex='-1']:focus,
-.mylist-empty h2[tabindex='-1']:focus { outline: none; }
+.mylist-empty h2[tabindex='-1']:focus {
+  outline: none;
+}
 .mylist-page h1[tabindex='-1']:focus-visible,
 .mylist-empty h2[tabindex='-1']:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);

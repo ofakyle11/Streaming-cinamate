@@ -1,0 +1,97 @@
+/* Dark theme ("lights down"): the same room with the lights off.
+   Applied when the device prefers dark and no explicit light choice is set,
+   and whenever <html data-theme="dark">. Only colour, glass and shadow tokens are redefined;
+   radii, motion and focus geometry stay in tokens.css. Keep the two blocks
+   identical. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --color-bg: #141126;
+    --color-text: #f6f5ff;
+    --color-text-soft: #bdb9d8;
+    --color-muted: #948fb3;
+    --color-accent: #9b8cff;
+    --color-accent-hover: #afa3ff;
+    --color-accent-text: #b8adff;
+    --color-on-accent: #141126;
+    --color-accent-soft: #241f40;
+    --brand-grad-a: #9b8cff;
+    --brand-grad-b: #6fd3ff;
+    --color-success: #5bd39a;
+    --color-warn: #f2b75c;
+    --color-danger: #ff8a8f;
+    --color-danger-soft: #ff8a8f;
+    --color-surface: #1c1833;
+    --color-surface-2: #241f40;
+    --color-surface-3: #2c2650;
+    --color-surface-solid: #1c1833;
+    --color-tint: rgba(155, 140, 255, 0.14);
+    --color-control-selected: #332d58;
+    --color-scrim: rgba(0, 0, 0, 0.5);
+    --color-scrim-strong: rgba(0, 0, 0, 0.8);
+    --glass-bg: rgba(255, 255, 255, 0.06);
+    --glass-bg-faint: rgba(255, 255, 255, 0.03);
+    --glass-bg-strong: rgba(20, 17, 38, 0.72);
+    --glass-bg-legible: rgba(20, 17, 38, 0.86);
+    --glass-border: rgba(246, 245, 255, 0.12);
+    --glass-border-strong: rgba(246, 245, 255, 0.25);
+    --glass-blur: blur(18px) saturate(160%);
+    --glass-blur-soft: blur(10px);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --glass-highlight: rgba(255, 255, 255, 0.3);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.45);
+    --shadow-card-hover:
+      var(--shadow-2), 0 0 0 1px rgba(246, 245, 255, 0.25), 0 0 30px rgba(155, 140, 255, 0.35);
+    --glow-accent: 0 8px 24px rgba(155, 140, 255, 0.4);
+    --glow-light: 0 0 24px rgba(255, 255, 255, 0.35);
+    --room-light: radial-gradient(60vw 40vw at 85% -10%, rgba(155, 140, 255, 0.1), transparent);
+    --focus-ring-color: #9b8cff;
+    --focus-ring-glow: rgba(155, 140, 255, 0.45);
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: #141126;
+  --color-text: #f6f5ff;
+  --color-text-soft: #bdb9d8;
+  --color-muted: #948fb3;
+  --color-accent: #9b8cff;
+  --color-accent-hover: #afa3ff;
+  --color-accent-text: #b8adff;
+  --color-on-accent: #141126;
+  --color-accent-soft: #241f40;
+  --brand-grad-a: #9b8cff;
+  --brand-grad-b: #6fd3ff;
+  --color-success: #5bd39a;
+  --color-warn: #f2b75c;
+  --color-danger: #ff8a8f;
+  --color-danger-soft: #ff8a8f;
+  --color-surface: #1c1833;
+  --color-surface-2: #241f40;
+  --color-surface-3: #2c2650;
+  --color-surface-solid: #1c1833;
+  --color-tint: rgba(155, 140, 255, 0.14);
+  --color-control-selected: #332d58;
+  --color-scrim: rgba(0, 0, 0, 0.5);
+  --color-scrim-strong: rgba(0, 0, 0, 0.8);
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-faint: rgba(255, 255, 255, 0.03);
+  --glass-bg-strong: rgba(20, 17, 38, 0.72);
+  --glass-bg-legible: rgba(20, 17, 38, 0.86);
+  --glass-border: rgba(246, 245, 255, 0.12);
+  --glass-border-strong: rgba(246, 245, 255, 0.25);
+  --glass-blur: blur(18px) saturate(160%);
+  --glass-blur-soft: blur(10px);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.3);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-card-hover:
+    var(--shadow-2), 0 0 0 1px rgba(246, 245, 255, 0.25), 0 0 30px rgba(155, 140, 255, 0.35);
+  --glow-accent: 0 8px 24px rgba(155, 140, 255, 0.4);
+  --glow-light: 0 0 24px rgba(255, 255, 255, 0.35);
+  --room-light: radial-gradient(60vw 40vw at 85% -10%, rgba(155, 140, 255, 0.1), transparent);
+  --focus-ring-color: #9b8cff;
+  --focus-ring-glow: rgba(155, 140, 255, 0.45);
+}

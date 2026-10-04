@@ -1,4 +1,4 @@
-# Last Frame — Architecture
+# Lastframe.tv — Architecture
 
 _Originally written for Wave 0; refreshed after the Quality & Polish stream (brand, errors,
 SEO, a11y)._
@@ -19,9 +19,10 @@ src/
   pages/              Route components (Home, Search, Genre, Title, MyList, Profiles, Account, Plans, Brand, NotFound)
   components/         Feature components (Hero, Row, MovieCard, Navbar; title/TrailerModal)
     a11y/             RouteAnnouncer (route-change announcement + focus reset)
-    brand/            marks.ts (four mark directions + colourways as path data, ACTIVE_BRAND, SVG
-                      string builders), BrandMark, Lockup/Wordmark, activeBrand.ts (preview
-                      override hook), useBrandFavicon
+    brand/            LogoMark (the Lumen mark: squircle, lens disc, band, halo); brand kit:
+                      marks.ts (four alternative directions + colourways as path data, SVG
+                      string builders), BrandMark, Lockup/Wordmark, activeBrand.ts (kit
+                      preview override), useBrandFavicon
     errors/           ErrorBoundary, RouteError, ErrorCard, OfflineBanner
     ui/               Primitives: Button, IconButton, Skeleton, Toast (barrel: ui/index.ts)
   features/profiles/  Gradient avatars, name/kids rules, ProfileAvatar, ProfileEditor dialog, navbar ProfileMenu
@@ -42,12 +43,17 @@ src/
   styles/
     tokens.css        Design tokens (color, radius, blur, motion)
     primitives.css    Styles for ui/ primitives
-    theme.css         Imports tokens + primitives; app styles; prefers-reduced-motion overrides
-    brand.css         Navbar brand-mark hover styles (imported by Navbar.tsx)
+    themes.css        Dark theme overrides of the colour tokens (media query and data-theme forms)
+    theme.css         Imports tokens + themes + primitives; base, glass, shared buttons, pages, modal/sheet
+    surfaces.css      Responsive system: 480/1024 breakpoints, gutters, safe areas, fluid type, pill buttons, 44px targets
+    motion.css        The motion system: the four moves, load stagger, button sweep, view transitions, reduced-motion stills
+    brand.css         LogoMark styles (imported by LogoMark.tsx)
     brand-kit.css     /brand deck, lockup + wordmark styles (imported by BrandPage.tsx)
     errors.css        Error card + offline banner (imported by errors/ components)
     a11y.css          Skip link, focus rings, main target, .sr-only (imported by AppLayout.tsx)
-    nav.css           Mobile primary nav toggle + glass dropdown (imported by Navbar.tsx)
+    nav.css           Mobile primary nav toggle + glass dropdown, theme control slots (imported by Navbar.tsx)
+    theme-toggle.css  ThemeToggle segmented control + theme view transition (imported by ThemeToggle.tsx)
+  theme/              theme.ts (lf.theme storage, resolve, applyTheme + theme-color metas), useTheme.ts (store hook, setTheme)
   test/               Vitest setup and integration tests
   services/db/sync.ts        Pure store <-> row mapping + last-write-wins merge
   services/db/syncEngine.ts  startCloudSync: initial pull, merge, debounced upserts, persisted retry queue
@@ -102,7 +108,8 @@ The production CSP in `netlify.toml` allows `https://*.supabase.co` and `wss://*
 
 ## PWA
 
-`vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Last Frame" (theme `#0b0b12`), icons generated at build
+`vite-plugin-pwa` (see `src/pwa/config.ts`): manifest "Lastframe.tv" (theme and background Cloud `#f6f5ff`;
+`injectThemeColor` is off because `index.html` carries two `theme-color` metas), icons generated at build
 from `public/logo.svg` via `pwa-assets.config.ts`, generateSW service worker precaching the app shell and caching
 images cache-first (`lf-images`, 250 entries / 30 days). `main.tsx` captures `beforeinstallprompt`; the Account
 page's `InstallAppCard` offers "Install app" (manual Add to Home Screen hint on iOS). The SW is build-only.
@@ -120,34 +127,95 @@ translucent backgrounds and `backdrop-filter` blur. The global `prefers-reduced-
 in `theme.css` switches off animations and transitions everywhere, so new motion only needs
 extra handling if it's driven by JS (for example, the hero rotation).
 
+Under the Lumen brand the tokens are split in two: `tokens.css` holds the shared tokens and
+the light theme values, and `themes.css` redefines the colour tokens for dark (device
+preference, or an explicit `data-theme` on `<html>`). Light is the default and follows the
+device. `public/theme-init.js` (first script in `<head>`, allowed by the `script-src 'self'` CSP)
+reads the saved choice from `localStorage` key `lf.theme` and sets `data-theme` before paint;
+`src/theme/useTheme.ts` is the React side of the same store and `ThemeToggle` (System / Light /
+Dark) is in the Navbar: header on desktop, first row of the menu sheet at <=1024px (the plan's tablet breakpoint; the menu
+breakpoint moved from 760 to 1024 so the header never overflows on tablets). The manifest's
+`theme_color`/`background_color` are static, so an installed app that was set to Dark shows a Cloud
+splash for a moment before `theme-init.js` runs; that is a platform limitation, not a bug.
+
+### Type
+
+Three self-hosted faces, all SIL Open Font License 1.1 (licences in `public/fonts/OFL-*.txt`):
+Gabarito (display and the wordmark), Figtree (body) and DM Mono (figures and code). The woff2
+subsets (latin, latin-ext) live in `public/fonts/` and are declared in `src/styles/fonts.css`
+with `font-display: swap` and a metric-matched local fallback face per family, so the swap
+barely shifts layout. `index.html` preloads the two latin files used above the fold; the
+service worker precaches all of them, so the installed app has its type offline. The CSP
+allows fonts from `'self'` only. Components use the type tokens in `tokens.css`
+(`--font-display`, `--font-body`, `--font-mono`, the `--text-*` fluid scale, weights and
+tracking); `theme.css` applies them to `body`, headings, code and form controls and styles the
+`.logo` wordmark ("Lastframe" in Gabarito 700 with `.logo-tv` in the accent).
+
+### Surfaces (phase 5)
+
+`surfaces.css` is the one place that knows the breakpoints: phone is `max-width: 480px`,
+tablet is `max-width: 1024px`, desktop is everything above. It exposes layout tokens
+(`--gutter`, `--container`, `--nav-h`, `--nav-top`, `--hero-inset`, `--card-w`, the
+`--safe-*` insets and the `--fs-*` type sizes) that components read instead of writing
+their own media queries. Blur is a desktop treatment: phones and tablets get solid
+surfaces, as do `prefers-reduced-transparency` and the `perf-lite` class that
+`src/lib/perfLite.ts` sets on `<html>` for low-memory or data-saver devices.
+
+The home hero is an Ink screen (`.hero-screen`, always dark, using the `--color-ink-*`
+tokens) inset 24px into the page on tablet and desktop and full-bleed on phones. Dialogs
+(`.modal-backdrop > [role="dialog"]`) are a centred card on desktop and a bottom sheet with
+a drag handle at 1024px and below; `useSheetDismiss` adds swipe-down to close from the handle
+or the dialog header, which carry `touch-action: none` so the browser never claims the pan.
+
+Load order matters for ties: component CSS imported by the eager graph (the navbar, the
+profile menu) is bundled before `theme.css`, `surfaces.css` and `motion.css`, so an
+equal-specificity rule in a component file loses to the shared one. A component that
+overrides a shared rule adds a class to the selector (for example
+`.modal-backdrop > .profile-editor.sheet`) rather than relying on order.
+
+### Motion (phase 5)
+
+`motion.css` holds the whole vocabulary: an 8px rise, a fade, a screen settle and a
+one-shot sweep, on transform and opacity only. Enter with `--ease-enter`, leave with
+`--ease-exit`; only `--ease-toggle` overshoots. Staggered entrances use `.lf-rise` with
+`--i` (0 to 4, 50ms apart). Hover effects live under `(hover: hover) and (pointer: fine)`;
+touch gets a 100ms press to 0.97. Route changes use React Router's `viewTransition`
+(a 240ms fade out, 400ms fade in) and the clicked poster carries the `lf-artwork`
+view-transition name so it morphs into the title page backdrop. An entrance animation on a surface that
+also gets inline, hover or press transforms (cards, dialogs) fills `backwards`, never
+`forwards` or `both`: a filled end frame would outrank those transforms for the life of the
+element. Pure entrances with nothing to compete with (`.lf-rise`, `.lf-fade`) may fill `both`. Under
+`prefers-reduced-motion` every surface renders its end frame. Three named exceptions to the
+8px / no-loop rule: the bottom sheet slides in from the bottom edge, loading spinners rotate
+while a lookup is pending, and the poster-to-backdrop morph on route change.
+
 ## Brand
 
-- **One source.** `components/brand/marks.ts` holds four mark directions (Monogram, Frame,
-  Strip, Countdown) as path data on a 64-grid, four colourways from existing tokens, and
-  `ACTIVE_BRAND`, the direction the app ships with (currently Countdown / Aurora). String
-  builders (`markSvg`, `appIconSvg`, `monoSvg`, `lockupSvg`) make standalone SVGs from the
-  same layers; `BrandMark` mirrors them as JSX (token colours, `useId` gradients). Glyphs are
-  paths, so no mark depends on a loaded font.
-- **Where it shows.** The Navbar draws `BrandMark` for `useActiveBrand()` (`activeBrand.ts`):
-  `ACTIVE_BRAND` unless the kit page has stored a preview in `localStorage` (`lf.brand`), in
-  which case every tab in that browser follows it and `useBrandFavicon` (mounted in
-  `AppLayout`) swaps the SVG favicon to match. `Lockup` wraps a decorative mark plus the
-  live-text `Wordmark` as one `role="img"`.
-- **Static icons.** `node scripts/generate-brand-assets.mjs` writes
-  `public/brand/lf-<mark>-{mark,icon,lockup}.svg` for all four directions (Aurora) and, from
-  `ACTIVE_BRAND`, `favicon.svg`, `mask-icon.svg` (black silhouette), `icons/icon.svg`
-  (full-bleed maskable) and `logo.svg` (the PWA icon source). `node scripts/generate-icons.mjs`
-  then rasterises `favicon-32.png` and `apple-touch-icon.png` with a local headless Chromium.
-  `marks.test.ts` fails if any of those files drift from `marks.ts`. To change the brand: edit
-  `ACTIVE_BRAND`, run both scripts, commit. `index.html` sets `theme-color` `#0b0b12`.
+- `components/brand/LogoMark.tsx`: the Lumen mark, a squircle with a disc of light cut from
+  its top-right corner. The squircle never moves; three light layers animate on transform and
+  opacity only (`brand.css`): the lens disc grows from the corner on load, a white band sweeps
+  across once on load and on hover, and a blurred halo behind the hero mark rises, breathes and
+  comes up on hover. `variant="header"` (default, 24 to 30px) keeps the disc plus a soft shadow;
+  `variant="hero"` (32px and up) adds the band and halo and uses the lights-down gradient pair.
+  `animate` is `once` (load sequence, then hover), `hover` or `none`; `prefers-reduced-motion`
+  renders the end frame and `forced-colors` the mono mark. Gradient, mask and clip ids come from
+  `useId()` so several marks can share a page. Pass `decorative` when a visible wordmark sits
+  beside it (as in the Navbar), otherwise it exposes `title` as its accessible name.
+- Static icons in `public/` come from the Lumen kit: `favicon.svg`, `mask-icon.svg` (one flat
+  path for Safari pinned tabs) and `icons/icon.svg` / `logo.svg` (the full-bleed app icon).
+  `node scripts/generate-icons.mjs` rasterises
+  `favicon-32.png` and `apple-touch-icon.png` with a local headless Chromium. `index.html`
+  sets the `theme-color` metas (Cloud `#f6f5ff` light, Ink `#141126` dark).
 - **Brand kit (`/brand`, `pages/BrandPage.tsx`)**: a ten-page guideline deck laid out like a
-  printed brand book. Option and colourway live in the URL (`?option=strip&colour=lagoon`) so
-  a combination can be shared; "Try it in the app" sets the preview above. Pages: cover,
-  identity, forms, colourways, logo use, typography, colour tokens with copy, treatment,
-  mockups, downloads (the copy buttons build the SVG for the selected colourway on the fly).
-- **Type.** Inter is self-hosted as a variable font (`public/fonts/inter/`, latin subset,
-  SIL OFL, preloaded from `index.html`, precached by Workbox); `theme.css` declares the
-  `@font-face` and `system-ui` stands in until it loads.
+  printed brand book, presenting four alternative mark directions (Monogram, Frame, Strip,
+  Countdown) and four colourways. `components/brand/marks.ts` holds them as path data on a
+  64-grid; string builders (`markSvg`, `appIconSvg`, `monoSvg`, `lockupSvg`) make standalone
+  SVGs, and `BrandMark` mirrors the same layers as JSX. Option and colourway live in the URL
+  (`?option=strip&colour=lagoon`). "Try it in the app" stores a preview in `localStorage`
+  (`lf.brand`, read by `useActiveBrand`): while it is set the Navbar draws that `BrandMark`
+  instead of the Lumen `LogoMark`, and `useBrandFavicon` (mounted in `AppLayout`) swaps the SVG
+  favicon to match. `node scripts/generate-brand-assets.mjs` writes the kit downloads in
+  `public/brand/`; `marks.test.ts` fails if they drift from `marks.ts`.
 
 ## Errors, offline and retry
 
@@ -174,7 +242,7 @@ fast. A non-ok final response throws `HttpError` with its `status`. Live adapter
 ## SEO: `useMeta`
 
 `useMeta({ title?, description?, image?, type?, noindex? })` (`hooks/useMeta.ts`) is called once at the
-top of each page. It sets `document.title` to `"<title> · Last Frame"` and upserts
+top of each page. It sets `document.title` to `"<title> · Lastframe.tv"` and upserts
 `description`, OpenGraph and Twitter meta tags through DOM APIs (no `innerHTML`). On unmount
 or input change it restores the previous values. `data:` images, such as mock posters, fall
 back to the brand icon because crawlers can't use them. `index.html` carries the default tags
@@ -207,7 +275,7 @@ hidden polite live region. If the lazily loaded page hasn't set `document.title`
 then announces anyway. While an `[aria-modal="true"]` dialog is open it still announces but
 doesn't move focus.
 
-**Mobile nav.** At <=760px `theme.css` hides `.nav-links`, and `Navbar` shows a menu toggle
+**Mobile nav.** At <=1024px `theme.css` hides `.nav-links`, and `Navbar` shows a menu toggle
 (`aria-expanded`, `aria-controls` pointing at the links list). Opening it shows the same list
 as a glass dropdown under the navbar (`nav.css`, 44px tap targets, reduced-motion safe). It
 closes on Escape or an outside click, returning focus to the toggle, and on any route change.

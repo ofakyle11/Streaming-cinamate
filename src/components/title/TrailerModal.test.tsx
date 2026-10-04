@@ -19,7 +19,14 @@ const video = (over: Partial<TmdbVideo>): TmdbVideo => ({
 });
 
 function renderModal(v: TmdbVideo, onClose = vi.fn()) {
-  render(<TrailerModal video={v} title="Neon Drift" poster="https://example.test/p.jpg" onClose={onClose} />);
+  render(
+    <TrailerModal
+      video={v}
+      title="Neon Drift"
+      poster="https://example.test/p.jpg"
+      onClose={onClose}
+    />,
+  );
   return onClose;
 }
 
@@ -43,6 +50,13 @@ describe('TrailerModal', () => {
     expect(screen.queryByTitle('Neon Drift trailer')).not.toBeInTheDocument();
     expect(document.querySelector('iframe')).toBeNull();
     expect(screen.getByText(/can’t be played here/i)).toBeInTheDocument();
+  });
+
+  it('renders as a sheet (drag-to-dismiss target) inside the modal backdrop', () => {
+    renderModal(video({}));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveClass('sheet');
+    expect(dialog.parentElement).toHaveClass('modal-backdrop');
   });
 
   it('closes via the close button and on backdrop click, not on dialog click', () => {
@@ -102,10 +116,14 @@ describe('TrailerModal footer (My List + thumbs)', () => {
     expect(add).toHaveAttribute('aria-pressed', 'false');
 
     fireEvent.click(add);
-    expect(selectWatchlist(useLastFrameStore.getState())).toMatchObject([{ titleId: 1002, mediaType: 'tv' }]);
+    expect(selectWatchlist(useLastFrameStore.getState())).toMatchObject([
+      { titleId: 1002, mediaType: 'tv' },
+    ]);
     expect(screen.getByRole('status')).toHaveTextContent('Added Midnight Protocol to My List');
 
-    const remove = within(dialog).getByRole('button', { name: 'Remove Midnight Protocol from My List' });
+    const remove = within(dialog).getByRole('button', {
+      name: 'Remove Midnight Protocol from My List',
+    });
     expect(remove).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(remove);
     expect(selectWatchlist(useLastFrameStore.getState())).toEqual([]);
@@ -117,7 +135,10 @@ describe('TrailerModal footer (My List + thumbs)', () => {
     const { onThumbChange } = renderWithMovie();
     fireEvent.click(screen.getByRole('button', { name: 'I like Midnight Protocol' }));
     expect(onThumbChange).toHaveBeenCalledWith('up');
-    expect(screen.getByRole('button', { name: 'I like Midnight Protocol' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'I like Midnight Protocol' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('Tab cycles through the close button and the footer controls', () => {
@@ -129,7 +150,12 @@ describe('TrailerModal footer (My List + thumbs)', () => {
     expect(close).toHaveFocus();
 
     // The trap sees every footer control, in DOM order.
-    expect(Array.from(screen.getByRole('dialog').querySelectorAll(FOCUSABLE_SELECTOR))).toEqual([close, list, up, down]);
+    expect(Array.from(screen.getByRole('dialog').querySelectorAll(FOCUSABLE_SELECTOR))).toEqual([
+      close,
+      list,
+      up,
+      down,
+    ]);
 
     // The browser moves focus between middle controls natively; the trap wraps at the ends.
     tab(true);
@@ -158,7 +184,13 @@ describe('TrailerModal footer (My List + thumbs)', () => {
             Watch trailer
           </button>
           {open && (
-            <TrailerModal video={video({})} title={MOVIE.title} poster="" onClose={() => setOpen(false)} movie={MOVIE} />
+            <TrailerModal
+              video={video({})}
+              title={MOVIE.title}
+              poster=""
+              onClose={() => setOpen(false)}
+              movie={MOVIE}
+            />
           )}
         </ToastProvider>
       );

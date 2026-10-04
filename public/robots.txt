@@ -1,4 +1,4 @@
-# Last Frame — https://lastframe.tv (placeholder origin)
+# Lastframe.tv — https://lastframe.tv (placeholder origin)
 # Regenerate the Sitemap line with: node scripts/generate-sitemap.mjs
 User-agent: *
 Allow: /
