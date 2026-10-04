@@ -19,9 +19,10 @@ src/
   pages/              Route components (Home, Search, Genre, Title, MyList, Profiles, Account, Plans, Brand, NotFound)
   components/         Feature components (Hero, Row, MovieCard, Navbar; title/TrailerModal)
     a11y/             RouteAnnouncer (route-change announcement + focus reset)
-    brand/            marks.ts (four mark directions + colourways as path data, ACTIVE_BRAND, SVG
-                      string builders), BrandMark, Lockup/Wordmark, activeBrand.ts (preview
-                      override hook), useBrandFavicon
+    brand/            LogoMark (the Lumen mark: squircle, lens disc, band, halo); brand kit:
+                      marks.ts (four alternative directions + colourways as path data, SVG
+                      string builders), BrandMark, Lockup/Wordmark, activeBrand.ts (kit
+                      preview override), useBrandFavicon
     errors/           ErrorBoundary, RouteError, ErrorCard, OfflineBanner
     ui/               Primitives: Button, IconButton, Skeleton, Toast (barrel: ui/index.ts)
   features/profiles/  Gradient avatars, name/kids rules, ProfileAvatar, ProfileEditor dialog, navbar ProfileMenu
@@ -140,32 +141,31 @@ tracking); `theme.css` applies them to `body`, headings, code and form controls 
 
 ## Brand
 
-- **One source.** `components/brand/marks.ts` holds four mark directions (Monogram, Frame,
-  Strip, Countdown) as path data on a 64-grid, four colourways from existing tokens, and
-  `ACTIVE_BRAND`, the direction the app ships with (currently Countdown / Aurora). String
-  builders (`markSvg`, `appIconSvg`, `monoSvg`, `lockupSvg`) make standalone SVGs from the
-  same layers; `BrandMark` mirrors them as JSX (token colours, `useId` gradients). Glyphs are
-  paths, so no mark depends on a loaded font.
-- **Where it shows.** The Navbar draws `BrandMark` for `useActiveBrand()` (`activeBrand.ts`):
-  `ACTIVE_BRAND` unless the kit page has stored a preview in `localStorage` (`lf.brand`), in
-  which case every tab in that browser follows it and `useBrandFavicon` (mounted in
-  `AppLayout`) swaps the SVG favicon to match. `Lockup` wraps a decorative mark plus the
-  live-text `Wordmark` as one `role="img"`.
-- **Static icons.** `node scripts/generate-brand-assets.mjs` writes
-  `public/brand/lf-<mark>-{mark,icon,lockup}.svg` for all four directions (Aurora) and, from
-  `ACTIVE_BRAND`, `favicon.svg`, `mask-icon.svg` (black silhouette), `icons/icon.svg`
-  (full-bleed maskable) and `logo.svg` (the PWA icon source). `node scripts/generate-icons.mjs`
-  then rasterises `favicon-32.png` and `apple-touch-icon.png` with a local headless Chromium.
-  `marks.test.ts` fails if any of those files drift from `marks.ts`. To change the brand: edit
-  `ACTIVE_BRAND`, run both scripts, commit. `index.html` sets `theme-color` `#0b0b12`.
+- `components/brand/LogoMark.tsx`: the Lumen mark, a squircle with a disc of light cut from
+  its top-right corner. The squircle never moves; three light layers animate on transform and
+  opacity only (`brand.css`): the lens disc grows from the corner on load, a white band sweeps
+  across once on load and on hover, and a blurred halo behind the hero mark rises, breathes and
+  comes up on hover. `variant="header"` (default, 24 to 30px) keeps the disc plus a soft shadow;
+  `variant="hero"` (32px and up) adds the band and halo and uses the lights-down gradient pair.
+  `animate` is `once` (load sequence, then hover), `hover` or `none`; `prefers-reduced-motion`
+  renders the end frame and `forced-colors` the mono mark. Gradient, mask and clip ids come from
+  `useId()` so several marks can share a page. Pass `decorative` when a visible wordmark sits
+  beside it (as in the Navbar), otherwise it exposes `title` as its accessible name.
+- Static icons in `public/` come from the Lumen kit: `favicon.svg`, `mask-icon.svg` (one flat
+  path for Safari pinned tabs) and `icons/icon.svg` / `logo.svg` (the full-bleed app icon).
+  `node scripts/generate-icons.mjs` rasterises
+  `favicon-32.png` and `apple-touch-icon.png` with a local headless Chromium. `index.html`
+  sets `theme-color` `#0b0b12`.
 - **Brand kit (`/brand`, `pages/BrandPage.tsx`)**: a ten-page guideline deck laid out like a
-  printed brand book. Option and colourway live in the URL (`?option=strip&colour=lagoon`) so
-  a combination can be shared; "Try it in the app" sets the preview above. Pages: cover,
-  identity, forms, colourways, logo use, typography, colour tokens with copy, treatment,
-  mockups, downloads (the copy buttons build the SVG for the selected colourway on the fly).
-- **Type.** Inter is self-hosted as a variable font (`public/fonts/inter/`, latin subset,
-  SIL OFL, preloaded from `index.html`, precached by Workbox); `theme.css` declares the
-  `@font-face` and `system-ui` stands in until it loads.
+  printed brand book, presenting four alternative mark directions (Monogram, Frame, Strip,
+  Countdown) and four colourways. `components/brand/marks.ts` holds them as path data on a
+  64-grid; string builders (`markSvg`, `appIconSvg`, `monoSvg`, `lockupSvg`) make standalone
+  SVGs, and `BrandMark` mirrors the same layers as JSX. Option and colourway live in the URL
+  (`?option=strip&colour=lagoon`). "Try it in the app" stores a preview in `localStorage`
+  (`lf.brand`, read by `useActiveBrand`): while it is set the Navbar draws that `BrandMark`
+  instead of the Lumen `LogoMark`, and `useBrandFavicon` (mounted in `AppLayout`) swaps the SVG
+  favicon to match. `node scripts/generate-brand-assets.mjs` writes the kit downloads in
+  `public/brand/`; `marks.test.ts` fails if they drift from `marks.ts`.
 
 ## Errors, offline and retry
 

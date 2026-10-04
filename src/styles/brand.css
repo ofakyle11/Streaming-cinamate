@@ -1,12 +1,295 @@
-/* Navbar brand mark (BrandMark with className="logo-mark", see Navbar.tsx) */
+/* Brand mark (src/components/brand/LogoMark.tsx)
+
+   The Lumen rule: light moves, objects stay. The squircle never translates or
+   rotates; it scales 1.03 at most on hover. Three layers of light carry the
+   motion, all on transform and opacity only (no filter, box-shadow, width or
+   colour transitions):
+
+     lens  the circle in the SVG mask, grows from the corner on load
+     band  a white highlight clipped to the squircle, sweeps across once
+     halo  a blurred bloom behind the mark (hero only), rises, breathes, lifts
+
+   Every rule below is keyed off the end state: with animations switched off
+   (reduced motion, animate="none", forced colours) the mark renders its final
+   frame with nothing further to do. */
+
 .logo-mark {
-  display: inline-block;
+  --logo-grad-a: var(--brand-grad-a, #6f5bf5);
+  --logo-grad-b: var(--brand-grad-b, #5ccbff);
+  --logo-halo-a: var(--color-sky, #6fd3ff);
+  --logo-halo-b: var(--brand-lavender, #9b8cff);
+  --logo-shadow-color: var(--color-accent, #5b47e0);
+  --logo-ease-enter: var(--ease-enter, cubic-bezier(0.16, 1, 0.3, 1));
+  --logo-ease-exit: var(--ease-exit, cubic-bezier(0.4, 0, 0.6, 1));
+  --logo-dur-micro: var(--dur-micro, 0.16s);
+  --logo-dur-layout: var(--dur-layout, 0.4s);
+  --logo-dur-page: var(--dur-page, 0.6s);
+  --logo-dur-sweep: var(--dur-sweep, 0.9s);
+
+  position: relative;
+  display: inline-grid;
+  place-items: center;
   flex-shrink: 0;
   vertical-align: middle;
-  border-radius: 25%;
-  filter: drop-shadow(var(--glow-accent));
-  transition: transform var(--dur-base, 0.24s) var(--ease-enter, ease);
+  line-height: 0;
+  isolation: isolate;
 }
+
+.logo-mark__svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+/* The hero sits on an Ink screen in both themes, so the mark uses the
+   lights-down pair there and the corner bite shows the dark room. */
+.logo-mark--hero {
+  --logo-grad-a: var(--brand-lavender, #9b8cff);
+  --logo-grad-b: var(--color-sky, #6fd3ff);
+}
+
+/* ---- the three layers at rest (their end frames) ---- */
+
+.logo-mark__lens {
+  transform-box: view-box;
+  transform-origin: 100px 0;
+}
+
+.logo-mark__tile {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transition: transform var(--logo-dur-micro) var(--logo-ease-exit);
+}
+
+/* Parked off the left edge of the clip, so an idle band is invisible. */
+.logo-mark__band {
+  transform: translateX(0);
+}
+
+.logo-mark__halo {
+  position: absolute;
+  /* A box 170% of the mark, shifted up and to the right so the bloom sits
+     toward the lit corner. The gradient ends exactly at the box's closest
+     side, so the box edge never shows. */
+  inset: -50% -50% -20% -20%;
+  z-index: 0;
+  pointer-events: none;
+  transform: scale(1);
+  transition:
+    transform var(--logo-dur-micro) var(--logo-ease-exit),
+    opacity var(--logo-dur-micro) var(--logo-ease-exit);
+}
+
+/* The halo paint and its hover lift are two pseudo-elements so the idle
+   breathe (a keyframe on ::before) and the hover lift (a transition on ::after)
+   never fight over one opacity value. */
+.logo-mark__halo::before,
+.logo-mark__halo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Each layer blurs on its own so the breathe never re-blurs the hover layer. */
+  filter: blur(14px);
+  background: radial-gradient(
+    circle closest-side,
+    color-mix(in srgb, var(--logo-halo-a) 70%, transparent) 0%,
+    color-mix(in srgb, var(--logo-halo-b) 55%, transparent) 35%,
+    color-mix(in srgb, var(--logo-halo-b) 18%, transparent) 65%,
+    color-mix(in srgb, var(--logo-halo-b) 4%, transparent) 85%,
+    transparent 100%
+  );
+}
+
+.logo-mark__halo::before {
+  opacity: 0.45;
+}
+
+.logo-mark__halo::after {
+  opacity: 0;
+  transition: opacity var(--logo-dur-micro) var(--logo-ease-exit);
+}
+
+/* Header mark: a soft accent shadow instead of a halo. The resting and the
+   deeper hover shadow are two pseudo-elements and only opacity changes. */
+.logo-mark--header::before,
+.logo-mark--header::after {
+  content: '';
+  position: absolute;
+  inset: 10% 10% 4%;
+  z-index: 0;
+  border-radius: 30%;
+  pointer-events: none;
+}
+
+.logo-mark--header::before {
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--logo-shadow-color) 24%, transparent);
+}
+
+.logo-mark--header::after {
+  opacity: 0;
+  box-shadow: var(
+    --glow-accent,
+    0 4px 16px color-mix(in srgb, var(--logo-shadow-color) 40%, transparent)
+  );
+  transition: opacity var(--logo-dur-micro) var(--logo-ease-exit);
+}
+
+/* ---- page load, one shot (animate="once") ---- */
+
+@keyframes lf-logo-lens {
+  from {
+    transform: scale(0);
+  }
+}
+
+@keyframes lf-logo-tile {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes lf-logo-sweep {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(180px);
+  }
+}
+
+/* Same frames under a second name, so a hover sweep can start while the load
+   sweep stays finished (an animation only restarts when its name changes). */
+@keyframes lf-logo-sweep-hover {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(180px);
+  }
+}
+
+@keyframes lf-logo-halo-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The only loop: opacity alone, 45% to 60%, slow enough to read as breathing. */
+@keyframes lf-logo-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.logo-mark[data-animate='once'] .logo-mark__lens {
+  animation: lf-logo-lens var(--logo-dur-page) var(--logo-ease-enter) both;
+}
+
+.logo-mark--hero[data-animate='once'] .logo-mark__lens {
+  animation-duration: var(--logo-dur-sweep);
+}
+
+.logo-mark--hero[data-animate='once'] .logo-mark__tile {
+  animation: lf-logo-tile var(--logo-dur-page) var(--logo-ease-enter) both;
+}
+
+.logo-mark--hero[data-animate='once'] .logo-mark__band {
+  animation: lf-logo-sweep var(--logo-dur-sweep) var(--logo-ease-exit) 0.15s both;
+}
+
+.logo-mark--hero[data-animate='once'] .logo-mark__halo::before {
+  animation:
+    lf-logo-halo-in var(--logo-dur-page) var(--logo-ease-enter) 0.3s both,
+    lf-logo-breathe 6s ease-in-out 0.9s infinite;
+}
+
+/* The idle breathe also runs when the load sequence was skipped. */
+.logo-mark--hero[data-animate='hover'] .logo-mark__halo::before {
+  animation: lf-logo-breathe 6s ease-in-out infinite;
+}
+
+/* ---- hover and focus: the light comes up, the object stays ----
+   Triggered on the mark itself or on the link or button that wraps it. Enter
+   over 400ms with ease-enter, leave in 160ms with ease-exit (the resting
+   transitions above). */
+
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ):not([data-animate='none'])
+  .logo-mark__tile {
+  transform: scale(1.03);
+  transition: transform var(--logo-dur-layout) var(--logo-ease-enter);
+}
+
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ):not([data-animate='none'])
+  .logo-mark__halo {
+  transform: scale(1.04);
+  will-change: opacity, transform;
+  transition: transform var(--logo-dur-layout) var(--logo-ease-enter);
+}
+
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ):not([data-animate='none'])
+  .logo-mark__halo::after {
+  opacity: 0.9; /* composited over the 45% base the halo reads at about 95% */
+  will-change: opacity;
+  transition: opacity var(--logo-dur-layout) var(--logo-ease-enter);
+}
+
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ).logo-mark--header:not([data-animate='none'])::after {
+  opacity: 1;
+  transition: opacity var(--logo-dur-layout) var(--logo-ease-enter);
+}
+
+/* One more sweep. The hero keeps its finished load sweep in the list so
+   un-hovering does not replay it; the header has no load sweep to keep. */
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ).logo-mark--hero[data-animate='once']
+  .logo-mark__band {
+  animation:
+    lf-logo-sweep var(--logo-dur-sweep) var(--logo-ease-exit) 0.15s both,
+    lf-logo-sweep-hover var(--logo-dur-sweep) var(--logo-ease-exit) both;
+}
+
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ).logo-mark--hero[data-animate='hover']
+  .logo-mark__band {
+  animation: lf-logo-sweep-hover var(--logo-dur-sweep) var(--logo-ease-exit) both;
+}
+
+:is(
+    .logo-mark:hover,
+    :is(.logo, a, button):hover .logo-mark,
+    :is(.logo, a, button):focus-visible .logo-mark
+  ).logo-mark--header:not([data-animate='none'])
+  .logo-mark__band {
+  animation: lf-logo-sweep-hover var(--logo-dur-page) var(--logo-ease-exit) both;
+}
+
+/* ---- the lockup around the mark ---- */
 
 .logo.logo--with-mark {
   display: inline-flex;
@@ -14,17 +297,53 @@
   gap: 10px;
 }
 
-.logo:hover .logo-mark,
-.logo:focus-visible .logo-mark {
-  transform: scale(1.03);
+@media (max-width: 420px) {
+  .logo.logo--with-mark {
+    gap: 8px;
+    font-size: 1.05rem;
+    letter-spacing: 2px;
+  }
 }
 
+/* ---- reduced motion: a designed still ----
+   Disc full, band parked, halo at 65%. Hover changes opacity only. */
 @media (prefers-reduced-motion: reduce) {
-  .logo-mark {
-    transition: none;
+  .logo-mark,
+  .logo-mark::before,
+  .logo-mark::after,
+  .logo-mark *,
+  .logo-mark *::before,
+  .logo-mark *::after {
+    animation: none !important;
+    transition: none !important;
   }
-  .logo:hover .logo-mark,
-  .logo:focus-visible .logo-mark {
-    transform: none;
+
+  .logo-mark .logo-mark__tile,
+  .logo-mark .logo-mark__halo {
+    transform: none !important;
+    will-change: auto !important;
+  }
+
+  .logo-mark__halo::before {
+    opacity: 0.65 !important;
+  }
+}
+
+/* ---- forced colours (Windows high contrast): the mono mark ---- */
+@media (forced-colors: active) {
+  .logo-mark__tile {
+    fill: CanvasText;
+  }
+
+  /* The mask's white and black are geometry, not colour: keep them. */
+  .logo-mark mask * {
+    forced-color-adjust: none;
+  }
+
+  .logo-mark__band,
+  .logo-mark__halo,
+  .logo-mark--header::before,
+  .logo-mark--header::after {
+    display: none;
   }
 }
