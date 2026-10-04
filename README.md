@@ -19,7 +19,12 @@ blurred panels over a dark cinematic background, with motion that switches off u
 - **Billing is mock-only**: there is no real payment processing and no Stripe SDK or keys.
 - **Resilience**: route and in-layout error boundaries with a retry card, an offline banner,
   and fetch retry with exponential backoff for live adapters.
-- **Brand, SEO and accessibility**: an "LF" glass monogram, SVG/PNG favicons, per-page
+- **Brand kit** at `/brand`: four logo directions and four colourways to compare, with logo
+  use, typography, colour tokens, treatments, mockups and downloadable SVGs. The choice is in
+  the URL (`/brand?option=strip&colour=lagoon`), so a combination can be shared for review,
+  and "Try it in the app" previews it across the app in your browser.
+- **Brand, SEO and accessibility**: the Countdown mark (`ACTIVE_BRAND` in
+  `src/components/brand/marks.ts`), self-hosted Inter, SVG/PNG favicons, per-page
   `<title>` and OpenGraph/Twitter meta, `robots.txt` and `sitemap.xml`, a skip link, ARIA
   landmarks and a target of WCAG 2.2 AA (see [docs/A11Y.md](docs/A11Y.md)).
 - **Mobile first**: the layout works down to 375px wide.

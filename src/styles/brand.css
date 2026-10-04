@@ -1,4 +1,4 @@
-/* Brand mark (src/components/brand/LogoMark.tsx) */
+/* Navbar brand mark (BrandMark with className="logo-mark", see Navbar.tsx) */
 .logo-mark {
   display: inline-block;
   flex-shrink: 0;

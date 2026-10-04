@@ -16,10 +16,12 @@ src/
     router.tsx        Route table; pages are lazy-loaded (code split per page)
     AppLayout.tsx     Shell: skip link, Navbar, #main > ErrorBoundary > Suspense > <Outlet/>,
                       OfflineBanner, RouteAnnouncer, footer
-  pages/              Route components (Home, Search, Genre, Title, MyList, Profiles, Account, Plans, NotFound)
+  pages/              Route components (Home, Search, Genre, Title, MyList, Profiles, Account, Plans, Brand, NotFound)
   components/         Feature components (Hero, Row, MovieCard, Navbar; title/TrailerModal)
     a11y/             RouteAnnouncer (route-change announcement + focus reset)
-    brand/            LogoMark (LF glass monogram, SVG paths, token colours)
+    brand/            marks.ts (four mark directions + colourways as path data, ACTIVE_BRAND, SVG
+                      string builders), BrandMark, Lockup/Wordmark, activeBrand.ts (preview
+                      override hook), useBrandFavicon
     errors/           ErrorBoundary, RouteError, ErrorCard, OfflineBanner
     ui/               Primitives: Button, IconButton, Skeleton, Toast (barrel: ui/index.ts)
   features/profiles/  Gradient avatars, name/kids rules, ProfileAvatar, ProfileEditor dialog, navbar ProfileMenu
@@ -41,7 +43,8 @@ src/
     tokens.css        Design tokens (color, radius, blur, motion)
     primitives.css    Styles for ui/ primitives
     theme.css         Imports tokens + primitives; app styles; prefers-reduced-motion overrides
-    brand.css         LogoMark styles (imported by LogoMark.tsx)
+    brand.css         Navbar brand-mark hover styles (imported by Navbar.tsx)
+    brand-kit.css     /brand deck, lockup + wordmark styles (imported by BrandPage.tsx)
     errors.css        Error card + offline banner (imported by errors/ components)
     a11y.css          Skip link, focus rings, main target, .sr-only (imported by AppLayout.tsx)
     nav.css           Mobile primary nav toggle + glass dropdown (imported by Navbar.tsx)
@@ -55,8 +58,9 @@ supabase/schema.sql   Sync tables: profiles, watchlist, history, ratings (PK sta
 supabase/seed.sql     Local-dev demo user + rows (`supabase db reset`)
 supabase/migrations/  SQL (RLS on every table, policies keyed on auth.uid()); schema.sql ships here too
 public/               favicon.svg, favicon-32.png, mask-icon.svg, apple-touch-icon.png,
-                      icons/icon.svg, robots.txt, sitemap.xml
-scripts/              generate-icons.mjs, generate-sitemap.mjs, tasks.json (task board)
+                      icons/icon.svg, brand/*.svg (downloadable kit files), robots.txt, sitemap.xml
+scripts/              generate-icons.mjs, generate-brand-assets.mjs, generate-sitemap.mjs,
+                      tasks.json (task board)
 docs/                 AGENTS.md (team rules + task log), ARCHITECTURE.md (this file),
                       KEYS.md (env vars), A11Y.md (accessibility)
 ```
@@ -79,12 +83,12 @@ data (profiles, lists, history, ratings) to a fresh guest, since the cloud holds
 
 ## Environment
 
-| Var | Effect |
-| --- | --- |
-| `VITE_TMDB_PROXY` | Live TMDB through our proxy |
-| `TMDB_API_KEY` (server-only) | Used by the Netlify TMDB proxy function, never the client |
-| `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` | Live auth + db (both required; Supabase SDK is lazy-loaded). Auth: magic link + Google OAuth; add `<origin>/account` to Supabase redirect URLs |
-| `VITE_PLAUSIBLE_DOMAIN` (+ optional `VITE_PLAUSIBLE_API_HOST`) | Plausible analytics (`services/analytics/plausible.ts`); else console mock |
+| Var                                                            | Effect                                                                                                                                         |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_TMDB_PROXY`                                              | Live TMDB through our proxy                                                                                                                    |
+| `TMDB_API_KEY` (server-only)                                   | Used by the Netlify TMDB proxy function, never the client                                                                                      |
+| `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`                 | Live auth + db (both required; Supabase SDK is lazy-loaded). Auth: magic link + Google OAuth; add `<origin>/account` to Supabase redirect URLs |
+| `VITE_PLAUSIBLE_DOMAIN` (+ optional `VITE_PLAUSIBLE_API_HOST`) | Plausible analytics (`services/analytics/plausible.ts`); else console mock                                                                     |
 
 See `docs/KEYS.md` for the full list, including tooling-only variables.
 
@@ -118,14 +122,32 @@ extra handling if it's driven by JS (for example, the hero rotation).
 
 ## Brand
 
-- `components/brand/LogoMark.tsx`: the glossy "LF" monogram. Its glyphs are SVG paths, so it
-  doesn't depend on a loaded font. Gradient ids come from `useId()` so several marks can share a
-  page. Pass `decorative` when a visible wordmark sits beside it (as in the Navbar), otherwise
-  it exposes `title` as its accessible name.
-- Static icons in `public/` mirror the mark: `favicon.svg`, `mask-icon.svg` and
-  `icons/icon.svg` (full bleed). `node scripts/generate-icons.mjs` rasterises
-  `favicon-32.png` and `apple-touch-icon.png` with a local headless Chromium. `index.html`
-  sets `theme-color` `#0b0b12`.
+- **One source.** `components/brand/marks.ts` holds four mark directions (Monogram, Frame,
+  Strip, Countdown) as path data on a 64-grid, four colourways from existing tokens, and
+  `ACTIVE_BRAND`, the direction the app ships with (currently Countdown / Aurora). String
+  builders (`markSvg`, `appIconSvg`, `monoSvg`, `lockupSvg`) make standalone SVGs from the
+  same layers; `BrandMark` mirrors them as JSX (token colours, `useId` gradients). Glyphs are
+  paths, so no mark depends on a loaded font.
+- **Where it shows.** The Navbar draws `BrandMark` for `useActiveBrand()` (`activeBrand.ts`):
+  `ACTIVE_BRAND` unless the kit page has stored a preview in `localStorage` (`lf.brand`), in
+  which case every tab in that browser follows it and `useBrandFavicon` (mounted in
+  `AppLayout`) swaps the SVG favicon to match. `Lockup` wraps a decorative mark plus the
+  live-text `Wordmark` as one `role="img"`.
+- **Static icons.** `node scripts/generate-brand-assets.mjs` writes
+  `public/brand/lf-<mark>-{mark,icon,lockup}.svg` for all four directions (Aurora) and, from
+  `ACTIVE_BRAND`, `favicon.svg`, `mask-icon.svg` (black silhouette), `icons/icon.svg`
+  (full-bleed maskable) and `logo.svg` (the PWA icon source). `node scripts/generate-icons.mjs`
+  then rasterises `favicon-32.png` and `apple-touch-icon.png` with a local headless Chromium.
+  `marks.test.ts` fails if any of those files drift from `marks.ts`. To change the brand: edit
+  `ACTIVE_BRAND`, run both scripts, commit. `index.html` sets `theme-color` `#0b0b12`.
+- **Brand kit (`/brand`, `pages/BrandPage.tsx`)**: a ten-page guideline deck laid out like a
+  printed brand book. Option and colourway live in the URL (`?option=strip&colour=lagoon`) so
+  a combination can be shared; "Try it in the app" sets the preview above. Pages: cover,
+  identity, forms, colourways, logo use, typography, colour tokens with copy, treatment,
+  mockups, downloads (the copy buttons build the SVG for the selected colourway on the fly).
+- **Type.** Inter is self-hosted as a variable font (`public/fonts/inter/`, latin subset,
+  SIL OFL, preloaded from `index.html`, precached by Workbox); `theme.css` declares the
+  `@font-face` and `system-ui` stands in until it loads.
 
 ## Errors, offline and retry
 
