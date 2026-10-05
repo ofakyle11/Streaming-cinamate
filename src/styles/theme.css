@@ -193,6 +193,13 @@ select {
 .footer a:hover {
   color: var(--color-text);
 }
+.footer-links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin-left: 16px;
+}
 
 /* ---------- modal ---------- */
 /* A bottom sheet on phone and tablet (<= 1024px), a centred card on desktop.

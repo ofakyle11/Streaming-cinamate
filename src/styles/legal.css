@@ -1,0 +1,182 @@
+/* Reading pages: /privacy, /terms, /security. Built on tokens.css; no literal colours. */
+
+.legal-page {
+  display: block;
+}
+
+.legal {
+  max-width: 720px;
+  margin: 0 auto;
+  animation: spring var(--dur-page) var(--ease-enter);
+}
+
+.legal-head {
+  margin-bottom: 8px;
+}
+
+.legal-eyebrow {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+}
+
+.legal h1 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 2.6rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.legal-meta {
+  margin: 0 0 18px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.legal-summary {
+  margin: 0 0 24px;
+  font-size: 1.1rem;
+  line-height: 1.55;
+  color: var(--color-text-soft);
+  text-wrap: pretty;
+}
+
+/* Section index: pill chips that wrap. Each is a hash link to a heading. */
+.legal-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.legal-toc a {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-decoration: none;
+  transition:
+    background-color var(--dur-micro) var(--ease-exit),
+    color var(--dur-micro) var(--ease-exit);
+}
+
+.legal-toc a:hover {
+  background: var(--color-surface-3);
+}
+
+.legal-toc a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.legal-section {
+  margin-top: 28px;
+}
+
+.legal h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  /* Leave room for the floating navbar when a chip scrolls a heading into view. */
+  scroll-margin-top: calc(var(--nav-top) + var(--nav-h) + 24px + var(--safe-top));
+  transition: color var(--dur-component) var(--ease-exit);
+}
+
+.legal h2:target {
+  color: var(--color-accent-text);
+}
+
+.legal h2:focus-visible {
+  outline: none;
+  color: var(--color-accent-text);
+}
+
+.legal p,
+.legal li {
+  margin: 0 0 12px;
+  line-height: 1.65;
+  color: var(--color-text-soft);
+  text-wrap: pretty;
+}
+
+.legal ul {
+  margin: 0 0 12px;
+  padding-left: 1.2em;
+}
+
+.legal li {
+  margin-bottom: 8px;
+}
+
+.legal li::marker {
+  color: var(--color-accent);
+}
+
+.legal strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.legal p a,
+.legal li a {
+  color: var(--color-accent-text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-accent-text) 40%, transparent);
+  text-underline-offset: 0.15em;
+  transition: text-decoration-color var(--dur-micro) var(--ease-exit);
+}
+
+.legal p a:hover,
+.legal li a:hover {
+  text-decoration-color: var(--color-accent-text);
+}
+
+/* Cross-links to the other two documents. */
+.legal-related {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--glass-border);
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.legal-related-link {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform var(--dur-micro) var(--ease-exit);
+}
+
+.legal-related-link:hover {
+  transform: scale(1.03);
+}
+
+.legal-related-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legal {
+    animation: none;
+  }
+  .legal-related-link:hover {
+    transform: none;
+  }
+}
