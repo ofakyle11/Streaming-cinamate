@@ -15,10 +15,7 @@ type EditorState = { mode: 'add' } | { mode: 'edit'; profile: Profile } | null;
 /** Only same-origin, in-app paths are honoured as a post-selection destination. */
 function safeNext(state: unknown): string {
   const next = (state as { from?: unknown } | null)?.from;
-  return typeof next === 'string' &&
-    next.startsWith('/') &&
-    !next.startsWith('//') &&
-    next !== '/profiles'
+  return typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') && next !== '/profiles'
     ? next
     : '/';
 }
@@ -100,11 +97,7 @@ export default function ProfilesPage() {
 
           {canAdd && (
             <li style={{ ['--i' as string]: profiles.length }}>
-              <button
-                type="button"
-                className="profile-tile add glass"
-                onClick={() => setEditor({ mode: 'add' })}
-              >
+              <button type="button" className="profile-tile add glass" onClick={() => setEditor({ mode: 'add' })}>
                 <span className="lf-avatar lg add-glyph" aria-hidden>
                   +
                 </span>
@@ -114,9 +107,7 @@ export default function ProfilesPage() {
           )}
         </ul>
 
-        {!canAdd && (
-          <p className="muted profiles-note">You can have up to {MAX_PROFILES} profiles.</p>
-        )}
+        {!canAdd && <p className="muted profiles-note">You can have up to {MAX_PROFILES} profiles.</p>}
 
         <Button variant={managing ? 'primary' : 'glass'} onClick={() => setManaging((m) => !m)}>
           {managing ? 'Done' : 'Manage profiles'}

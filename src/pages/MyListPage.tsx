@@ -5,12 +5,7 @@ import { Button, Skeleton } from '../components/ui';
 import { useKeepFocusOnRemoval } from '../hooks/useKeepFocusOnRemoval';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { useWatchlistActions } from '../hooks/useWatchlist';
-import {
-  MY_LIST_SORTS,
-  sortMyList,
-  useMyListTitles,
-  type MyListSort,
-} from '../hooks/useMyListTitles';
+import { MY_LIST_SORTS, sortMyList, useMyListTitles, type MyListSort } from '../hooks/useMyListTitles';
 import { analytics, tmdb as defaultTmdb, type Movie, type TmdbService } from '../services';
 import '../styles/my-list.css';
 import { useMeta } from '../hooks/useMeta';
@@ -34,12 +29,8 @@ function EmptyState() {
         Your list is empty
       </h2>
       <p className="muted">
-        Tap{' '}
-        <span className="mylist-empty-plus" aria-hidden>
-          ＋
-        </span>
-        <span className="mylist-sr-only">the plus button</span> on any poster or title page to save
-        it for later.
+        Tap <span className="mylist-empty-plus" aria-hidden>＋</span>
+        <span className="mylist-sr-only">the plus button</span> on any poster or title page to save it for later.
       </p>
       <div className="mylist-empty-actions">
         <Link className="btn primary" to="/">
@@ -84,21 +75,13 @@ export default function MyListPage({ svc = defaultTmdb }: Props) {
             My List
           </h1>
           <p className="muted" aria-live="polite">
-            {count === null
-              ? 'Loading your titles…'
-              : count === 1
-                ? '1 title saved'
-                : `${count} titles saved`}
+            {count === null ? 'Loading your titles…' : count === 1 ? '1 title saved' : `${count} titles saved`}
           </p>
         </div>
         {count !== null && count > 1 && (
           <label className="mylist-sort">
             <span>Sort</span>
-            <select
-              className="glass"
-              value={sort}
-              onChange={(e) => setSort(e.target.value as MyListSort)}
-            >
+            <select className="glass" value={sort} onChange={(e) => setSort(e.target.value as MyListSort)}>
               {MY_LIST_SORTS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -143,15 +126,9 @@ export default function MyListPage({ svc = defaultTmdb }: Props) {
 
       {state.status === 'ready' && state.missing.length > 0 && (
         <p className="mylist-missing muted">
-          {state.missing.length === 1
-            ? '1 saved title is'
-            : `${state.missing.length} saved titles are`}{' '}
-          no longer available.{' '}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => state.missing.forEach((e) => remove(e.titleId))}
-          >
+          {state.missing.length === 1 ? '1 saved title is' : `${state.missing.length} saved titles are`} no longer
+          available.{' '}
+          <Button variant="ghost" size="sm" onClick={() => state.missing.forEach((e) => remove(e.titleId))}>
             Remove {state.missing.length === 1 ? 'it' : 'them'}
           </Button>
         </p>

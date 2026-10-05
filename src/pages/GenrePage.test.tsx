@@ -17,9 +17,7 @@ const renderAt = (url: string) =>
 describe('GenrePage', () => {
   it('renders the genre name and a grid of titles', async () => {
     renderAt('/genre/878');
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Science Fiction' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Science Fiction' })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /\(\d{4}\)$/ }).length).toBeGreaterThan(0);
   });
 
@@ -27,15 +25,9 @@ describe('GenrePage', () => {
     renderAt('/genre/18');
     await screen.findByRole('heading', { level: 1, name: 'Drama' });
     const group = screen.getByRole('group', { name: /sort titles/i });
-    expect(within(group).getByRole('button', { name: 'Newest' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    expect(within(group).getByRole('button', { name: 'Newest' })).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(within(group).getByRole('button', { name: 'Newest' }));
-    expect(within(group).getByRole('button', { name: 'Newest' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(within(group).getByRole('button', { name: 'Newest' })).toHaveAttribute('aria-pressed', 'true');
     expect(await screen.findByRole('heading', { level: 1, name: 'Drama' })).toBeInTheDocument();
   });
 
@@ -46,18 +38,14 @@ describe('GenrePage', () => {
     expect(await screen.findByText('Neon Drift')).toBeInTheDocument();
     expect(screen.queryByText('Signal Lost')).not.toBeInTheDocument();
     const group = await screen.findByRole('group', { name: /media type/i });
-    expect(within(group).getByRole('button', { name: 'Movies' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(within(group).getByRole('button', { name: 'Movies' })).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(within(group).getByRole('button', { name: 'TV' }));
     expect(await screen.findByText('Signal Lost')).toBeInTheDocument();
     expect(screen.queryByText('Neon Drift')).not.toBeInTheDocument();
-    expect(
-      within(screen.getByRole('group', { name: /media type/i })).getByRole('button', {
-        name: 'TV',
-      }),
-    ).toHaveAttribute('aria-pressed', 'true');
+    expect(within(screen.getByRole('group', { name: /media type/i })).getByRole('button', { name: 'TV' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('hides the media type control for single-type genres', async () => {

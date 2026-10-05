@@ -303,7 +303,7 @@ export const security: LegalDocument = {
         [
           '**Supabase** for the database and sign-in emails.',
           '**Netlify** for hosting and serverless functions.',
-          '**TMDB** (with availability data from **JustWatch**) for catalogue and availability data.',
+          '**TMDB** for catalogue data and, through it, **JustWatch** for streaming availability.',
           '**Google**, only when you choose to sign in with it.',
           '**Plausible** for privacy-friendly analytics.',
         ],

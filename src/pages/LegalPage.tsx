@@ -38,7 +38,12 @@ export default function LegalPage({ doc }: LegalPageProps) {
   // /privacy -> /terms. Start each document at the top, or at the heading a
   // hash names (the lazy chunk arrives after the browser's own fragment scroll).
   useEffect(() => {
-    const id = hash.startsWith('#') ? decodeURIComponent(hash.slice(1)) : '';
+    let id = '';
+    try {
+      id = hash.startsWith('#') ? decodeURIComponent(hash.slice(1)) : '';
+    } catch {
+      // A malformed fragment (e.g. a mangled paste) just starts at the top.
+    }
     const target = id ? document.getElementById(id) : null;
     if (target) {
       target.scrollIntoView?.({ block: 'start' });

@@ -51,6 +51,15 @@ describe('LegalPage', () => {
     expect(text).not.toMatch(/\bmatch(es|ed)?\b/i);
   });
 
+  it('survives a malformed hash and still renders', () => {
+    render(
+      <MemoryRouter initialEntries={['/privacy#%E0']}>
+        <LegalPage doc="privacy" />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeInTheDocument();
+  });
+
   it('section ids are unique within a document and safe as anchors', () => {
     for (const doc of legalOrder) {
       const ids = legalDocuments[doc].sections.map((s) => s.id);

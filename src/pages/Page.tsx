@@ -1,9 +1,6 @@
 import { ReactNode } from 'react';
 
-interface PageProps {
-  title: string;
-  children?: ReactNode;
-}
+interface PageProps { title: string; children?: ReactNode }
 
 /** Shared glass page shell for secondary routes. */
 export default function Page({ title, children }: PageProps) {

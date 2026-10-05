@@ -9,6 +9,7 @@ import AccountPage from './AccountPage';
 
 import { findLive, getLive, queryLive } from '../test/liveRegions';
 
+
 function renderPage(service: AuthService = createMockAuth(), clearLocal = vi.fn()) {
   render(
     <ToastProvider>
@@ -32,9 +33,7 @@ describe('AccountPage + AuthProvider', () => {
 
   it('signs in with a magic link, shows the email, then signs out', async () => {
     renderPage();
-    fireEvent.change(await screen.findByLabelText('Email'), {
-      target: { value: 'ada@example.com' },
-    });
+    fireEvent.change(await screen.findByLabelText('Email'), { target: { value: 'ada@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: /magic link/i }));
     expect(await screen.findByText('ada@example.com')).toBeInTheDocument();
 
@@ -123,10 +122,7 @@ describe('Delete my data clears the PWA image cache', () => {
     vi.stubGlobal('caches', undefined);
     localStorage.setItem('lf.mock.db', '{}');
     useLastFrameStore.getState().addToWatchlist(7);
-    renderPage(
-      createMockAuth(),
-      vi.fn(() => void clearLocalData()),
-    );
+    renderPage(createMockAuth(), vi.fn(() => void clearLocalData()));
 
     await confirmDelete();
 

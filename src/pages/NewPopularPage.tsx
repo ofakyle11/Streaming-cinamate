@@ -70,12 +70,7 @@ export default function NewPopularPage({ svc = defaultTmdb }: Props) {
         )}
 
         {state.status === 'loading' && (
-          <div
-            className="discovery-loading"
-            aria-busy="true"
-            role="status"
-            aria-label="Loading New & Popular"
-          >
+          <div className="discovery-loading" aria-busy="true" role="status" aria-label="Loading New & Popular">
             {SKELETON_ROWS.map((r) => (
               <div key={r} className="discovery-skel-row">
                 <Skeleton variant="text" width={160} />

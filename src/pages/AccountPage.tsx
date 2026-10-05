@@ -12,9 +12,7 @@ import { useMeta } from '../hooks/useMeta';
 type Notice = { kind: 'success' | 'error' | 'info'; text: string } | null;
 
 function errorText(err: unknown): string {
-  return err instanceof Error && err.message
-    ? err.message
-    : 'Something went wrong. Please try again.';
+  return err instanceof Error && err.message ? err.message : 'Something went wrong. Please try again.';
 }
 
 function initials(user: User): string {
@@ -31,8 +29,7 @@ function memberSince(iso: string): string | null {
 
 export default function AccountPage() {
   useMeta({ title: 'Account', description: 'Manage your Lastframe.tv account settings.' });
-  const { status, user, mode, signInWithMagicLink, signInWithOAuth, signOut, deleteData } =
-    useAuth();
+  const { status, user, mode, signInWithMagicLink, signInWithOAuth, signOut, deleteData } = useAuth();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState<null | 'magic' | 'google' | 'signout' | 'delete'>(null);
   const [notice, setNotice] = useState<Notice>(null);
@@ -40,11 +37,7 @@ export default function AccountPage() {
   const emailId = useId();
   const noticeId = useId();
 
-  const run = async (
-    kind: NonNullable<typeof busy>,
-    action: () => Promise<void>,
-    success?: string,
-  ) => {
+  const run = async (kind: NonNullable<typeof busy>, action: () => Promise<void>, success?: string) => {
     setBusy(kind);
     setNotice(null);
     try {
@@ -96,12 +89,7 @@ export default function AccountPage() {
         {status === 'authenticated' && user && (
           <section className="account-section account-profile glass" aria-label="Signed-in account">
             {user.avatarUrl ? (
-              <img
-                className="account-avatar"
-                src={user.avatarUrl}
-                alt=""
-                referrerPolicy="no-referrer"
-              />
+              <img className="account-avatar" src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
             ) : (
               <span className="account-avatar" aria-hidden>
                 {initials(user)}
@@ -133,8 +121,7 @@ export default function AccountPage() {
               Sign in to sync across devices
             </h2>
             <p className="muted">
-              You can keep browsing as a guest. Your list, history and ratings stay on this device
-              until you sign in.
+              You can keep browsing as a guest. Your list, history and ratings stay on this device until you sign in.
             </p>
 
             <form className="account-form" onSubmit={onMagicLink} noValidate>
@@ -156,12 +143,7 @@ export default function AccountPage() {
                   disabled={busy !== null}
                   required
                 />
-                <Button
-                  type="submit"
-                  variant="primary"
-                  loading={busy === 'magic'}
-                  disabled={busy !== null}
-                >
+                <Button type="submit" variant="primary" loading={busy === 'magic'} disabled={busy !== null}>
                   Email me a magic link
                 </Button>
               </div>
@@ -185,9 +167,7 @@ export default function AccountPage() {
             </Button>
 
             {mode === 'mock' && (
-              <p className="account-demo">
-                Demo mode: no emails are sent and sign-in completes instantly.
-              </p>
+              <p className="account-demo">Demo mode: no emails are sent and sign-in completes instantly.</p>
             )}
           </section>
         )}
@@ -209,37 +189,19 @@ export default function AccountPage() {
             </h2>
             <p className="muted">
               Removes profiles, My List, watch history and ratings from this device
-              {user ? ', requests deletion of your cloud data, and signs you out' : ''}. This cannot
-              be undone.
+              {user ? ', requests deletion of your cloud data, and signs you out' : ''}. This cannot be undone.
             </p>
             {confirmDelete ? (
-              <div
-                className="account-row account-confirm"
-                role="group"
-                aria-label="Confirm data deletion"
-              >
-                <Button
-                  variant="accent"
-                  loading={busy === 'delete'}
-                  disabled={busy !== null}
-                  onClick={onDelete}
-                >
+              <div className="account-row account-confirm" role="group" aria-label="Confirm data deletion">
+                <Button variant="accent" loading={busy === 'delete'} disabled={busy !== null} onClick={onDelete}>
                   Yes, delete everything
                 </Button>
-                <Button
-                  variant="ghost"
-                  disabled={busy !== null}
-                  onClick={() => setConfirmDelete(false)}
-                >
+                <Button variant="ghost" disabled={busy !== null} onClick={() => setConfirmDelete(false)}>
                   Cancel
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="glass"
-                disabled={busy !== null}
-                onClick={() => setConfirmDelete(true)}
-              >
+              <Button variant="glass" disabled={busy !== null} onClick={() => setConfirmDelete(true)}>
                 Delete my data…
               </Button>
             )}
