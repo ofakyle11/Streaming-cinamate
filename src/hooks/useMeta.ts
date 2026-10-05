@@ -16,6 +16,8 @@ export interface MetaOptions {
   type?: string;
   /** Adds <meta name="robots" content="noindex"> (e.g. for not-found states). */
   noindex?: boolean;
+  /** Use the large Twitter card (`summary_large_image`) for a wide share image. */
+  largeImage?: boolean;
 }
 
 type Attr = 'name' | 'property';
@@ -106,6 +108,7 @@ export function useMeta({
   image,
   type = 'website',
   noindex = false,
+  largeImage = false,
 }: MetaOptions = {}): void {
   useEffect(() => {
     const fullTitle = formatTitle(title);
@@ -127,7 +130,11 @@ export function useMeta({
       { attr: 'property', key: 'og:description', content: desc },
       { attr: 'property', key: 'og:url', content: url },
       { attr: 'property', key: 'og:image', content: img },
-      { attr: 'name', key: 'twitter:card', content: 'summary' },
+      {
+        attr: 'name',
+        key: 'twitter:card',
+        content: largeImage ? 'summary_large_image' : 'summary',
+      },
       { attr: 'name', key: 'twitter:title', content: fullTitle },
       { attr: 'name', key: 'twitter:description', content: desc },
       { attr: 'name', key: 'twitter:image', content: img },
@@ -141,5 +148,5 @@ export function useMeta({
       for (let i = restores.length - 1; i >= 0; i--) restores[i]();
       document.title = previousTitle;
     };
-  }, [title, description, image, type, noindex]);
+  }, [title, description, image, type, noindex, largeImage]);
 }
