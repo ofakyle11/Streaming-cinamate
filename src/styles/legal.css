@@ -94,6 +94,7 @@
 
 .legal h2:target {
   color: var(--color-accent-text);
+  transition-timing-function: var(--ease-enter);
 }
 
 .legal h2:focus-visible {
@@ -170,6 +171,16 @@
 .legal-related-link:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+/* Phone: chips become full tap targets. */
+@media (max-width: 760px) {
+  .legal-toc a,
+  .legal-related-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap, 44px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -26,7 +26,8 @@ function renderAt(url: string, svc: TmdbService = createMockTmdb()) {
   );
 }
 
-const cards = () => within(screen.getByRole('list', { name: 'Search results' })).queryAllByRole('listitem');
+const cards = () =>
+  within(screen.getByRole('list', { name: 'Search results' })).queryAllByRole('listitem');
 
 describe('SearchPage', () => {
   const OriginalIO = globalThis.IntersectionObserver;
@@ -47,7 +48,10 @@ describe('SearchPage', () => {
     fireEvent.change(input, { target: { value: 'orb' } });
     // Not written immediately.
     expect(screen.getByTestId('location').textContent).toBe('/search');
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/search?q=orb'), T);
+    await waitFor(
+      () => expect(screen.getByTestId('location').textContent).toBe('/search?q=orb'),
+      T,
+    );
     expect(await screen.findByRole('link', { name: /^Silent Orbit/i }, T)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Orbital Drift/i })).toBeInTheDocument();
   });
@@ -57,7 +61,10 @@ describe('SearchPage', () => {
     await screen.findByRole('link', { name: /^Silent Orbit/i }, T);
     fireEvent.click(screen.getByRole('button', { name: 'TV' }));
     await waitFor(() => expect(screen.getByTestId('location').textContent).toContain('type=tv'), T);
-    await waitFor(() => expect(screen.queryByRole('link', { name: /^Silent Orbit/i })).toBeNull(), T);
+    await waitFor(
+      () => expect(screen.queryByRole('link', { name: /^Silent Orbit/i })).toBeNull(),
+      T,
+    );
     expect(await screen.findByRole('link', { name: /^Orbital Drift/i }, T)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'TV' })).toHaveAttribute('aria-pressed', 'true');
   });
@@ -126,10 +133,14 @@ describe('SearchPage', () => {
     const navInput = screen.getByRole('searchbox', { name: 'Search titles' });
     fireEvent.change(navInput, { target: { value: 'glass' } });
     fireEvent.submit(navInput.closest('form') as HTMLFormElement);
-    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/search?q=glass'), T);
-    expect(await screen.findByRole('link', { name: /^The Glass Horizon/i }, T)).toBeInTheDocument();
-    expect((screen.getByLabelText('Search titles', { selector: '#search-input' }) as HTMLInputElement).value).toBe(
-      'glass',
+    await waitFor(
+      () => expect(screen.getByTestId('location').textContent).toBe('/search?q=glass'),
+      T,
     );
+    expect(await screen.findByRole('link', { name: /^The Glass Horizon/i }, T)).toBeInTheDocument();
+    expect(
+      (screen.getByLabelText('Search titles', { selector: '#search-input' }) as HTMLInputElement)
+        .value,
+    ).toBe('glass');
   });
 });

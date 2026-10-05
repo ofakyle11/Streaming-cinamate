@@ -29,7 +29,9 @@ describe('MyListPage', () => {
 
   it('shows the empty state with ways to browse', () => {
     renderPage();
-    expect(screen.getByRole('heading', { level: 2, name: /your list is empty/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: /your list is empty/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /browse titles/i })).toHaveAttribute('href', '/');
     expect(screen.getByText('0 titles saved')).toBeInTheDocument();
   });
@@ -43,13 +45,26 @@ describe('MyListPage', () => {
 
     expect(screen.getByRole('status', { name: /loading my list/i })).toBeInTheDocument();
     const grid = await screen.findByRole('list', { name: /saved titles/i }, T);
-    const names = () => within(grid).getAllByRole('link').map((a) => a.getAttribute('aria-label'));
-    expect(names()).toEqual(['The Glass Horizon (2016)', 'Midnight Protocol (2017)', 'Neon Drift (2015)']);
+    const names = () =>
+      within(grid)
+        .getAllByRole('link')
+        .map((a) => a.getAttribute('aria-label'));
+    expect(names()).toEqual([
+      'The Glass Horizon (2016)',
+      'Midnight Protocol (2017)',
+      'Neon Drift (2015)',
+    ]);
     expect(within(grid).getAllByRole('link')[1]).toHaveAttribute('href', '/title/tv/1002');
     expect(screen.getByText('3 titles saved')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole('combobox', { name: /sort/i }), { target: { value: 'title' } });
-    expect(names()).toEqual(['Midnight Protocol (2017)', 'Neon Drift (2015)', 'The Glass Horizon (2016)']);
+    fireEvent.change(screen.getByRole('combobox', { name: /sort/i }), {
+      target: { value: 'title' },
+    });
+    expect(names()).toEqual([
+      'Midnight Protocol (2017)',
+      'Neon Drift (2015)',
+      'The Glass Horizon (2016)',
+    ]);
   });
 
   it('removes a title from its card and toasts', async () => {
@@ -59,7 +74,9 @@ describe('MyListPage', () => {
     expect(btn).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(btn);
     expect(ids()).toEqual([]);
-    expect(screen.getByRole('heading', { level: 2, name: /your list is empty/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: /your list is empty/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText('Removed Neon Drift from My List')).toBeInTheDocument();
   });
 
@@ -68,7 +85,11 @@ describe('MyListPage', () => {
     addToWatchlist(1000, 'movie'); // Neon Drift
     addToWatchlist(1002, 'tv'); // Midnight Protocol
     renderPage();
-    const btn = await screen.findByRole('button', { name: 'Remove Midnight Protocol from My List' }, T);
+    const btn = await screen.findByRole(
+      'button',
+      { name: 'Remove Midnight Protocol from My List' },
+      T,
+    );
     act(() => btn.focus());
     fireEvent.click(btn);
     expect(ids()).toEqual([1000]);
@@ -78,10 +99,9 @@ describe('MyListPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     const entries = selectWatchlist(useLastFrameStore.getState());
     expect(entries.find((e) => e.titleId === 1002)?.mediaType).toBe('tv');
-    expect(await within(grid).findByRole('link', { name: 'Midnight Protocol (2017)' })).toHaveAttribute(
-      'href',
-      '/title/tv/1002',
-    );
+    expect(
+      await within(grid).findByRole('link', { name: 'Midnight Protocol (2017)' }),
+    ).toHaveAttribute('href', '/title/tv/1002');
   });
 
   it('moves focus to the empty-state heading when the last title is removed', async () => {
@@ -107,7 +127,10 @@ describe('MyListPage', () => {
   it('shows an error with retry when the catalogue fails', async () => {
     const base = createMockTmdb();
     let down = true;
-    const svc: TmdbService = { ...base, genres: () => (down ? Promise.reject(new Error('offline')) : base.genres()) };
+    const svc: TmdbService = {
+      ...base,
+      genres: () => (down ? Promise.reject(new Error('offline')) : base.genres()),
+    };
     useLastFrameStore.getState().addToWatchlist(1000, 'movie');
     renderPage(svc);
     expect(await findLive('alert', T)).toHaveTextContent('offline');

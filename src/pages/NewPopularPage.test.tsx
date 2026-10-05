@@ -51,7 +51,9 @@ describe('NewPopularPage', () => {
     expect(await screen.findByRole('alert', undefined, T)).toHaveTextContent('Network down');
     fail = false;
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(await screen.findByRole('heading', { level: 2, name: 'Coming Soon' }, T)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Coming Soon' }, T),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });

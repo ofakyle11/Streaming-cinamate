@@ -36,10 +36,16 @@ describe('Because you liked X', () => {
     state().setThumb(1000, 'up', { mediaType: 'movie', title: 'Neon Drift' });
     renderHome();
 
-    const heading = await screen.findByRole('heading', { level: 2, name: 'Because you liked Neon Drift' }, T);
+    const heading = await screen.findByRole(
+      'heading',
+      { level: 2, name: 'Because you liked Neon Drift' },
+      T,
+    );
     const section = heading.closest('section') as HTMLElement;
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
-    expect(headings.indexOf('Because you liked Neon Drift')).toBe(headings.indexOf('Trending Now') + 1);
+    expect(headings.indexOf('Because you liked Neon Drift')).toBe(
+      headings.indexOf('Trending Now') + 1,
+    );
 
     const links = within(section).getAllByRole('link');
     expect(links.length).toBeGreaterThan(0);
@@ -49,7 +55,11 @@ describe('Because you liked X', () => {
     const first = links[0];
     const card = first.closest('.card') as HTMLElement;
     fireEvent.click(within(card).getByRole('button', { name: /not for me/i }));
-    await waitFor(() => expect(within(section).queryByRole('link', { name: first.getAttribute('aria-label')! })).toBeNull());
+    await waitFor(() =>
+      expect(
+        within(section).queryByRole('link', { name: first.getAttribute('aria-label')! }),
+      ).toBeNull(),
+    );
   });
 
   it('keeps focus in the row when a card is thumbed away, with an Undo toast that restores it', async () => {
@@ -61,7 +71,11 @@ describe('Because you liked X', () => {
         </MemoryRouter>
       </ToastProvider>,
     );
-    const heading = await screen.findByRole('heading', { level: 2, name: 'Because you liked Neon Drift' }, T);
+    const heading = await screen.findByRole(
+      'heading',
+      { level: 2, name: 'Because you liked Neon Drift' },
+      T,
+    );
     const section = heading.closest('section') as HTMLElement;
     const first = within(section).getAllByRole('link')[0];
     const name = first.getAttribute('aria-label')!;
@@ -89,24 +103,37 @@ describe('Because you liked X', () => {
         </MemoryRouter>
       </ToastProvider>,
     );
-    const heading = await screen.findByRole('heading', { level: 2, name: 'Because you liked Neon Drift' }, T);
+    const heading = await screen.findByRole(
+      'heading',
+      { level: 2, name: 'Because you liked Neon Drift' },
+      T,
+    );
     const section = heading.closest('section') as HTMLElement;
     const keep = within(section).getAllByRole('link')[0];
     // Rate every other recommendation (the row is capped, so repeat as more fill in) until one card is left.
     for (let pass = 0; pass < 10 && within(section).getAllByRole('link').length > 1; pass++) {
-      const rest = within(section).getAllByRole('link').filter((l) => l !== keep);
+      const rest = within(section)
+        .getAllByRole('link')
+        .filter((l) => l !== keep);
       act(() => {
         for (const link of rest) {
           const [, , type, id] = link.getAttribute('href')!.split('/');
           const mediaType = type as 'movie' | 'tv';
-          state().setThumb(Number(id), 'down', { mediaType, title: link.getAttribute('aria-label')! }, mediaType);
+          state().setThumb(
+            Number(id),
+            'down',
+            { mediaType, title: link.getAttribute('aria-label')! },
+            mediaType,
+          );
         }
       });
     }
     expect(within(section).getAllByRole('link')).toEqual([keep]);
 
     const title = keep.getAttribute('aria-label')!.replace(/ \(\d{4}\)$/, '');
-    const down = within(keep.closest('.card') as HTMLElement).getByRole('button', { name: `Not for me: ${title}` });
+    const down = within(keep.closest('.card') as HTMLElement).getByRole('button', {
+      name: `Not for me: ${title}`,
+    });
     act(() => down.focus());
     fireEvent.click(down);
 
@@ -119,10 +146,14 @@ describe('Because you liked X', () => {
 
   it('uses 4+ star ratings as seeds and resolves missing titles from the service', async () => {
     useLastFrameStore.setState({
-      ratings: { [state().activeProfileId!]: [{ titleId: 1000, rating: 5, ratedAt: 1, mediaType: 'movie' }] },
+      ratings: {
+        [state().activeProfileId!]: [{ titleId: 1000, rating: 5, ratedAt: 1, mediaType: 'movie' }],
+      },
     });
     renderHome();
-    expect(await screen.findByRole('heading', { level: 2, name: 'Because you liked Neon Drift' }, T)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Because you liked Neon Drift' }, T),
+    ).toBeInTheDocument();
   });
 });
 
@@ -145,7 +176,10 @@ describe('Title page thumbs', () => {
     const panel = heading.closest('article') as HTMLElement;
     fireEvent.click(within(panel).getByRole('button', { name: 'I like Neon Drift' }));
     expect(selectThumbFor(1000)(state())).toBe('up');
-    expect(state().thumbs[state().activeProfileId!][0]).toMatchObject({ mediaType: 'movie', title: 'Neon Drift' });
+    expect(state().thumbs[state().activeProfileId!][0]).toMatchObject({
+      mediaType: 'movie',
+      title: 'Neon Drift',
+    });
     expect(await screen.findByText(/glad you liked neon drift/i)).toBeInTheDocument();
   });
 });

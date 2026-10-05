@@ -7,7 +7,11 @@ import Home from './Home';
 
 function TitleProbe() {
   const { type, id } = useParams();
-  return <p>title route {type}/{id}</p>;
+  return (
+    <p>
+      title route {type}/{id}
+    </p>
+  );
 }
 
 function renderHome(svc: TmdbService) {
@@ -24,12 +28,15 @@ function renderHome(svc: TmdbService) {
 /** Waits until the named row has finished loading and returns its section. */
 async function readyRow(title: string): Promise<HTMLElement> {
   let section: HTMLElement | null = null;
-  await waitFor(() => {
-    const heading = screen.getByRole('heading', { level: 2, name: title });
-    section = heading.closest('section') as HTMLElement;
-    expect(section).not.toHaveAttribute('aria-busy');
-    expect(within(section).getAllByRole('link').length).toBeGreaterThan(0);
-  }, { timeout: 3000 });
+  await waitFor(
+    () => {
+      const heading = screen.getByRole('heading', { level: 2, name: title });
+      section = heading.closest('section') as HTMLElement;
+      expect(section).not.toHaveAttribute('aria-busy');
+      expect(within(section).getAllByRole('link').length).toBeGreaterThan(0);
+    },
+    { timeout: 3000 },
+  );
   return section as unknown as HTMLElement;
 }
 
@@ -49,7 +56,10 @@ describe('Home', () => {
     renderHome(createMockTmdb());
 
     for (const t of ROW_TITLES) {
-      expect(screen.getByRole('region', { name: `${t}, loading` })).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByRole('region', { name: `${t}, loading` })).toHaveAttribute(
+        'aria-busy',
+        'true',
+      );
     }
 
     for (const t of ROW_TITLES) await readyRow(t);
@@ -66,7 +76,9 @@ describe('Home', () => {
     expect(href).toMatch(/^\/title\/movie\/\d+$/);
 
     fireEvent.click(movieLink);
-    expect(await screen.findByText(`title route ${href.replace('/title/', '')}`)).toBeInTheDocument();
+    expect(
+      await screen.findByText(`title route ${href.replace('/title/', '')}`),
+    ).toBeInTheDocument();
   });
 
   it('shows a per-row error with a working retry', async () => {
@@ -75,7 +87,9 @@ describe('Home', () => {
     const svc: TmdbService = {
       ...base,
       popular: (mediaType, page) =>
-        mediaType === 'tv' && failTv ? Promise.reject(new Error('TV is down')) : base.popular(mediaType, page),
+        mediaType === 'tv' && failTv
+          ? Promise.reject(new Error('TV is down'))
+          : base.popular(mediaType, page),
     };
     renderHome(svc);
 
@@ -102,7 +116,9 @@ describe('Home', () => {
     };
     renderHome(svc);
 
-    expect(await screen.findByRole('heading', { level: 1, name: /couldn’t load the catalogue/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /couldn’t load the catalogue/i }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
 
     down = false;
@@ -135,7 +151,11 @@ describe('Home load states (polish)', () => {
     };
     renderHome(svc);
 
-    const alert = await screen.findByRole('alert', { name: /couldn.t load the catalogue/i }, { timeout: 4000 });
+    const alert = await screen.findByRole(
+      'alert',
+      { name: /couldn.t load the catalogue/i },
+      { timeout: 4000 },
+    );
     expect(calls).toBeGreaterThanOrEqual(3);
     expect(alert).toHaveAccessibleName(/couldn.t load the catalogue/i);
     expect(screen.getAllByRole('main')).toHaveLength(1);
@@ -146,7 +166,11 @@ describe('Home load states (polish)', () => {
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     renderHome(allDown(() => new Error('offline')));
     expect(
-      await screen.findByText('You appear to be offline. Reconnect and try again.', {}, { timeout: 4000 }),
+      await screen.findByText(
+        'You appear to be offline. Reconnect and try again.',
+        {},
+        { timeout: 4000 },
+      ),
     ).toBeInTheDocument();
   }, 10000);
 

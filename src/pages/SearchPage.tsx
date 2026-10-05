@@ -67,7 +67,9 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
 
   const updateFilters = useCallback(
     (patch: Partial<SearchFilters>) => {
-      setParams((prev) => writeFilters(prev, { ...parseFilters(prev), ...patch }), { replace: true });
+      setParams((prev) => writeFilters(prev, { ...parseFilters(prev), ...patch }), {
+        replace: true,
+      });
     },
     [setParams],
   );
@@ -91,7 +93,8 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
 
   useEffect(() => {
     const trimmed = q.trim();
-    if (trimmed) track(AnalyticsEvents.search, { query: trimmed.slice(0, 100), length: trimmed.length });
+    if (trimmed)
+      track(AnalyticsEvents.search, { query: trimmed.slice(0, 100), length: trimmed.length });
   }, [q]);
 
   /* ------------------------------------------------------------ results */
@@ -127,7 +130,11 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
   const active = hasActiveFilters(filters);
   const initialLoading = status === 'loading' && items.length === 0;
   const isEmpty = status === 'ready' && items.length === 0 && !hasMore;
-  const heading = query ? `Results for “${query}”` : active ? 'Filtered titles' : 'Browse everything';
+  const heading = query
+    ? `Results for “${query}”`
+    : active
+      ? 'Filtered titles'
+      : 'Browse everything';
 
   return (
     <main className="search-page">
@@ -162,7 +169,12 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
             onChange={(e) => setText(e.target.value)}
           />
           {text && (
-            <button type="button" className="search-clear" aria-label="Clear search" onClick={() => setText('')}>
+            <button
+              type="button"
+              className="search-clear"
+              aria-label="Clear search"
+              onClick={() => setText('')}
+            >
               ×
             </button>
           )}
@@ -203,7 +215,9 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
               <select
                 aria-label="Year from"
                 value={filters.yearFrom ?? ''}
-                onChange={(e) => updateFilters({ yearFrom: e.target.value ? Number(e.target.value) : null })}
+                onChange={(e) =>
+                  updateFilters({ yearFrom: e.target.value ? Number(e.target.value) : null })
+                }
               >
                 <option value="">Any</option>
                 {years.map((y) => (
@@ -218,7 +232,9 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
               <select
                 aria-label="Year to"
                 value={filters.yearTo ?? ''}
-                onChange={(e) => updateFilters({ yearTo: e.target.value ? Number(e.target.value) : null })}
+                onChange={(e) =>
+                  updateFilters({ yearTo: e.target.value ? Number(e.target.value) : null })
+                }
               >
                 <option value="">Any</option>
                 {years.map((y) => (
@@ -229,7 +245,11 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
               </select>
             </label>
             {active && (
-              <button type="button" className="chip chip-reset" onClick={() => updateFilters(EMPTY_FILTERS)}>
+              <button
+                type="button"
+                className="chip chip-reset"
+                onClick={() => updateFilters(EMPTY_FILTERS)}
+              >
                 Clear filters
               </button>
             )}
@@ -282,7 +302,9 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
               </div>
             ))}
             {initialLoading &&
-              Array.from({ length: 12 }, (_, i) => <Skeleton key={`sk-${i}`} variant="card" className="search-skeleton" />)}
+              Array.from({ length: 12 }, (_, i) => (
+                <Skeleton key={`sk-${i}`} variant="card" className="search-skeleton" />
+              ))}
           </div>
         )}
 
@@ -311,7 +333,6 @@ export default function SearchPage({ svc = defaultTmdb }: Props) {
           </div>
         )}
       </section>
-
     </main>
   );
 }

@@ -35,13 +35,13 @@ describe('LegalPage', () => {
     },
   );
 
-  it('links each document to the other two', () => {
-    renderDoc('privacy');
+  it.each(legalOrder)('links /%s to the other two documents', (doc) => {
+    renderDoc(doc);
     const related = screen.getByText('Also read').parentElement!;
     const hrefs = within(related)
       .getAllByRole('link')
       .map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual(['/terms', '/security']);
+    expect(hrefs).toEqual(legalOrder.filter((s) => s !== doc).map((s) => `/${s}`));
   });
 
   it('keeps the copy on brand', () => {
@@ -78,9 +78,13 @@ describe('renderInline', () => {
 
   it('drops unsafe link schemes but keeps the label', () => {
     const { container } = render(
-      <p>{renderInline('[click](javascript:alert) and [plain](http://insecure.example)')}</p>,
+      <p>
+        {renderInline(
+          '[click](javascript:alert) and [plain](http://insecure.example) and [proto](//evil.example) and [slash](/\\evil.example) and [data](data:text/html,x)',
+        )}
+      </p>,
     );
     expect(screen.queryByRole('link')).toBeNull();
-    expect(container.textContent).toBe('click and plain');
+    expect(container.textContent).toBe('click and plain and proto and slash and data');
   });
 });

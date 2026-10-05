@@ -1,12 +1,14 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
-/** `**bold**` or `[text](href)`; everything else is plain text. */
+/** `**bold**` or `[text](href)`; everything else is plain text.
+ *  Deliberately small: no nesting, no `)` inside an href, no spanning lines. */
 const INLINE = /\*\*(.+?)\*\*|\[([^\]]+)\]\(([^)\s]+)\)/g;
 
 /** Only root-relative, https and mailto links are ever rendered. */
 function safeHref(href: string): string | null {
-  if (href.startsWith('/')) return href;
+  // Root-relative only: `//host` and `/\host` would resolve to another origin.
+  if (/^\/(?![/\\])/.test(href)) return href;
   if (/^(https:|mailto:)/i.test(href)) return href;
   return null;
 }

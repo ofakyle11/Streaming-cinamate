@@ -53,7 +53,9 @@ describe('Home resilience', () => {
         <Home svc={svc} />
       </MemoryRouter>,
     );
-    expect(await screen.findByRole('heading', { name: /couldn’t load the catalogue/ }, T)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /couldn’t load the catalogue/ }, T),
+    ).toBeInTheDocument();
     fail = false;
     fireEvent.click(screen.getByRole('button', { name: /Try again/ }));
     expect(await screen.findByRole('heading', { level: 1 }, T)).toBeInTheDocument();
@@ -79,7 +81,10 @@ describe('Hero guards', () => {
   it('does not auto-advance under prefers-reduced-motion', () => {
     vi.useFakeTimers();
     const original = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...original(q), matches: q.includes('reduce') })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({
+      ...original(q),
+      matches: q.includes('reduce'),
+    })) as typeof window.matchMedia;
     const spy = vi.spyOn(globalThis, 'setInterval');
     render(<Hero featured={[movie(1, 'A'), movie(2, 'B')]} onMore={() => {}} />);
     expect(spy).not.toHaveBeenCalled();

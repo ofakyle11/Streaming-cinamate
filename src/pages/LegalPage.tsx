@@ -1,5 +1,5 @@
-import { Fragment } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useMeta } from '../hooks/useMeta';
 import {
   EFFECTIVE_DATE,
@@ -32,6 +32,21 @@ interface LegalPageProps {
 export default function LegalPage({ doc }: LegalPageProps) {
   const d = legalDocuments[doc];
   useMeta({ title: d.title, description: d.description, type: 'article' });
+  const { hash } = useLocation();
+
+  // The three routes share this component, so React keeps the instance across
+  // /privacy -> /terms. Start each document at the top, or at the heading a
+  // hash names (the lazy chunk arrives after the browser's own fragment scroll).
+  useEffect(() => {
+    const id = hash.startsWith('#') ? decodeURIComponent(hash.slice(1)) : '';
+    const target = id ? document.getElementById(id) : null;
+    if (target) {
+      target.scrollIntoView?.({ block: 'start' });
+      target.focus?.({ preventScroll: true });
+    } else {
+      window.scrollTo?.({ top: 0 });
+    }
+  }, [doc, hash]);
   const others = legalOrder.filter((slug) => slug !== doc).map((slug) => legalDocuments[slug]);
 
   return (
@@ -52,14 +67,12 @@ export default function LegalPage({ doc }: LegalPageProps) {
         </header>
 
         {d.sections.map((s) => (
-          <section key={s.id} className="legal-section" aria-labelledby={`${s.id}-heading`}>
+          <section key={s.id} className="legal-section">
             <h2 id={s.id} tabIndex={-1}>
-              <span id={`${s.id}-heading`}>{s.heading}</span>
+              {s.heading}
             </h2>
             {s.body.map((block, i) => (
-              <Fragment key={i}>
-                <Block block={block} />
-              </Fragment>
+              <Block key={i} block={block} />
             ))}
           </section>
         ))}

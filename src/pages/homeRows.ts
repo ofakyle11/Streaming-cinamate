@@ -23,13 +23,11 @@ export const HOME_ROWS: readonly HomeRowSpec[] = [
   { id: 'popular-tv', title: 'Popular TV', load: (svc) => svc.popular('tv') },
   { id: 'top-rated', title: 'Top Rated', load: (svc) => svc.topRated('movie') },
   { id: 'new-upcoming', title: 'New & Upcoming', load: (svc) => svc.nowPlaying() },
-  ...HOME_GENRES.map(
-    ({ genreId, title }): HomeRowSpec => ({
-      id: `genre-${genreId}`,
-      title,
-      load: (svc) => svc.discover({ genreId }),
-    }),
-  ),
+  ...HOME_GENRES.map(({ genreId, title }): HomeRowSpec => ({
+    id: `genre-${genreId}`,
+    title,
+    load: (svc) => svc.discover({ genreId }),
+  })),
 ];
 
 /** The row whose first items feed the hero carousel. */

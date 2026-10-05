@@ -43,7 +43,11 @@ export default function GenrePage() {
       })
       .catch((e: unknown) => {
         if (!cancelled) {
-          setSettled({ key, status: 'error', message: e instanceof Error ? e.message : 'Could not load this genre.' });
+          setSettled({
+            key,
+            status: 'error',
+            message: e instanceof Error ? e.message : 'Could not load this genre.',
+          });
         }
       });
     return () => {
@@ -53,7 +57,8 @@ export default function GenrePage() {
 
   // Last loaded data for this genre, kept while a new page/sort/type loads so
   // the Movies/TV control does not flicker away.
-  const known = settled?.status === 'ready' && settled.data.genre?.id === genreId ? settled.data : null;
+  const known =
+    settled?.status === 'ready' && settled.data.genre?.id === genreId ? settled.data : null;
   const availableTypes = known?.availableTypes ?? [];
   const defaultType = known?.defaultType;
   const activeType: MediaType | undefined =
@@ -66,7 +71,14 @@ export default function GenrePage() {
   };
 
   const select = (m: Movie) => {
-    track(AnalyticsEvents.titleOpen, { id: m.id, mediaType: m.mediaType, source: 'genre', genreId, page, sortBy });
+    track(AnalyticsEvents.titleOpen, {
+      id: m.id,
+      mediaType: m.mediaType,
+      source: 'genre',
+      genreId,
+      page,
+      sortBy,
+    });
   };
 
   const data = state.status === 'ready' ? state.data : null;
@@ -74,7 +86,9 @@ export default function GenrePage() {
   const genreName = data?.genre?.name ?? known?.genre?.name;
   useMeta({
     title: notFound ? 'Genre not found' : genreName ? `${genreName}` : 'Genre',
-    description: genreName ? `Browse ${genreName} films and series on Lastframe.tv.` : 'Browse titles by genre.',
+    description: genreName
+      ? `Browse ${genreName} films and series on Lastframe.tv.`
+      : 'Browse titles by genre.',
     noindex: notFound,
   });
 
@@ -84,7 +98,9 @@ export default function GenrePage() {
         <section className="page-card glass">
           <h1>Genre not found</h1>
           <p className="muted">We couldn’t find that genre.</p>
-          <Link className="page-link" to="/">Back to Home</Link>
+          <Link className="page-link" to="/">
+            Back to Home
+          </Link>
         </section>
       </main>
     );
@@ -140,7 +156,9 @@ export default function GenrePage() {
         {state.status === 'error' ? (
           <div className="genre-empty glass" role="alert">
             <p>{state.message}</p>
-            <Button variant="glass" size="sm" onClick={() => setAttempt((n) => n + 1)}>Retry</Button>
+            <Button variant="glass" size="sm" onClick={() => setAttempt((n) => n + 1)}>
+              Retry
+            </Button>
           </div>
         ) : (
           <div className="genre-grid" aria-busy={state.status === 'loading'}>
@@ -158,13 +176,23 @@ export default function GenrePage() {
 
         {totalPages > 1 && data && (
           <nav className="genre-pager" aria-label="Pagination">
-            <Button variant="glass" size="sm" disabled={data.page <= 1} onClick={() => go(data.page - 1, sortBy)}>
+            <Button
+              variant="glass"
+              size="sm"
+              disabled={data.page <= 1}
+              onClick={() => go(data.page - 1, sortBy)}
+            >
               ‹ Prev
             </Button>
             <span className="muted" aria-current="page">
               Page {data.page} of {totalPages}
             </span>
-            <Button variant="glass" size="sm" disabled={data.page >= totalPages} onClick={() => go(data.page + 1, sortBy)}>
+            <Button
+              variant="glass"
+              size="sm"
+              disabled={data.page >= totalPages}
+              onClick={() => go(data.page + 1, sortBy)}
+            >
               Next ›
             </Button>
           </nav>
