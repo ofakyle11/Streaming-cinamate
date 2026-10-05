@@ -1,5 +1,8 @@
 import { KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useOptionalAuth } from '../../auth/context';
+import { signInHref } from '../../auth/returnTo';
+import { useOptionalToast } from '../../components/ui/Toast';
 import { useActiveProfile, useProfileActions, useProfiles } from '../../hooks';
 import ProfileAvatar from './ProfileAvatar';
 import './profiles.css';
@@ -10,6 +13,9 @@ export default function ProfileMenu() {
   const active = useActiveProfile();
   const { setActiveProfile } = useProfileActions();
   const location = useLocation();
+  const auth = useOptionalAuth();
+  const { toast } = useOptionalToast();
+  const [signingOut, setSigningOut] = useState(false);
   // The menu remembers the path it was opened on, so navigating closes it.
   const [openAt, setOpenAt] = useState<string | null>(null);
   const open = openAt === location.pathname;
@@ -45,6 +51,20 @@ export default function ProfileMenu() {
   const close = (restoreFocus = true) => {
     setOpen(false);
     if (restoreFocus) triggerRef.current?.focus();
+  };
+
+  const signOut = async () => {
+    if (!auth || signingOut) return;
+    setSigningOut(true);
+    try {
+      await auth.signOut();
+      close();
+      toast('You are signed out. Guest mode is on.', { kind: 'info' });
+    } catch (err) {
+      toast(err instanceof Error && err.message ? err.message : 'Sign-out failed.', { kind: 'error' });
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   const onMenuKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -125,9 +145,52 @@ export default function ProfileMenu() {
             </button>
           ))}
           <div className="profile-dropdown-sep" role="separator" />
-          <Link to="/profiles" role="menuitem" tabIndex={-1} className="profile-dropdown-item manage">
+          <Link
+            to="/profiles"
+            role="menuitem"
+            tabIndex={-1}
+            className="profile-dropdown-item manage"
+            onClick={() => close(false)}
+          >
             Manage profiles
           </Link>
+          {auth && auth.status !== 'loading' && (
+            <>
+              <div className="profile-dropdown-sep" role="separator" />
+              <Link
+                to="/account"
+                role="menuitem"
+                tabIndex={-1}
+                className="profile-dropdown-item manage"
+                onClick={() => close(false)}
+              >
+                Account
+              </Link>
+              {auth.status === 'authenticated' ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  tabIndex={-1}
+                  className="profile-dropdown-item manage"
+                  aria-busy={signingOut || undefined}
+                  disabled={signingOut}
+                  onClick={() => void signOut()}
+                >
+                  Sign out
+                </button>
+              ) : (
+                <Link
+                  to={signInHref(location.pathname + location.search)}
+                  role="menuitem"
+                  tabIndex={-1}
+                  className="profile-dropdown-item manage"
+                  onClick={() => close(false)}
+                >
+                  Sign in
+                </Link>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

@@ -1,0 +1,11 @@
+Sign in to Lastframe.tv
+
+Here is your one-time sign-in link. Open it on the device you are signing in on:
+
+{{ .ConfirmationURL }}
+
+The link works once and expires in 15 minutes.
+
+You received this because someone entered {{ .Email }} on Lastframe.tv. If that was not you, ignore this email; nothing happens without the link.
+
+{{ .SiteURL }}

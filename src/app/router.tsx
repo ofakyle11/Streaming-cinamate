@@ -14,6 +14,9 @@ const GenrePage = lazy(() => import('../pages/GenrePage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 const NewPopularPage = lazy(() => import('../pages/NewPopularPage'));
 const BrandPage = lazy(() => import('../pages/BrandPage'));
+const SignInPage = lazy(() => import('../pages/SignInPage'));
+const SignInSentPage = lazy(() => import('../pages/SignInSentPage'));
+const AuthCallbackPage = lazy(() => import('../pages/AuthCallbackPage'));
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +34,9 @@ export const router = createBrowserRouter([
       { path: 'genre/:id', element: <GenrePage /> },
       { path: 'new', element: <NewPopularPage /> },
       { path: 'brand', element: <BrandPage /> },
+      { path: 'sign-in', element: <SignInPage /> },
+      { path: 'sign-in/sent', element: <SignInSentPage /> },
+      { path: 'auth/callback', element: <AuthCallbackPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

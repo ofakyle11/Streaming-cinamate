@@ -1,10 +1,11 @@
-import { FormEvent, useId, useState } from 'react';
+import { useId, useState } from 'react';
+import { Link } from 'react-router-dom';
 import ViewingHistoryPanel from '../components/account/ViewingHistoryPanel';
 import Page from './Page';
 import { Button, Skeleton } from '../components/ui';
 import InstallAppCard from '../components/InstallAppCard';
 import { useAuth } from '../auth';
-import { isValidEmail, normalizeEmail } from '../services/auth/validate';
+import { signInHref } from '../auth/returnTo';
 import type { User } from '../services/types';
 import '../styles/account.css';
 import { useMeta } from '../hooks/useMeta';
@@ -29,12 +30,11 @@ function memberSince(iso: string): string | null {
 
 export default function AccountPage() {
   useMeta({ title: 'Account', description: 'Manage your Lastframe.tv account settings.' });
-  const { status, user, mode, signInWithMagicLink, signInWithOAuth, signOut, deleteData } = useAuth();
-  const [email, setEmail] = useState('');
-  const [busy, setBusy] = useState<null | 'magic' | 'google' | 'signout' | 'delete'>(null);
+  const { status, user, signOut, deleteData } = useAuth();
+  const [busy, setBusy] = useState<null | 'signout' | 'delete'>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const emailId = useId();
+  const headingId = useId();
   const noticeId = useId();
 
   const run = async (kind: NonNullable<typeof busy>, action: () => Promise<void>, success?: string) => {
@@ -48,20 +48,6 @@ export default function AccountPage() {
     } finally {
       setBusy(null);
     }
-  };
-
-  const onMagicLink = (e: FormEvent) => {
-    e.preventDefault();
-    if (!isValidEmail(email)) {
-      setNotice({ kind: 'error', text: 'Enter a valid email address.' });
-      return;
-    }
-    const target = normalizeEmail(email);
-    void run(
-      'magic',
-      () => signInWithMagicLink(target),
-      mode === 'live' ? `Check ${target} for your sign-in link.` : undefined,
-    );
   };
 
   const onDelete = () =>
@@ -115,60 +101,18 @@ export default function AccountPage() {
         )}
 
         {status === 'guest' && (
-          <section className="account-section" aria-labelledby={`${emailId}-heading`}>
+          <section className="account-section" aria-labelledby={`${headingId}-heading`}>
             <p className="account-pill">Guest mode</p>
-            <h2 id={`${emailId}-heading`} className="account-heading">
+            <h2 id={`${headingId}-heading`} className="account-heading">
               Sign in to sync across devices
             </h2>
             <p className="muted">
-              You can keep browsing as a guest. Your list, history and ratings stay on this device until you sign in.
+              You can keep browsing as a guest. Your list, history and ratings stay on this device until you sign
+              in, then they come with you.
             </p>
-
-            <form className="account-form" onSubmit={onMagicLink} noValidate>
-              <label htmlFor={emailId} className="account-label">
-                Email
-              </label>
-              <div className="account-row">
-                <input
-                  id={emailId}
-                  className="account-input glass"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  aria-describedby={notice ? noticeId : undefined}
-                  aria-invalid={notice?.kind === 'error' || undefined}
-                  disabled={busy !== null}
-                  required
-                />
-                <Button type="submit" variant="primary" loading={busy === 'magic'} disabled={busy !== null}>
-                  Email me a magic link
-                </Button>
-              </div>
-            </form>
-
-            <div className="account-divider" role="separator" aria-label="or">
-              <span>or</span>
-            </div>
-
-            <Button
-              className="account-google"
-              variant="glass"
-              loading={busy === 'google'}
-              disabled={busy !== null}
-              onClick={() => void run('google', () => signInWithOAuth('google'))}
-            >
-              <span className="account-google-mark" aria-hidden>
-                G
-              </span>
-              Continue with Google
-            </Button>
-
-            {mode === 'mock' && (
-              <p className="account-demo">Demo mode: no emails are sent and sign-in completes instantly.</p>
-            )}
+            <Link to={signInHref('/account')} className="btn accent account-signin">
+              Sign in with an email link
+            </Link>
           </section>
         )}
 
@@ -183,8 +127,8 @@ export default function AccountPage() {
         )}
 
         {status !== 'loading' && (
-          <section className="account-section account-danger" aria-labelledby={`${emailId}-danger`}>
-            <h2 id={`${emailId}-danger`} className="account-heading">
+          <section className="account-section account-danger" aria-labelledby={`${headingId}-danger`}>
+            <h2 id={`${headingId}-danger`} className="account-heading">
               Delete my data
             </h2>
             <p className="muted">

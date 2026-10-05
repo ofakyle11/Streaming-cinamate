@@ -96,3 +96,25 @@ test('plans page shows mock checkout', async ({ page }) => {
   await page.getByRole('button', { name: /^Start / }).click();
   await expect(page.getByText(/You're on /).first()).toBeVisible();
 });
+
+test('sign-in flow (mock mode): returns to the page you came from', async ({ page }) => {
+  await page.goto('/my-list');
+  await page.getByRole('button', { name: /switch profile/i }).click();
+  await page.getByRole('menuitem', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fmy-list/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in to Lastframe.tv' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /google/i })).toHaveCount(0);
+  await page.getByLabel('Email').fill('ada@example.com');
+  await page.getByRole('button', { name: 'Email me a sign-in link' }).click();
+  await expect(page).toHaveURL(/\/my-list$/);
+  await page.getByRole('button', { name: /switch profile/i }).click();
+  await page.getByRole('menuitem', { name: 'Sign out' }).click();
+  await expect(page.getByText(/signed out/i)).toBeVisible();
+});
+
+test('an expired link explains itself on /sign-in', async ({ page }) => {
+  await page.goto('/auth/callback#error=access_denied&error_code=otp_expired');
+  await expect(page).toHaveURL(/\/sign-in\?error=expired$/);
+  await expect(page.locator('.auth-error')).toContainText('That link has expired');
+  await expect(page.getByRole('button', { name: 'Send a new link' })).toBeVisible();
+});
