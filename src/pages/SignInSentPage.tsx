@@ -6,6 +6,8 @@ import { useAuth } from '../auth';
 import { peekReturnTo, rememberReturnTo, resolveReturnTo, signInHref } from '../auth/returnTo';
 import { isValidEmail } from '../services/auth/validate';
 import { useMeta } from '../hooks/useMeta';
+import Turnstile from '../components/auth/Turnstile';
+import { useCaptcha } from '../auth/useCaptcha';
 import { SENT_EMAIL_KEY } from './SignInPage';
 
 /** Seconds before "Resend link" is available (the mockup counts down from 0:45). */
@@ -54,6 +56,7 @@ export default function SignInSentPage({
 }: SignInSentPageProps) {
   const location = useLocation();
   const { status, signInWithMagicLink } = useAuth();
+  const captcha = useCaptcha();
   const state = (location.state ?? null) as SentState | null;
   const [email] = useState(() => readSentEmail(state));
   // After a reload the router state is gone; the remembered path still knows where to go.
@@ -80,12 +83,13 @@ export default function SignInSentPage({
     setNotice(null);
     try {
       rememberReturnTo(returnTo); // refresh the TTL for the new link
-      await signInWithMagicLink(email);
+      await signInWithMagicLink(email, captcha.options());
       setNotice({ kind: 'success', text: 'A new link is on its way.' });
       setLeft(cooldownSeconds);
     } catch (err) {
       setNotice({ kind: 'error', text: errorText(err) });
     } finally {
+      captcha.spend();
       setBusy(false);
     }
   };
@@ -118,10 +122,11 @@ export default function SignInSentPage({
         <li>The link works once and expires in 15 minutes.</li>
         <li>Nothing arrived? Check spam, then resend.</li>
       </ul>
+      {captcha.required && <Turnstile {...captcha.widget} />}
       <Button
         variant="glass"
         loading={busy}
-        disabled={busy || left > 0}
+        disabled={busy || left > 0 || !captcha.ready}
         onClick={() => void resend()}
       >
         {left > 0 ? (

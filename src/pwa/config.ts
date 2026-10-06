@@ -45,7 +45,7 @@ interface ImageMatchContext {
  * Matches image requests the service worker may cache: anything the browser
  * fetches as an image (<img>, CSS backgrounds) plus explicit fetches of image
  * files, limited to origins allowed by the Content-Security-Policy connect-src
- * in netlify.toml ('self' and https://image.tmdb.org).
+ * in scripts/security-headers.mjs ('self' and https://image.tmdb.org).
  *
  * Inside a service worker the fetch() Workbox makes is checked against
  * connect-src, not img-src. Any other image host (mock posters/avatars on
@@ -73,8 +73,9 @@ export const pwaWorkbox: WorkboxOptions = {
   clientsClaim: true,
   skipWaiting: true,
   navigateFallback: '/index.html',
-  // Serverless functions and API proxies must always hit the network.
-  navigateFallbackDenylist: [/^\/\.netlify\//, /^\/api\//],
+  // Serverless functions and API proxies must always hit the network, and
+  // /.well-known/* (security.txt) is a static file, not an app route.
+  navigateFallbackDenylist: [/^\/\.netlify\//, /^\/api\//, /^\/\.well-known\//],
   runtimeCaching: [
     {
       urlPattern: isImageRequest,

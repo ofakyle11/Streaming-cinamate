@@ -93,8 +93,9 @@ fallback, the `/api/*` rewrite to functions, and security headers (CSP, HSTS and
 Serverless functions are served at `/.netlify/functions/<name>` and, through the rewrite, at
 `/api/<name>`. For example, `/api/health` returns `{"ok": true}`.
 
-If a live integration calls a new origin, add that origin to the `Content-Security-Policy`
-header in `netlify.toml` (for example, `connect-src` for an analytics or Supabase host).
+If a live integration calls a new origin, add that origin to the Content-Security-Policy in
+`scripts/security-headers.mjs` (for example, `connect-src` for an analytics or Supabase host).
+The build writes it into `dist/_headers`; see [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Project layout
 
