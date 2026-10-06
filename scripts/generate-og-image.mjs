@@ -10,7 +10,7 @@
 // Output (committed): public/og-landing.png
 import { chromium } from '@playwright/test';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, extname, join, resolve } from 'node:path';
+import { dirname, extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -108,7 +108,9 @@ try {
     const file = path.startsWith('/styles/')
       ? join(styles, path.slice('/styles/'.length))
       : join(pub, path);
-    if (!file.startsWith(pub) && !file.startsWith(styles)) return route.fulfill({ status: 403 });
+    if (!file.startsWith(pub + sep) && !file.startsWith(styles + sep)) {
+      return route.fulfill({ status: 403 });
+    }
     if (!existsSync(file)) return route.fulfill({ status: 404 });
     return route.fulfill({
       contentType: TYPES[extname(file)] ?? 'application/octet-stream',

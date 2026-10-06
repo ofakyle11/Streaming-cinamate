@@ -23,7 +23,8 @@
   gap: 40px;
   align-items: center;
   min-height: 560px;
-  padding: 64px clamp(24px, 5vw, 56px);
+  /* Copy sits on the system's shared left edge: --gutter measured from the screen's inset. */
+  padding: 64px calc(var(--gutter) - var(--hero-inset));
   border-radius: var(--hero-radius);
   background: var(--color-ink);
   color: var(--color-ink-fg);
@@ -130,7 +131,7 @@
 }
 .landing .btn.lg {
   padding: 14px 28px;
-  font-size: 1.05rem;
+  font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
 }
 .landing .btn.accent {
@@ -150,6 +151,13 @@
     background: color-mix(in srgb, var(--color-ink-fg) 16%, transparent);
   }
 }
+/* surfaces.css turns glass solid (page surface) here, so the button takes page text again. */
+@media (prefers-reduced-transparency: reduce) {
+  .land-cta .btn.glass {
+    color: var(--color-text);
+    border-color: var(--glass-border-strong);
+  }
+}
 .land-note {
   margin: 16px 0 0;
   font-size: var(--text-sm);
@@ -157,8 +165,9 @@
 }
 
 /* ---------- the poster wall ---------- */
+/* Tiles rise by row (--i 0..2) after the headline has started. */
 .land-wall {
-  --lf-delay: 200ms;
+  --lf-delay: 450ms;
   position: relative;
   z-index: 1;
   width: min(100%, 448px);
@@ -222,11 +231,16 @@
   z-index: 1;
   padding: 3px 8px;
   border-radius: var(--radius-pill);
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   color: var(--color-ink-fg);
   background: color-mix(in srgb, var(--brand-lavender) 35%, transparent);
-  backdrop-filter: var(--glass-blur-soft);
-  -webkit-backdrop-filter: var(--glass-blur-soft);
+}
+/* Blur is a desktop treatment (surfaces.css). */
+@media (min-width: 1025px) {
+  .land-poster-fit {
+    backdrop-filter: var(--glass-blur-soft);
+    -webkit-backdrop-filter: var(--glass-blur-soft);
+  }
 }
 
 /* ---------- sections ---------- */
@@ -360,7 +374,7 @@
 }
 .land-final h2 {
   margin: 0 0 10px;
-  font-size: var(--text-display);
+  font-size: var(--text-h1);
 }
 .land-final p {
   margin: 0 0 24px;
@@ -373,14 +387,14 @@
     grid-template-columns: 1fr;
     gap: 36px;
     min-height: 0;
-    padding: 48px clamp(20px, 5vw, 40px) 40px;
+    padding: 48px calc(var(--gutter) - var(--hero-inset)) 40px;
   }
   .land-wall {
     width: 100%;
-    justify-self: stretch;
+    max-width: 560px;
+    justify-self: center;
     transform: none;
     gap: 12px;
-    margin-top: 28px;
   }
   .land-poster:nth-child(3n + 2) {
     translate: 0 -14px;

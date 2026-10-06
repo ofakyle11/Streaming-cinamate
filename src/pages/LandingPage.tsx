@@ -36,7 +36,11 @@ interface Props {
 
 function Poster({ movie, index }: { movie: Movie | null; index: number }) {
   const [loaded, setLoaded] = useState(false);
-  const style = { '--pg': `var(${TINTS[index % TINTS.length]})`, '--i': index } as CSSProperties;
+  // The rise staggers by row (motion.css documents --i 0..4); columns arrive together.
+  const style = {
+    '--pg': `var(${TINTS[index % TINTS.length]})`,
+    '--i': Math.floor(index / 3),
+  } as CSSProperties;
   return (
     <figure className={`land-poster lf-rise${loaded ? ' is-loaded' : ''}`} style={style}>
       {movie ? (
@@ -45,6 +49,8 @@ function Poster({ movie, index }: { movie: Movie | null; index: number }) {
             src={imageOrPlaceholder(movie.poster)}
             alt=""
             decoding="async"
+            // Tiles 7 to 9 are hidden on phones (landing.css): lazy so they are not fetched there.
+            loading={index >= 6 ? 'lazy' : undefined}
             onLoad={() => setLoaded(true)}
           />
           <span className="land-poster-fit mono">Fit {movie.match}</span>
@@ -78,7 +84,8 @@ export default function LandingPage({ svc = tmdb }: Props) {
   const browseAsGuest = useCallback(() => {
     track(AnalyticsEvents.browseAsGuest, { source: 'landing' });
     rememberGuest();
-    navigate('/', { viewTransition: true });
+    // Replace, not push: `/` is already the current entry, so Back still leaves the site.
+    navigate('/', { replace: true, viewTransition: true });
   }, [navigate]);
 
   const tiles = Array.from({ length: WALL_COUNT }, (_, i) => wall.items[i] ?? null);
@@ -118,7 +125,8 @@ export default function LandingPage({ svc = tmdb }: Props) {
             data-testid="landing-wall"
           >
             {tiles.map((m, i) => (
-              <Poster key={m ? `${m.mediaType}:${m.id}` : `tile-${i}`} movie={m} index={i} />
+              // Keyed by slot so a tile never remounts (and re-runs its entrance) when its title arrives.
+              <Poster key={`tile-${i}`} movie={m} index={i} />
             ))}
           </div>
         </div>

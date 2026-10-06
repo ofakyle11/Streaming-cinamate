@@ -263,13 +263,13 @@ landing flash for members); `authenticated` users and remembered guests get `Hom
 gets `pages/LandingPage.tsx` (`styles/landing.css`). "Browse as a guest" calls `rememberGuest()`
 (`lib/guest.ts`, localStorage `lf.guest`, guarded like `lf.theme`) and FrontDoor re-renders through
 `useSyncExternalStore` on the `lf:guest-change` event (and `storage` for other tabs). `clearLocalData`
-already wipes every `lf.*` key, so deleting device data also brings the landing page back. The hero's
+wipes every `lf.*` key and calls `forgetGuest()`, so deleting device data also brings the landing page back. The hero's
 poster wall comes from `hooks/useLandingWall.ts` (`trending` this week through the active catalogue
 adapter, so live TMDB fills it once configured); tiles are tinted with the `--avatar-*` gradients until
 their poster loads and stay tinted if it never does. Playwright projects start with `lf.guest=1` in
 `storageState` (playwright.config.ts) so every app spec still lands on Home; the landing test in
 `smoke.spec.ts` opens a fresh context. The signed-out navbar (Sign in / Get started) ships with the
-sign-in flow thread, which owns `Navbar.tsx`.
+sign-in flow thread, which owns `Navbar.tsx`; the footer's Privacy, Terms and Security links ship with the legal pages.
 
 ## Accessibility hooks
 

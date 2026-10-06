@@ -43,10 +43,8 @@ export default function AppLayout() {
       <OfflineBanner />
       <RouteAnnouncer />
       <footer className="footer">
+        {/* The legal-pages thread adds Privacy, Terms and Security here with their routes. */}
         <span>Lastframe.tv</span>
-        <Link to="/privacy">Privacy</Link>
-        <Link to="/terms">Terms</Link>
-        <Link to="/security">Security</Link>
         <Link to="/brand">Brand kit</Link>
       </footer>
     </>

@@ -2,8 +2,9 @@ import { lazy } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import AppLayout from './AppLayout';
 import RouteError from '../components/errors/RouteError';
+// Eager: a few hundred bytes that decide between the (lazy) Home and LandingPage chunks.
+import FrontDoor from '../pages/FrontDoor';
 
-const FrontDoor = lazy(() => import('../pages/FrontDoor'));
 const TitlePage = lazy(() => import('../pages/TitlePage'));
 const SearchPage = lazy(() => import('../pages/SearchPage'));
 const MyListPage = lazy(() => import('../pages/MyListPage'));

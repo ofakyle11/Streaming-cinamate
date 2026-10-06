@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Suspense } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthContext, type AuthContextValue, type AuthStatus } from '../auth/context';
-import { GUEST_KEY, rememberGuest } from '../lib/guest';
+import { GUEST_CHANGE_EVENT, GUEST_KEY, rememberGuest } from '../lib/guest';
 import FrontDoor from './FrontDoor';
 
 vi.mock('./Home', () => ({ default: () => <p>home app</p> }));
@@ -62,7 +62,33 @@ describe('FrontDoor', () => {
   it('switches to the app in place when the guest choice is made', async () => {
     renderDoor('guest');
     expect(await screen.findByText('landing page')).toBeInTheDocument();
-    rememberGuest();
+    act(() => rememberGuest());
     expect(await screen.findByText('home app')).toBeInTheDocument();
+  });
+
+  it('follows the choice made in another tab, including a cleared storage', async () => {
+    renderDoor('guest');
+    expect(await screen.findByText('landing page')).toBeInTheDocument();
+    window.localStorage.setItem(GUEST_KEY, '1');
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: GUEST_KEY, newValue: '1' }));
+    });
+    expect(await screen.findByText('home app')).toBeInTheDocument();
+    window.localStorage.clear();
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: null }));
+    });
+    expect(await screen.findByText('landing page')).toBeInTheDocument();
+  });
+
+  it('removes its listeners on unmount', async () => {
+    const remove = vi.spyOn(window, 'removeEventListener');
+    const { unmount } = renderDoor('guest');
+    await screen.findByText('landing page');
+    unmount();
+    const removed = remove.mock.calls.map((c) => c[0]);
+    expect(removed).toContain('storage');
+    expect(removed).toContain(GUEST_CHANGE_EVENT);
+    remove.mockRestore();
   });
 });

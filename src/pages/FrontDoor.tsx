@@ -2,7 +2,10 @@ import { lazy, useSyncExternalStore } from 'react';
 import { useAuth } from '../auth';
 import { GUEST_CHANGE_EVENT, GUEST_KEY, hasChosenGuest } from '../lib/guest';
 
-const Home = lazy(() => import('./Home'));
+// A remembered guest is going to Home: start that chunk at module load instead of
+// after auth resolves, so the route does not wait on a serial chunk waterfall.
+const homeImport = hasChosenGuest() ? import('./Home') : null;
+const Home = lazy(() => homeImport ?? import('./Home'));
 const LandingPage = lazy(() => import('./LandingPage'));
 
 /** Re-renders when the guest choice changes (same tab via the custom event, other tabs via `storage`). */

@@ -39,7 +39,7 @@ export function rememberGuest(store: Storage | null = storage()): void {
   notify();
 }
 
-/** Forgets the guest choice (used when an account deletes its device data). */
+/** Forgets the guest choice (clearLocalData calls it when device data is deleted). */
 export function forgetGuest(store: Storage | null = storage()): void {
   try {
     store?.removeItem(GUEST_KEY);
