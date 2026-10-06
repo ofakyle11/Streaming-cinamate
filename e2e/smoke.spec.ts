@@ -20,7 +20,8 @@ test('the landing page is the front door until you browse as a guest', async ({ 
   await expect(
     page.getByRole('heading', { level: 1, name: /Know where it streams/ }),
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: /Get started/ })).toHaveAttribute(
+  // The navbar carries a "Get started" too (signed-out bar); this is the hero's.
+  await expect(page.locator('main').getByRole('link', { name: /Get started/ })).toHaveAttribute(
     'href',
     '/sign-in?new=1',
   );
