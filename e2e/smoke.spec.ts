@@ -20,7 +20,8 @@ test('the landing page is the front door until you browse as a guest', async ({ 
   await expect(
     page.getByRole('heading', { level: 1, name: /Know where it streams/ }),
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: /Get started/ })).toHaveAttribute(
+  // The navbar carries a "Get started" too (signed-out bar); this is the hero's.
+  await expect(page.locator('main').getByRole('link', { name: /Get started/ })).toHaveAttribute(
     'href',
     '/sign-in?new=1',
   );
@@ -108,10 +109,11 @@ test('switching profile changes My List', async ({ page }) => {
   await page.getByRole('button', { name: 'Add profile' }).click();
   await page.getByLabel('Name').fill('Guest');
   await page.getByRole('dialog').getByRole('button', { name: 'Add profile' }).click();
-  await page.goto('/');
-  await page.getByRole('button', { name: /Switch profile/ }).click();
-  await page.getByRole('menuitemradio', { name: /Guest/ }).click();
-  await expect(page.getByRole('button', { name: /Profile: Guest/ })).toBeVisible();
+  // Signed-out visitors have no profile menu in the bar; switch from the profiles page.
+  await page.getByRole('button', { name: /^Watch as Guest/ }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto('/profiles');
+  await expect(page.getByRole('button', { name: /^Watch as Guest.*current profile/ })).toBeVisible();
 
   await page.goto('/my-list');
   await expect(page.locator('main').getByRole('link', { name: new RegExp(TITLE) })).toHaveCount(0);
@@ -123,4 +125,29 @@ test('plans page shows mock checkout', async ({ page }) => {
   await expect(page.getByRole('note')).toContainText('Demo mode');
   await page.getByRole('button', { name: /^Start / }).click();
   await expect(page.getByText(/You're on /).first()).toBeVisible();
+});
+
+test('sign-in flow (mock mode): returns to the page you came from', async ({ page }) => {
+  await page.goto('/my-list');
+  await expect(page.getByRole('button', { name: /switch profile/i })).toHaveCount(0);
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fmy-list/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in to Lastframe.tv' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /google/i })).toHaveCount(0);
+  await page.getByLabel('Email').fill('ada@example.com');
+  await page.getByRole('button', { name: 'Email me a sign-in link' }).click();
+  await expect(page).toHaveURL(/\/my-list$/);
+  await page.getByRole('button', { name: /switch profile/i }).click();
+  await page.getByRole('menuitem', { name: 'Sign out' }).click();
+  await expect(page.getByText(/signed out/i)).toBeVisible();
+  await expect(
+    page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Get started' }),
+  ).toBeVisible();
+});
+
+test('an expired link explains itself on /sign-in', async ({ page }) => {
+  await page.goto('/auth/callback#error=access_denied&error_code=otp_expired');
+  await expect(page).toHaveURL(/\/sign-in\?error=expired$/);
+  await expect(page.locator('.auth-error')).toContainText('That link has expired');
+  await expect(page.getByRole('button', { name: 'Send a new link' })).toBeVisible();
 });

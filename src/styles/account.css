@@ -132,23 +132,14 @@
   height: 1px;
   background: var(--glass-border);
 }
-.account-google {
+.account-signin {
   align-self: flex-start;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
 }
-.account-google-mark {
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--color-text);
-  color: var(--color-on-light);
-  font-weight: 900;
-  font-size: 0.8rem;
-}
-.account-demo {
-  font-size: 0.8rem;
-  color: var(--color-muted);
+a.account-signin:hover {
+  text-decoration: none;
+  box-shadow: var(--glow-accent);
 }
 
 /* ---------- notices ---------- */
@@ -195,7 +186,7 @@
     width: 100%;
   }
   .account-row > .btn,
-  .account-google,
+  .account-signin,
   .account-danger > .btn {
     width: 100%;
     align-self: stretch;

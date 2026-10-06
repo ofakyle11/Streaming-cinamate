@@ -1,5 +1,7 @@
 import { KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useOptionalAuth } from '../../auth/context';
+import { useOptionalToast } from '../../components/ui/Toast';
 import { useActiveProfile, useProfileActions, useProfiles } from '../../hooks';
 import ProfileAvatar from './ProfileAvatar';
 import './profiles.css';
@@ -10,6 +12,9 @@ export default function ProfileMenu() {
   const active = useActiveProfile();
   const { setActiveProfile } = useProfileActions();
   const location = useLocation();
+  const auth = useOptionalAuth();
+  const { toast } = useOptionalToast();
+  const [signingOut, setSigningOut] = useState(false);
   // The menu remembers the path it was opened on, so navigating closes it.
   const [openAt, setOpenAt] = useState<string | null>(null);
   const open = openAt === location.pathname;
@@ -47,8 +52,26 @@ export default function ProfileMenu() {
     if (restoreFocus) triggerRef.current?.focus();
   };
 
+  const signOut = async () => {
+    if (!auth || signingOut) return;
+    setSigningOut(true);
+    try {
+      await auth.signOut();
+      close();
+      toast('You are signed out. Guest mode is on.', { kind: 'info' });
+    } catch (err) {
+      toast(err instanceof Error && err.message ? err.message : 'Sign-out failed.', {
+        kind: 'error',
+      });
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   const onMenuKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    const items = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? []);
+    const items = Array.from(
+      menuRef.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [],
+    );
     const idx = items.indexOf(document.activeElement as HTMLElement);
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -125,9 +148,41 @@ export default function ProfileMenu() {
             </button>
           ))}
           <div className="profile-dropdown-sep" role="separator" />
-          <Link to="/profiles" role="menuitem" tabIndex={-1} className="profile-dropdown-item manage">
+          <Link
+            to="/profiles"
+            role="menuitem"
+            tabIndex={-1}
+            className="profile-dropdown-item manage"
+            onClick={() => close(false)}
+          >
             Manage profiles
           </Link>
+          {/* Signed-out visitors get Sign in / Get started in the bar instead of this menu. */}
+          {auth?.status === 'authenticated' && (
+            <>
+              <div className="profile-dropdown-sep" role="separator" />
+              <Link
+                to="/account"
+                role="menuitem"
+                tabIndex={-1}
+                className="profile-dropdown-item manage"
+                onClick={() => close(false)}
+              >
+                Account
+              </Link>
+              <button
+                type="button"
+                role="menuitem"
+                tabIndex={-1}
+                className="profile-dropdown-item manage"
+                aria-busy={signingOut || undefined}
+                disabled={signingOut}
+                onClick={() => void signOut()}
+              >
+                Sign out
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

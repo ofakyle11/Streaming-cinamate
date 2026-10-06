@@ -21,6 +21,7 @@ a `VITE_` prefix, and never read a server-only variable from `src/`.
 | `TMDB_API_KEY`           | Server-only | Netlify TMDB proxy function              | Proxy calls to TMDB           |
 | `VITE_SUPABASE_URL`      | Client      | `src/services/index.ts` → `auth`, `db`   | Live Supabase auth + database |
 | `VITE_SUPABASE_ANON_KEY` | Client      | `src/services/index.ts` → `auth`, `db`   | (paired with the URL)         |
+| `VITE_AUTH_GOOGLE`       | Client      | `src/auth/flags.ts` → `/sign-in`         | Shows the Google button       |
 | `VITE_PLAUSIBLE_DOMAIN`  | Client      | Analytics adapter (Plausible)            | Privacy-friendly page views   |
 | `VITE_PLAUSIBLE_API_HOST` | Client      | Analytics adapter (Plausible)            | Optional custom/proxied Plausible host |
 
@@ -65,6 +66,23 @@ Build-time and script-only variables that do not configure the app are listed at
   and db methods without backing tables still reject with `NotConfiguredError`.
 - **CSP**: when going live, add `https://<ref>.supabase.co` (and `wss://<ref>.supabase.co` for
   realtime) to `connect-src` in `netlify.toml`.
+- **Redirect URLs**: in **Authentication → URL Configuration** set the Site URL to the
+  production origin and add `<origin>/auth/callback` for every origin that signs users in
+  (production, deploy previews, `http://localhost:5173`). The sign-in link lands on
+  `/auth/callback`, which then returns the user to the page they came from.
+- **Email template**: paste `supabase/templates/magic-link.html` (and the `.txt` plain-text
+  version) into **Authentication → Email Templates → Magic Link**; see
+  `supabase/templates/README.md`.
+
+### `VITE_AUTH_GOOGLE` (client)
+
+- **What**: `1` (or `true` / `on`) renders the "Continue with Google" button on `/sign-in`.
+  Anything else, or unset, hides it. Not a secret.
+- **Why a flag**: email link is the only sign-in method at launch. The Google code path stays
+  in the app so it can be switched on per deploy once a Google OAuth client is configured in
+  Supabase (**Authentication → Providers → Google**) and the privacy and terms pages exist.
+- **Effect**: UI only; the live adapter's `signInWithOAuth` works regardless, and the mock
+  adapter signs a demo user in.
 
 ### `VITE_PLAUSIBLE_DOMAIN` (client)
 

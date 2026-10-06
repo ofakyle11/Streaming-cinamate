@@ -12,7 +12,7 @@ describe('auth validation', () => {
   });
 
   it('builds the redirect URL from the current origin', () => {
-    expect(authRedirectUrl()).toBe(`${window.location.origin}/account`);
+    expect(authRedirectUrl()).toBe(`${window.location.origin}/auth/callback`);
     expect(authRedirectUrl('/')).toBe(`${window.location.origin}/`);
   });
 });

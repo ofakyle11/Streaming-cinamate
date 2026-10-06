@@ -22,8 +22,14 @@ export function requirePassword(password: string): void {
   if (password.length < 6) throw new Error('Password must be at least 6 characters.');
 }
 
-/** Where auth providers send the browser back to after a magic link / OAuth. */
-export function authRedirectUrl(path = '/account'): string | undefined {
+/** The route that finishes a magic-link / OAuth sign-in (see pages/AuthCallbackPage). */
+export const AUTH_CALLBACK_PATH = '/auth/callback';
+
+/**
+ * Where auth providers send the browser back to after a magic link / OAuth.
+ * Add `<origin>/auth/callback` to the Supabase project's redirect allow-list.
+ */
+export function authRedirectUrl(path = AUTH_CALLBACK_PATH): string | undefined {
   if (typeof window === 'undefined' || !window.location?.origin) return undefined;
   return `${window.location.origin}${path}`;
 }

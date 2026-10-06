@@ -94,8 +94,9 @@ data (profiles, lists, history, ratings) to a fresh guest, since the cloud holds
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VITE_TMDB_PROXY`                                              | Live TMDB through our proxy                                                                                                                    |
 | `TMDB_API_KEY` (server-only)                                   | Used by the Netlify TMDB proxy function, never the client                                                                                      |
-| `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`                 | Live auth + db (both required; Supabase SDK is lazy-loaded). Auth: magic link + Google OAuth; add `<origin>/account` to Supabase redirect URLs |
+| `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`                 | Live auth + db (both required; Supabase SDK is lazy-loaded). Auth: email link (Google OAuth behind `VITE_AUTH_GOOGLE`); add `<origin>/auth/callback` to Supabase redirect URLs |
 | `VITE_PLAUSIBLE_DOMAIN` (+ optional `VITE_PLAUSIBLE_API_HOST`) | Plausible analytics (`services/analytics/plausible.ts`); else console mock                                                                     |
+| `VITE_AUTH_GOOGLE`                                             | `1` renders "Continue with Google" on `/sign-in` (needs a Google OAuth client in Supabase). Off by default                                   |
 
 See `docs/KEYS.md` for the full list, including tooling-only variables.
 

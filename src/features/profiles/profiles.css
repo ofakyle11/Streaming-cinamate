@@ -476,6 +476,9 @@
 
 /* ---------- small screens (375px+) ---------- */
 @media (max-width: 480px) {
+  .profile-dropdown-item {
+    min-height: var(--tap);
+  }
   .profile-trigger-name,
   .profile-trigger .kids-pill {
     display: none;
