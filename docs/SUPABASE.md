@@ -89,22 +89,19 @@ of the `*.supabase.co` wildcard. Nothing else changes.
 
 ### Deploying so the variables are inlined
 
-lastframe.tv is deployed from the Netlify CLI, not from a git build, and a plain
-`npm run build` on a laptop or in a cloud session does not see the Netlify UI variables. The
-deploy recipe therefore runs the build through the CLI, which injects the site's **Production**
-environment:
+Netlify builds production from git (branch `claude/modest-johnson-ugzfhg`, `npm run build`),
+and every git build runs with the site's **Production** variables. So after adding the two
+variables, either trigger a build (**Deploys → Trigger deploy → Deploy site**) or merge the
+next PR; nothing else is needed. The deploy log prints
+`security-headers: ... supabase https://<ref>.supabase.co` when the pin took; `supabase off`
+means the variables did not reach the build (wrong scope or context) and that deploy still
+serves guest mode.
 
-```bash
-npm ci
-npx netlify link --id bd791a0a-dcc5-46d3-8e59-8b91a115d929   # once per checkout
-npx netlify env:list --context production                      # VITE_SUPABASE_URL and the anon key must appear
-npx netlify build --context production                         # runs `npm run build` with those variables
-npx netlify deploy --prod --site bd791a0a-dcc5-46d3-8e59-8b91a115d929
-```
-
-The build log prints `security-headers: ... supabase https://<ref>.supabase.co` when the pin
-took; `supabase off` means the variables did not reach the build and the deploy would ship
-guest mode. (`npx netlify build` without a linked site: add `--site <id>`.)
+A build made elsewhere (a laptop, a cloud session) does not see the Netlify variables. If the
+CLI is ever used for a production deploy again, build through it so they are injected:
+`npx netlify build --context production --site bd791a0a-dcc5-46d3-8e59-8b91a115d929` and then
+`npx netlify deploy --prod --site bd791a0a-dcc5-46d3-8e59-8b91a115d929`. A plain
+`npm run build` followed by `netlify deploy` would ship guest mode.
 
 ## 4. Email sender: Resend (hands)
 
