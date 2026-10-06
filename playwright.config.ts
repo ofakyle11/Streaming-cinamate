@@ -135,6 +135,15 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
     serviceWorkers: 'block',
+    // `/` is the landing page for a first-time visitor; every spec that expects
+    // the app at `/` starts as a remembered guest (src/lib/guest.ts). The landing
+    // page's own test clears the key.
+    storageState: {
+      cookies: [],
+      origins: [
+        { origin: `http://localhost:${PORT}`, localStorage: [{ name: 'lf.guest', value: '1' }] },
+      ],
+    },
   },
   projects: [
     {

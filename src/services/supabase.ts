@@ -13,7 +13,9 @@ export function createSupabaseLoader(supabaseUrl: string, anonKey: string): () =
       clientPromise = import('@supabase/supabase-js')
         .then(({ createClient }) =>
           createClient(supabaseUrl, anonKey, {
-            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+            // Tokens are taken from /auth/callback by src/auth/callbackBoot.ts and
+            // exchanged through completeSignIn(), never read from the URL by the SDK.
+            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
           }),
         )
         .catch((err: unknown) => {

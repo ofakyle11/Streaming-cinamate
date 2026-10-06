@@ -5,6 +5,7 @@ import { createMockAuth } from '../services/auth/mock';
 import type { AuthService } from '../services/types';
 import { useLastFrameStore } from '../state/store';
 import { ToastProvider } from '../components/ui';
+import { MemoryRouter } from 'react-router-dom';
 import AccountPage from './AccountPage';
 
 import { findLive, getLive, queryLive } from '../test/liveRegions';
@@ -14,7 +15,9 @@ function renderPage(service: AuthService = createMockAuth(), clearLocal = vi.fn(
   render(
     <ToastProvider>
       <AuthProvider service={service} mode="mock" clearLocal={clearLocal}>
-        <AccountPage />
+        <MemoryRouter initialEntries={['/account']}>
+          <AccountPage />
+        </MemoryRouter>
       </AuthProvider>
     </ToastProvider>,
   );
@@ -24,35 +27,23 @@ function renderPage(service: AuthService = createMockAuth(), clearLocal = vi.fn(
 describe('AccountPage + AuthProvider', () => {
   beforeEach(() => localStorage.clear());
 
-  it('defaults to guest mode', async () => {
+  it('defaults to guest mode and points at the sign-in page', async () => {
     renderPage();
     expect(await screen.findByText('Guest mode')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /magic link/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/sign-in?returnTo=%2Faccount');
+    expect(screen.queryByLabelText('Email')).toBeNull();
+    expect(screen.queryByRole('button', { name: /google/i })).toBeNull();
   });
 
-  it('signs in with a magic link, shows the email, then signs out', async () => {
-    renderPage();
-    fireEvent.change(await screen.findByLabelText('Email'), { target: { value: 'ada@example.com' } });
-    fireEvent.click(screen.getByRole('button', { name: /magic link/i }));
+  it('shows the signed-in account and signs out', async () => {
+    const service = createMockAuth();
+    await service.signInWithMagicLink('ada@example.com');
+    renderPage(service);
     expect(await screen.findByText('ada@example.com')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /sign out/i }));
     expect(await screen.findByText('Guest mode')).toBeInTheDocument();
     expect(getLive('status')).toHaveTextContent(/signed out/i);
-  });
-
-  it('shows a validation error for a bad email', async () => {
-    renderPage();
-    fireEvent.change(await screen.findByLabelText('Email'), { target: { value: 'nope' } });
-    fireEvent.click(screen.getByRole('button', { name: /magic link/i }));
-    expect(getLive('alert')).toHaveTextContent(/valid email/i);
-  });
-
-  it('signs in with Google', async () => {
-    renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: /continue with google/i }));
-    expect(await screen.findByText('Demo Viewer')).toBeInTheDocument();
   });
 
   it('deletes data after confirmation', async () => {

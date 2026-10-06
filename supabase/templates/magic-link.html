@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <title>Your Lastframe.tv sign-in link</title>
+    <!--
+      Lastframe.tv magic-link email (Supabase "Magic Link" template).
+      Email clients ignore CSS custom properties, so the Lumen tokens are
+      inlined here as literal values: Cloud #f6f5ff, Ink #141126, Violet
+      #5b47e0, Lavender #9b8cff, Sky #5ccbff (see src/styles/tokens.css).
+      Keep this file and magic-link.txt in step.
+    -->
+    <style>
+      @media (prefers-color-scheme: dark) {
+        .lf-body { background-color: #141126 !important; }
+        .lf-card { background-color: #1c1833 !important; border-color: #2a2546 !important; }
+        .lf-text { color: #f6f5ff !important; }
+        .lf-soft { color: #bdb9d8 !important; }
+        .lf-muted { color: #948fb3 !important; }
+        .lf-link { color: #b8adff !important; }
+      }
+    </style>
+  </head>
+  <body class="lf-body" style="margin:0;padding:0;background-color:#f6f5ff;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+      Your one-time link to sign in to Lastframe.tv. It works once and expires in 15 minutes.
+    </div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f6f5ff;">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:480px;">
+            <tr>
+              <td align="center" style="padding:0 0 22px;">
+                <!-- Lumen mark: rounded tile with the lens cut from the top-right corner. -->
+                <img
+                  src="{{ .SiteURL }}/apple-touch-icon.png"
+                  width="56"
+                  height="56"
+                  alt="Lastframe.tv"
+                  style="display:block;width:56px;height:56px;border:0;border-radius:18px;"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="lf-card"
+                style="background-color:#ffffff;border:1px solid #e2dff7;border-radius:24px;padding:36px 32px;font-family:Figtree,'Segoe UI',Helvetica,Arial,sans-serif;"
+              >
+                <h1
+                  class="lf-text"
+                  style="margin:0 0 10px;font-family:Gabarito,Figtree,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.2;color:#141126;text-align:center;"
+                >
+                  Sign in to Lastframe.tv
+                </h1>
+                <p class="lf-soft" style="margin:0 0 28px;font-size:16px;line-height:1.55;color:#4a4766;text-align:center;">
+                  Here is your one-time link. Open it on the device you are signing in on.
+                </p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="center">
+                      <!--[if mso]>
+                      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{ .ConfirmationURL }}" style="height:48px;v-text-anchor:middle;width:280px;" arcsize="25%" fillcolor="#5b47e0" stroke="f">
+                        <center style="color:#ffffff;font-family:Helvetica,Arial,sans-serif;font-size:16px;font-weight:bold;">Sign in to Lastframe.tv</center>
+                      </v:roundrect>
+                      <![endif]-->
+                      <!--[if !mso]><!-->
+                      <a
+                        href="{{ .ConfirmationURL }}"
+                        style="display:inline-block;background-color:#5b47e0;color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;line-height:48px;padding:0 32px;border-radius:12px;"
+                      >
+                        Sign in to Lastframe.tv
+                      </a>
+                      <!--<![endif]-->
+                    </td>
+                  </tr>
+                </table>
+                <p class="lf-muted" style="margin:26px 0 0;font-size:13px;line-height:1.6;color:#666384;text-align:center;">
+                  The link works once and expires in 15 minutes. If the button does not open, paste this address into your browser:
+                </p>
+                <p class="lf-link" style="margin:8px 0 0;font-size:12px;line-height:1.5;color:#4030b8;text-align:center;word-break:break-all;">
+                  <a href="{{ .ConfirmationURL }}" class="lf-link" style="color:#4030b8;">{{ .ConfirmationURL }}</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td class="lf-muted" style="padding:22px 12px 0;font-family:Figtree,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#666384;text-align:center;">
+                You received this because someone entered {{ .Email }} on Lastframe.tv. If that was not you, ignore this email; nothing happens without the link.
+                <br />
+                <a href="{{ .SiteURL }}" class="lf-link" style="color:#4030b8;text-decoration:none;">lastframe.tv</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

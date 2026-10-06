@@ -1,3 +1,326 @@
+/* Sign-in flow: /sign-in, /sign-in/sent, /auth/callback. Built on tokens.css. */
+
+.auth-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--nav-top) + var(--nav-h) + 24px) var(--gutter, 24px) 40px;
+}
+
+/* Two soft brand glows behind the card; decoration only, never text. */
+.auth-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      50% 40% at 70% 0%,
+      color-mix(in srgb, var(--brand-lavender) 22%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      40% 40% at 10% 100%,
+      color-mix(in srgb, var(--color-sky) 16%, transparent),
+      transparent 70%
+    );
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  margin: 0;
+  padding: 36px;
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-2);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  animation: auth-rise var(--dur-page) var(--ease-enter) both;
+}
+.auth-mark {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.auth-title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  text-align: center;
+  text-wrap: balance;
+}
+.auth-lead {
+  text-align: center;
+  color: var(--color-text-soft);
+  margin: 0 0 26px;
+  line-height: 1.5;
+}
+
+/* ---------- form ---------- */
+.auth-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-soft);
+  margin: 0 0 6px;
+}
+.auth-card .auth-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 16px;
+  margin: 0 0 12px;
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-base) var(--ease);
+}
+.auth-input::placeholder {
+  color: var(--color-muted);
+}
+.auth-input:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0 0 var(--focus-ring-width) var(--focus-ring-color),
+    0 0 18px var(--focus-ring-glow);
+}
+.auth-input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+.auth-card .btn {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 20px;
+  border-radius: var(--radius-md);
+}
+.auth-card .btn.accent {
+  box-shadow: var(--glow-accent);
+}
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+.auth-or::before,
+.auth-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--glass-border);
+}
+.auth-google-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-text);
+  color: var(--color-on-text);
+  font-weight: 900;
+  font-size: 0.8rem;
+}
+.auth-fine {
+  margin: 20px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--color-muted);
+}
+.auth-fine a {
+  color: inherit;
+}
+.auth-help {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 22px;
+  font-size: 0.9rem;
+  color: var(--color-text-soft);
+}
+.auth-help a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 8px;
+  margin: 0 -8px;
+  color: var(--color-accent-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.auth-help a:hover,
+.auth-help a:focus-visible {
+  text-decoration: underline;
+}
+.auth-demo {
+  margin: 14px 0 0;
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--color-muted);
+}
+
+/* ---------- notices ---------- */
+.auth-error,
+.auth-status {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--color-text);
+  animation: auth-rise var(--dur-base) var(--ease) both;
+}
+.auth-error {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+}
+.auth-error b {
+  color: var(--color-danger);
+}
+.auth-status {
+  margin: 14px 0 0;
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+/* ---------- "check your email" ---------- */
+.auth-sent-icon {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+.auth-sent-icon::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 28px;
+  border: 2px solid var(--color-accent);
+  opacity: 0.35;
+  animation: auth-breathe 2.4s ease-in-out infinite;
+}
+.auth-sent-email {
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.auth-sent-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-soft);
+  font-size: 0.92rem;
+}
+.auth-sent-list li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.auth-sent-list li::before {
+  content: '';
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--color-success);
+  mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="black" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>')
+    center / contain no-repeat;
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="black" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>')
+    center / contain no-repeat;
+}
+.auth-countdown {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- callback ---------- */
+.auth-spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--glass-border-strong);
+  border-top-color: var(--color-accent);
+  animation: auth-spin 0.9s linear infinite;
+}
+
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes auth-breathe {
+  50% {
+    opacity: 0.08;
+    transform: scale(1.06);
+  }
+}
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .auth-page {
+    padding: calc(var(--nav-top) + var(--nav-h) + 16px) 16px 32px;
+  }
+  .auth-card {
+    padding: 28px 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-card,
+  .auth-error,
+  .auth-status {
+    animation: none;
+  }
+  .auth-sent-icon::after,
+  .auth-spinner {
+    animation: none;
+  }
+  .auth-spinner {
+    border-top-color: var(--glass-border-strong);
+    border-left-color: var(--color-accent);
+  }
+  .auth-input {
+    transition: none;
+  }
+}
+
 /* Sign-in helpers: Cloudflare Turnstile bot check (src/components/auth/Turnstile.tsx). */
 .turnstile-error {
   margin: 6px 0 0;

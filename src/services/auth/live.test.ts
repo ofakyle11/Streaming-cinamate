@@ -80,7 +80,7 @@ describe('live auth adapter (Supabase)', () => {
     await make(fake).signInWithMagicLink(' Ada@Example.com ');
     expect(fake.auth.signInWithOtp).toHaveBeenCalledWith({
       email: 'ada@example.com',
-      options: { emailRedirectTo: `${window.location.origin}/account`, shouldCreateUser: true },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback`, shouldCreateUser: true },
     });
   });
 
@@ -95,7 +95,7 @@ describe('live auth adapter (Supabase)', () => {
     await make(fake).signInWithOAuth('google');
     expect(fake.auth.signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/account` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   });
 

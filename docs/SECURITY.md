@@ -5,17 +5,17 @@ Every control here works in mock mode with no environment variables.
 
 ## Summary
 
-| Control                                                              | Where                                                          | On by default                                                       |
-| -------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Content-Security-Policy                                              | `scripts/security-headers.mjs` (Vite plugin) → `dist/_headers` | Yes                                                                 |
-| Static security headers (HSTS, frame, referrer, permissions)         | `netlify.toml`                                                 | Yes                                                                 |
-| Rate limit on `/api/*` (60 a minute per IP, then 429)                | `netlify.toml`                                                 | Yes                                                                 |
-| Bot check on sign-in (Cloudflare Turnstile)                          | `src/components/auth/Turnstile.tsx`                            | Ready, mounted by the sign-in page; needs `VITE_TURNSTILE_SITE_KEY` |
-| Callback hardening (tokens out of the URL, same-origin return paths) | `src/auth/callback.ts`, `src/auth/callbackBoot.ts`             | Ready, active once links point at `/auth/callback`                  |
-| Client may only read `VITE_*` variables                              | `src/test/envNames.test.ts`                                    | Yes (test)                                                          |
-| Dependency audit (production deps, high and above fail)              | `.github/workflows/ci.yml` job `audit`                         | Yes                                                                 |
-| Secret scan of history and tree (gitleaks)                           | `.github/workflows/ci.yml` job `secrets`                       | Yes                                                                 |
-| Disclosure contact                                                   | `public/.well-known/security.txt`                              | Yes                                                                 |
+| Control                                                              | Where                                                          | On by default                                                  |
+| -------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
+| Content-Security-Policy                                              | `scripts/security-headers.mjs` (Vite plugin) → `dist/_headers` | Yes                                                            |
+| Static security headers (HSTS, frame, referrer, permissions)         | `netlify.toml`                                                 | Yes                                                            |
+| Rate limit on `/api/*` (60 a minute per IP, then 429)                | `netlify.toml`                                                 | Yes                                                            |
+| Bot check on sign-in (Cloudflare Turnstile)                          | `src/components/auth/Turnstile.tsx`                            | On `/sign-in` and resend when `VITE_TURNSTILE_SITE_KEY` is set |
+| Callback hardening (tokens out of the URL, same-origin return paths) | `src/auth/callback.ts`, `src/auth/callbackBoot.ts`             | Yes                                                            |
+| Client may only read `VITE_*` variables                              | `src/test/envNames.test.ts`                                    | Yes (test)                                                     |
+| Dependency audit (production deps, high and above fail)              | `.github/workflows/ci.yml` job `audit`                         | Yes                                                            |
+| Secret scan of history and tree (gitleaks)                           | `.github/workflows/ci.yml` job `secrets`                       | Yes                                                            |
+| Disclosure contact                                                   | `public/.well-known/security.txt`                              | Yes                                                            |
 
 ## Content-Security-Policy
 
@@ -38,48 +38,34 @@ from being used as a free API key. Netlify allows a few code-based rules per sit
 
 ## Turnstile
 
-`<Turnstile onToken={...} />` renders nothing when no site key is configured. With a key it
-loads `https://challenges.cloudflare.com/turnstile/v0/api.js` once, renders an
-interaction-only widget (invisible for most people) and reports the token, or `null` on
-expiry or error. Pass the token with the request:
+`<Turnstile />` renders nothing when no site key is configured. With a key it loads
+`https://challenges.cloudflare.com/turnstile/v0/api.js` once, renders an interaction-only
+widget (invisible for most people) and reports the token, or `null` on expiry, error or
+reset. `/sign-in` and the resend button on `/sign-in/sent` use it through
+`src/auth/useCaptcha.ts`: the send button waits for a token, the token goes out as
+`signInWithMagicLink(email, { captchaToken })`, and every attempt spends it and asks for a
+fresh one (tokens are single use).
 
-```ts
-await signInWithMagicLink(email, { captchaToken: token ?? undefined });
-```
-
-Supabase verifies the token with the Turnstile secret key. Until the sign-in page mounts the
-component and passes the token, do not turn on CAPTCHA in Supabase or set the site key. Setup is in
+Supabase verifies the token with the Turnstile secret key. Turn CAPTCHA on in Supabase and
+set the site key in the same release, never one without the other. Setup is in
 [KEYS.md](KEYS.md#vite_turnstile_site_key-client-optional).
 
 ## Auth callback
 
-**Status:** ready, not yet wired. Magic links still return to `/account` (`authRedirectUrl()`
-in `src/services/auth/validate.ts`) and Supabase reads the tokens itself
-(`detectSessionInUrl`). Switch the redirect to `/auth/callback` only in the same change that
-adds the callback page below; the boot step strips tokens on that path, so without the page
-sign-in would fail.
+Magic links and OAuth return to `/auth/callback` (`authRedirectUrl()` in
+`src/services/auth/validate.ts`). `src/auth/callbackBoot.ts` is the first import in
+`src/main.tsx`. On that path it copies the auth parameters (`code`, `access_token`,
+`refresh_token`, `token_hash`, `type`, `error*`) out of the query and fragment into memory and
+replaces the URL in history, before analytics, the service worker or the Supabase client load.
+The Supabase client runs with `detectSessionInUrl: false`, so it never reads the URL itself.
+`AuthCallbackPage` then reads the captured values once (`readAuthCallback()`), passes them to
+`completeSignIn()` from `useAuth()` (which marks the user signed in), sends a rejected or
+errored link back to `/sign-in`, and clears them from memory (`clearAuthCallback()`).
 
-`src/auth/callbackBoot.ts` is the first import in `src/main.tsx`. On `/auth/callback` it
-copies the auth parameters (`code`, `access_token`, `refresh_token`, `token_hash`, `type`,
-`error*`) out of the query and fragment into memory and replaces the URL in history, before
-analytics, the service worker or the Supabase client load. The callback page then calls:
-
-```ts
-const { completeSignIn } = useAuth();
-const cb = readAuthCallback();
-try {
-  await completeSignIn(cb?.params ?? {}); // marks the user signed in
-  navigate(cb?.returnTo ?? '/', { replace: true });
-} catch (err) {
-  setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
-} finally {
-  clearAuthCallback();
-}
-```
-
-`returnTo` comes from `returnTo`, `redirect`, `next` or `from` in the query and is passed
-through `safeReturnPath()`: only a same-origin absolute path is kept (no `//host`, no scheme,
-no backslashes or control characters, never `/auth/callback` itself), otherwise `/`.
+Where to go next is the path `/sign-in` remembered (`src/auth/returnTo.ts`), validated as a
+same-origin absolute path. `safeReturnPath()` applies the same rule to any `returnTo`,
+`redirect`, `next` or `from` on the callback URL itself, which is stripped along with the
+tokens.
 `completeSignIn()` maps provider errors to fixed copy and never echoes the provider's text.
 
 ## Dependency audit

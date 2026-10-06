@@ -62,7 +62,10 @@ export function createLiveAuth(supabaseUrl: string, anonKey: string, opts: LiveA
     (async () => {
       const { createClient } = await import('@supabase/supabase-js');
       return createClient(supabaseUrl, anonKey, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        // detectSessionInUrl is off: src/auth/callbackBoot.ts strips the tokens from
+        // /auth/callback before the SDK loads, and AuthCallbackPage passes them to
+        // completeSignIn() instead.
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
       });
     });
 

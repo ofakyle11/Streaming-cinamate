@@ -1,0 +1,437 @@
+/* Landing page (the front door for signed-out first-time visitors).
+   Built on tokens.css, surfaces.css and motion.css: an Ink screen set into the
+   room like the Home hero, then glass value cards, three steps and a closing
+   call to action. Tokens only, no literal colours. Breakpoints are the app's
+   two: 480 (phone) and 1024 (tablet). Motion is enter-only: the lf-rise stagger
+   on load and one light sweep across the screen; nothing loops. */
+
+.landing {
+  padding-bottom: 24px;
+}
+
+/* ---------- hero: the Ink screen ---------- */
+.land-hero {
+  padding: calc(var(--nav-top) + var(--nav-h) + var(--safe-top) + var(--hero-inset))
+    var(--hero-inset) 0;
+}
+.land-screen {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 40px;
+  align-items: center;
+  min-height: 560px;
+  /* Copy sits on the system's shared left edge: --gutter measured from the screen's inset. */
+  padding: 64px calc(var(--gutter) - var(--hero-inset));
+  border-radius: var(--hero-radius);
+  background: var(--color-ink);
+  color: var(--color-ink-fg);
+  box-shadow:
+    var(--shadow-2),
+    0 30px 80px -20px color-mix(in srgb, var(--brand-grad-a) 45%, transparent);
+  animation: lf-screen var(--dur-hero) var(--ease-enter) both;
+  animation-delay: 100ms;
+}
+/* The screen's own light: lavender top right, sky bottom left. */
+.land-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      60% 70% at 85% 10%,
+      color-mix(in srgb, var(--brand-lavender) 28%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      40% 50% at 10% 100%,
+      color-mix(in srgb, var(--color-sky) 18%, transparent),
+      transparent 60%
+    );
+}
+/* Lights down: a rim light instead of a cast shadow. Written twice, exactly like themes.css. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .land-screen {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--brand-lavender) 22%, transparent),
+      0 24px 80px color-mix(in srgb, var(--brand-lavender) 14%, transparent);
+  }
+}
+:root[data-theme='dark'] .land-screen {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-lavender) 22%, transparent),
+    0 24px 80px color-mix(in srgb, var(--brand-lavender) 14%, transparent);
+}
+/* One light sweep across the screen on load (the hero's move), then still. */
+.land-sweep {
+  position: absolute;
+  inset: 0;
+  width: 25%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-ink-fg) 12%, transparent),
+    transparent
+  );
+  transform: translateX(-30%);
+  animation: lf-sweep var(--dur-sweep) var(--ease-exit) 1 both;
+  animation-delay: 400ms;
+}
+
+/* ---------- copy ---------- */
+.land-copy {
+  --lf-delay: 300ms;
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+}
+.land-eyebrow {
+  margin: 0;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+}
+.land-copy .land-eyebrow {
+  color: var(--color-ink-accent);
+}
+.land-copy h1 {
+  margin: 18px 0;
+  font-size: var(--text-hero);
+  line-height: 1.02;
+  color: var(--color-ink-fg);
+}
+.land-copy h1 em {
+  font-style: normal;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.land-lead {
+  margin: 0 0 28px;
+  max-width: 48ch;
+  font-size: var(--text-lg);
+  line-height: var(--leading-body);
+  color: var(--color-ink-fg-soft);
+}
+.land-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.landing a.btn,
+.landing a.btn:hover {
+  text-decoration: none;
+}
+.landing .btn.lg {
+  padding: 14px 28px;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+.landing .btn.accent {
+  box-shadow: var(--glow-accent);
+}
+.landing .btn.accent:hover {
+  background: var(--color-accent-hover);
+}
+/* The glass button on Ink: light glass whatever the theme. */
+.land-cta .btn.glass {
+  color: var(--color-ink-fg);
+  background: color-mix(in srgb, var(--color-ink-fg) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-ink-fg) 35%, transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .land-cta .btn.glass:hover {
+    background: color-mix(in srgb, var(--color-ink-fg) 16%, transparent);
+  }
+}
+/* surfaces.css turns glass solid (page surface) here, so the button takes page text again. */
+@media (prefers-reduced-transparency: reduce) {
+  .land-cta .btn.glass {
+    color: var(--color-text);
+    border-color: var(--glass-border-strong);
+  }
+}
+.land-note {
+  margin: 16px 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-fg-muted);
+}
+
+/* ---------- the poster wall ---------- */
+/* Tiles rise by row (--i 0..2) after the headline has started. */
+.land-wall {
+  --lf-delay: 450ms;
+  position: relative;
+  z-index: 1;
+  width: min(100%, 448px);
+  justify-self: end;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  transform: rotate(-6deg) translateY(10px);
+}
+.land-poster {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-lg);
+  background: var(--pg, var(--brand-gradient));
+  box-shadow: 0 20px 50px color-mix(in srgb, var(--color-ink) 45%, transparent);
+}
+.land-poster:nth-child(3n + 2) {
+  translate: 0 -28px;
+}
+.land-poster img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--dur-page) var(--ease-enter);
+}
+.land-poster.is-loaded img {
+  opacity: 1;
+}
+/* Ink scrim so the caption reads on any artwork. */
+.land-poster::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 45%, var(--color-ink-scrim));
+}
+.land-poster-title {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-display);
+  line-height: 1.15;
+  color: var(--color-ink-fg);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.land-poster-fit {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 1;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  color: var(--color-ink-fg);
+  background: color-mix(in srgb, var(--brand-lavender) 35%, transparent);
+}
+/* Blur is a desktop treatment (surfaces.css). */
+@media (min-width: 1025px) {
+  .land-poster-fit {
+    backdrop-filter: var(--glass-blur-soft);
+    -webkit-backdrop-filter: var(--glass-blur-soft);
+  }
+}
+
+/* ---------- sections ---------- */
+.land-section {
+  padding-block: 64px 8px;
+}
+.land-section h2 {
+  margin: 8px 0 10px;
+  font-size: var(--text-h1);
+}
+.land-section-lead {
+  margin: 0 0 28px;
+  max-width: 60ch;
+  font-size: var(--text-body);
+  color: var(--color-text-soft);
+}
+.land-values,
+.land-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.land-steps {
+  margin-top: 24px;
+}
+.land-value {
+  box-sizing: border-box;
+  padding: 26px;
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+.land-value-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+.land-value h3,
+.land-step h3 {
+  margin: 0 0 8px;
+}
+.land-value p,
+.land-step p {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--color-text-soft);
+}
+.land-demo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+.land-chips {
+  display: inline-flex;
+  gap: 6px;
+}
+.land-chip {
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  border: 1px solid var(--glass-border);
+}
+.land-chip.is-on {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+.land-fitbar {
+  flex: 1;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-3);
+  overflow: hidden;
+}
+.land-fitbar i {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--brand-gradient);
+}
+.land-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 20%, transparent);
+}
+.land-step {
+  box-sizing: border-box;
+  padding: 22px 24px;
+  border-left: 2px solid var(--color-accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--color-surface);
+}
+.land-step-n {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-accent-text);
+}
+
+/* ---------- closing call to action ---------- */
+.land-final {
+  padding-top: 64px;
+}
+.land-final-card {
+  padding: 56px clamp(22px, 5vw, 56px);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-2);
+  text-align: center;
+}
+.land-final h2 {
+  margin: 0 0 10px;
+  font-size: var(--text-h1);
+}
+.land-final p {
+  margin: 0 0 24px;
+  color: var(--color-text-soft);
+}
+
+/* ---------- tablet and phone ---------- */
+@media (max-width: 1024px) {
+  .land-screen {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    min-height: 0;
+    padding: 48px calc(var(--gutter) - var(--hero-inset)) 40px;
+  }
+  .land-wall {
+    width: 100%;
+    max-width: 560px;
+    justify-self: center;
+    transform: none;
+    gap: 12px;
+  }
+  .land-poster:nth-child(3n + 2) {
+    translate: 0 -14px;
+  }
+  .land-poster:nth-child(n + 7) {
+    display: none;
+  }
+  .land-values,
+  .land-steps {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .land-screen {
+    padding: 40px var(--gutter) 32px;
+  }
+  .land-section {
+    padding-top: 48px;
+  }
+  .land-final-card {
+    padding: 36px 22px;
+  }
+}
+
+/* ---------- reduced motion: the designed still ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .land-sweep {
+    display: none;
+  }
+  .land-screen,
+  .land-copy > *,
+  .land-poster {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .land-poster img {
+    transition: none;
+  }
+}

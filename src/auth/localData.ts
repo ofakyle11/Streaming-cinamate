@@ -1,6 +1,7 @@
 import { STORAGE_KEY, useLastFrameStore } from '../state/store';
 import { freshGuestState } from '../services/db/sync';
 import { clearSyncOwner } from '../services/db/syncEngine';
+import { forgetGuest } from '../lib/guest';
 
 /** localStorage keys owned by Lastframe.tv: the zustand store and every `lf.*` key. */
 export function isLastFrameKey(key: string): boolean {
@@ -26,8 +27,22 @@ export function clearLocalData(): number {
   } catch {
     /* storage unavailable: only the in-memory reset below applies */
   }
+  // Tab-scoped leftovers of the sign-in flow (the address a link was sent to).
+  try {
+    const ss = window.sessionStorage;
+    const keys: string[] = [];
+    for (let i = 0; i < ss.length; i += 1) {
+      const k = ss.key(i);
+      if (k && isLastFrameKey(k)) keys.push(k);
+    }
+    keys.forEach((k) => ss.removeItem(k));
+  } catch {
+    /* sessionStorage unavailable */
+  }
 
   useLastFrameStore.setState(freshGuestState());
+  // The `lf.guest` key went with the rest; notify FrontDoor so the landing page returns.
+  forgetGuest();
   return removed;
 }
 

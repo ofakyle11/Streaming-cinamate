@@ -21,6 +21,7 @@ a `VITE_` prefix, and never read a server-only variable from `src/`.
 | `TMDB_API_KEY`           | Server-only | Netlify TMDB proxy function              | Proxy calls to TMDB           |
 | `VITE_SUPABASE_URL`      | Client      | `src/services/index.ts` → `auth`, `db`   | Live Supabase auth + database |
 | `VITE_SUPABASE_ANON_KEY` | Client      | `src/services/index.ts` → `auth`, `db`   | (paired with the URL)         |
+| `VITE_AUTH_GOOGLE`       | Client      | `src/auth/flags.ts` → `/sign-in`         | Shows the Google button       |
 | `VITE_PLAUSIBLE_DOMAIN`  | Client      | Analytics adapter (Plausible)            | Privacy-friendly page views   |
 | `VITE_PLAUSIBLE_API_HOST` | Client      | Analytics adapter (Plausible)            | Optional custom/proxied Plausible host |
 | `VITE_TURNSTILE_SITE_KEY` | Client      | `services/auth/turnstile.ts`, `components/auth/Turnstile.tsx`, `scripts/security-headers.mjs` | Cloudflare Turnstile bot check on sign-in |
@@ -67,6 +68,23 @@ Build-time and script-only variables that do not configure the app are listed at
 - **CSP**: `connect-src` already allows `https://*.supabase.co` and `wss://*.supabase.co`
   (`scripts/security-headers.mjs`). Pin it to `https://<ref>.supabase.co` once the project
   exists; a self-hosted Supabase on another domain must be added there.
+- **Redirect URLs**: in **Authentication → URL Configuration** set the Site URL to the
+  production origin and add `<origin>/auth/callback` for every origin that signs users in
+  (production, deploy previews, `http://localhost:5173`). The sign-in link lands on
+  `/auth/callback`, which then returns the user to the page they came from.
+- **Email template**: paste `supabase/templates/magic-link.html` (and the `.txt` plain-text
+  version) into **Authentication → Email Templates → Magic Link**; see
+  `supabase/templates/README.md`.
+
+### `VITE_AUTH_GOOGLE` (client)
+
+- **What**: `1` (or `true` / `on`) renders the "Continue with Google" button on `/sign-in`.
+  Anything else, or unset, hides it. Not a secret.
+- **Why a flag**: email link is the only sign-in method at launch. The Google code path stays
+  in the app so it can be switched on per deploy once a Google OAuth client is configured in
+  Supabase (**Authentication → Providers → Google**) and the privacy and terms pages exist.
+- **Effect**: UI only; the live adapter's `signInWithOAuth` works regardless, and the mock
+  adapter signs a demo user in.
 
 ### `VITE_PLAUSIBLE_DOMAIN` (client)
 
@@ -93,13 +111,12 @@ Build-time and script-only variables that do not configure the app are listed at
   mode **Managed**. Copy the **Site Key** into Netlify; paste the **Secret Key** into
   Supabase → **Authentication** → **Attack Protection** (Bot and Abuse Protection) →
   **Enable CAPTCHA protection** → provider **Turnstile**.
-- **Effect**: when set at build time, a sign-in form that mounts `<Turnstile>` shows the
-  widget and sends its token as `captchaToken` with the magic-link request, and the build adds
+- **Effect**: when set at build time, `/sign-in` and the resend button on `/sign-in/sent`
+  show the widget and send its token as `captchaToken` with the magic-link request, and the build adds
   `https://challenges.cloudflare.com` to `script-src` and `frame-src` in the CSP. When unset
   (mock mode, previews) no widget, no script and no CSP entry. Set it only together with live
   Supabase and CAPTCHA protection enabled there; with CAPTCHA on in Supabase but no site key
-  in the build, every sign-in fails. The `/sign-in` page must mount the widget first; the
-  older form on `/account` does not send a token.
+  in the build, every sign-in fails, so change both in the same release.
 - **Scope**: **Builds**, Production context only (same as the Supabase variables).
 
 ## Billing: no keys

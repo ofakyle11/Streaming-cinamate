@@ -1,7 +1,14 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { readSyncOwner, services, startCloudSync, type CloudSync } from '../services';
 import { useLastFrameStore } from '../state/store';
-import type { AdapterMode, AuthCallbackParams, AuthService, MagicLinkOptions, OAuthProvider, User } from '../services/types';
+import type {
+  AdapterMode,
+  AuthCallbackParams,
+  AuthService,
+  MagicLinkOptions,
+  OAuthProvider,
+  User,
+} from '../services/types';
 import { AuthContext, type AuthContextValue, type AuthStatus } from './context';
 import { clearLocalData, resetSyncedData } from './localData';
 import { clearImageCache } from '../pwa/imageCache';
@@ -97,7 +104,8 @@ export default function AuthProvider({
   }, [service]);
 
   const signInWithMagicLink = useCallback(
-    (email: string, options?: MagicLinkOptions) => service.signInWithMagicLink(email, options),
+    (email: string, options?: MagicLinkOptions) =>
+      options ? service.signInWithMagicLink(email, options) : service.signInWithMagicLink(email),
     [service],
   );
   const signInWithOAuth = useCallback((p: OAuthProvider) => service.signInWithOAuth(p), [service]);

@@ -2,6 +2,9 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import Navbar from './Navbar';
+import { AuthProvider } from '../auth';
+import { createMockAuth } from '../services/auth/mock';
+import { vi } from 'vitest';
 import SearchPage from '../pages/SearchPage';
 import NewPopularPage from '../pages/NewPopularPage';
 import GenrePage from '../pages/GenrePage';
@@ -175,5 +178,47 @@ describe('Navbar mobile menu', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Series' }));
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('link', { name: 'Series' })).toHaveClass('active');
+  });
+});
+
+describe('Navbar signed-out state', () => {
+  const renderWithAuth = async (service = createMockAuth(), url = '/my-list') => {
+    render(
+      <AuthProvider service={service} mode="mock" clearLocal={vi.fn()} startSync={null}>
+        <MemoryRouter initialEntries={[url]}>
+          <Navbar />
+        </MemoryRouter>
+      </AuthProvider>,
+    );
+  };
+
+  it('offers Sign in and Get started to guests, returning to the current page', async () => {
+    await renderWithAuth();
+    const signIn = await nav().findByRole('link', { name: 'Sign in' });
+    expect(signIn).toHaveAttribute('href', '/sign-in?returnTo=%2Fmy-list');
+    expect(nav().getByRole('link', { name: 'Get started' })).toHaveAttribute(
+      'href',
+      '/sign-in?new=1&returnTo=%2Fmy-list',
+    );
+    expect(nav().queryByRole('button', { name: /switch profile/i })).toBeNull();
+  });
+
+  it('hides the buttons on the sign-in pages themselves', async () => {
+    await renderWithAuth(createMockAuth(), '/sign-in?returnTo=%2Fmy-list');
+    await waitFor(() => expect(nav().queryByRole('link', { name: 'Sign in' })).toBeNull());
+    expect(nav().queryByRole('link', { name: 'Get started' })).toBeNull();
+  });
+
+  it('shows the profile menu to members', async () => {
+    const service = createMockAuth();
+    await service.signInWithMagicLink('ada@example.com');
+    await renderWithAuth(service);
+    expect(await nav().findByRole('button', { name: /switch profile/i })).toBeInTheDocument();
+    expect(nav().queryByRole('link', { name: 'Sign in' })).toBeNull();
+  });
+
+  it('keeps the profile menu without an auth provider', () => {
+    renderAt('/');
+    expect(nav().getByRole('button', { name: /switch profile/i })).toBeInTheDocument();
   });
 });
