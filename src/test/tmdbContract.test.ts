@@ -35,7 +35,18 @@ const MOVIE_DETAILS = {
     cast: [{ id: 6384, name: 'Keanu Reeves', character: 'Neo', profile_path: '/k.jpg', order: 0 }],
     crew: [{ id: 9339, name: 'Lana Wachowski', job: 'Director', department: 'Directing' }],
   },
-  videos: { results: [{ id: 'v1', key: 'abc123', name: 'Trailer', site: 'YouTube', type: 'Trailer', official: true }] },
+  videos: {
+    results: [
+      {
+        id: 'v1',
+        key: 'abc123',
+        name: 'Trailer',
+        site: 'YouTube',
+        type: 'Trailer',
+        official: true,
+      },
+    ],
+  },
   similar: { results: [{ id: 604, title: 'The Matrix Reloaded', genre_ids: [28] }] },
   recommendations: { results: [{ id: 605, title: 'The Matrix Revolutions', genre_ids: [28] }] },
   'watch/providers': { results: { US: { link: 'https://example.test/watch' } } },
@@ -60,15 +71,34 @@ const TV_DETAILS = {
 function cannedUpstream(url: URL): unknown {
   const path = url.pathname.replace(/^\/3\//, '');
   if (/^genre\/(movie|tv)\/list$/.test(path)) {
-    return { genres: [{ id: 28, name: 'Action' }, { id: 18, name: 'Drama' }] };
+    return {
+      genres: [
+        { id: 28, name: 'Action' },
+        { id: 18, name: 'Drama' },
+      ],
+    };
   }
   if (/^movie\/\d+$/.test(path)) return MOVIE_DETAILS;
   if (/^tv\/\d+$/.test(path)) return TV_DETAILS;
   return {
     page: Number(url.searchParams.get('page') ?? 1),
     results: [
-      { id: 1, title: 'Alpha', media_type: 'movie', genre_ids: [28], vote_average: 7, release_date: '2020-01-01' },
-      { id: 2, name: 'Beta', media_type: 'tv', genre_ids: [18], vote_average: 8, first_air_date: '2020-05-01' },
+      {
+        id: 1,
+        title: 'Alpha',
+        media_type: 'movie',
+        genre_ids: [28],
+        vote_average: 7,
+        release_date: '2020-01-01',
+      },
+      {
+        id: 2,
+        name: 'Beta',
+        media_type: 'tv',
+        genre_ids: [18],
+        vote_average: 8,
+        first_air_date: '2020-05-01',
+      },
     ],
     total_pages: 3,
     total_results: 2,
@@ -89,13 +119,20 @@ async function proxyFetch(input: string): Promise<Response> {
   const res = await handleTmdbRequest({ httpMethod: 'GET', queryStringParameters: params });
   const body = res.body ?? '';
   proxyCalls.push({ url: input, params, status: res.statusCode, body });
-  return new Response(body, { status: res.statusCode, headers: { 'Content-Type': 'application/json' } });
+  return new Response(body, {
+    status: res.statusCode,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 function expectAllProxyCallsOk() {
   expect(proxyCalls.length).toBeGreaterThan(0);
   for (const call of proxyCalls) {
-    expect({ url: call.url, status: call.status, body: call.status >= 400 ? call.body : '' }).toEqual({
+    expect({
+      url: call.url,
+      status: call.status,
+      body: call.status >= 400 ? call.body : '',
+    }).toEqual({
       url: call.url,
       status: 200,
       body: '',
@@ -183,7 +220,12 @@ describe('live TMDB adapter <-> proxy contract', () => {
     expectUpstreamKeyServerSideOnly();
     const sorts = new Set(upstreamUrls.map((u) => new URL(u).searchParams.get('sort_by')));
     expect(sorts).toEqual(
-      new Set(['popularity.desc', 'vote_average.desc', 'primary_release_date.desc', 'first_air_date.desc']),
+      new Set([
+        'popularity.desc',
+        'vote_average.desc',
+        'primary_release_date.desc',
+        'first_air_date.desc',
+      ]),
     );
   });
 
@@ -256,7 +298,9 @@ describe('live TMDB adapter <-> proxy contract', () => {
   });
 
   it('a client-supplied api_key never reaches TMDB', async () => {
-    const leaky = createLiveTmdb(`${PROXY}?api_key=client-evil&API_KEY=client-evil2`, { fetch: proxyFetch });
+    const leaky = createLiveTmdb(`${PROXY}?api_key=client-evil&API_KEY=client-evil2`, {
+      fetch: proxyFetch,
+    });
     await leaky.popular('movie');
     expectAllProxyCallsOk();
     expect(proxyCalls[0].params.api_key).toBe('client-evil');

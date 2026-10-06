@@ -25,9 +25,8 @@ function LocationProbe() {
 }
 
 /**
- * Renders the page over a hand-built auth context carrying the account
- * methods the backend thread adds to useAuth() (listDevices, forgetDevice,
- * changeEmail), which the current AuthProvider does not forward yet.
+ * Renders the page over a hand-built auth context so a test can control the
+ * account methods on useAuth() (listDevices, forgetDevice, changeEmail).
  */
 function renderWithContext(
   extra: Partial<Pick<ExtendedAuth, 'listDevices' | 'forgetDevice' | 'changeEmail'>>,
@@ -45,8 +44,12 @@ function renderWithContext(
     completeSignIn: base.completeSignIn,
     signOut: vi.fn(async () => undefined),
     deleteData: vi.fn(async () => undefined),
+    // The real provider always forwards these; a test overrides the ones it exercises.
+    listDevices: async (): Promise<Device[]> => [],
+    forgetDevice: vi.fn(async () => undefined),
+    changeEmail: vi.fn(async () => undefined),
     ...extra,
-  } satisfies AuthContextValue & Partial<ExtendedAuth>;
+  } satisfies AuthContextValue;
   render(
     <ToastProvider>
       <AuthContext.Provider value={value}>
@@ -192,14 +195,16 @@ describe('AccountPage: signed in', () => {
       await screen.findByText('ada@example.com', { selector: '.acct-email' }),
     ).toBeInTheDocument();
     expect(screen.getByText('This device')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /change email/i })).toBeNull(); // not offered by this adapter
-    // Without a scoped sign-out there is one Sign out button and no "everywhere".
-    expect(screen.queryByRole('button', { name: /sign out everywhere/i })).toBeNull();
+    // The provider forwards the account methods of every adapter (mock included).
+    expect(screen.getByRole('button', { name: /change email/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign out everywhere/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    fireEvent.click(screen.getByRole('button', { name: /sign out of this device/i }));
     expect(await screen.findByText('Guest mode')).toBeInTheDocument();
     expect(spy).toHaveBeenCalledTimes(1);
-    expect(getLive('status')).toHaveTextContent(/you are signed out\. guest mode/i);
+    // No scope means this browser only (the live adapter maps it to Supabase's local scope).
+    expect(spy.mock.calls[0][0]).toBeUndefined();
+    expect(getLive('status')).toHaveTextContent(/signed out of this device\. guest mode/i);
   });
 
   it('signs out everywhere after a confirm step with the global scope', async () => {

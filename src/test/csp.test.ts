@@ -6,7 +6,9 @@ import { DEFAULT_PLAUSIBLE_HOST } from '../services/analytics/plausible';
 import { TURNSTILE_ORIGIN as CLIENT_TURNSTILE_ORIGIN } from '../services/auth/turnstile';
 import {
   buildCsp,
+  cspOptions,
   headersFile,
+  supabaseOrigins,
   TURNSTILE_ORIGIN,
   turnstileEnabled,
 } from '../../scripts/security-headers.mjs';
@@ -49,9 +51,8 @@ describe.each([false, true])('CSP (turnstile %s)', (turnstile) => {
     }
   });
 
-  it('allows Supabase REST/auth (https) and realtime (wss) in connect-src', () => {
-    expect(connectSrc).toContain('https://*.supabase.co');
-    expect(connectSrc).toContain('wss://*.supabase.co');
+  it('allows no Supabase host in a mock-mode build (no VITE_SUPABASE_URL)', () => {
+    expect(connectSrc.some((s) => s.includes('supabase'))).toBe(false);
   });
 
   it('keeps self, TMDB API and TMDB images in connect-src (PWA image caching relies on image.tmdb.org)', () => {
@@ -81,6 +82,47 @@ describe.each([false, true])('CSP (turnstile %s)', (turnstile) => {
     for (const directive of ['connect-src', 'img-src', 'default-src']) {
       expect(csp.get(directive) ?? []).not.toContain(TURNSTILE_ORIGIN);
     }
+  });
+});
+
+describe('Supabase pin', () => {
+  it('pins connect-src to the exact project host, https and wss, nothing else', () => {
+    const csp = parseCsp(buildCsp({ supabaseUrl: 'https://abcdefgh.supabase.co' }));
+    const connectSrc = csp.get('connect-src') ?? [];
+    expect(connectSrc).toContain('https://abcdefgh.supabase.co');
+    expect(connectSrc).not.toContain('https://*.supabase.co');
+    // Realtime is off ([realtime] enabled = false) and no client code opens a channel.
+    expect(connectSrc.some((s) => s.startsWith('wss:'))).toBe(false);
+    for (const directive of ['script-src', 'img-src', 'frame-src', 'default-src']) {
+      expect((csp.get(directive) ?? []).some((s) => s.includes('supabase'))).toBe(false);
+    }
+  });
+
+  it('derives the origins from the URL only when it is a clean https origin', () => {
+    expect(supabaseOrigins('https://abcdefgh.supabase.co')).toEqual([
+      'https://abcdefgh.supabase.co',
+    ]);
+    expect(supabaseOrigins(' https://abcdefgh.supabase.co/ ')).toEqual([
+      'https://abcdefgh.supabase.co',
+    ]);
+    expect(supabaseOrigins('https://db.example.com:8443/rest')).toEqual([
+      'https://db.example.com:8443',
+    ]);
+    expect(supabaseOrigins('')).toEqual([]);
+    expect(supabaseOrigins(undefined)).toEqual([]);
+    expect(supabaseOrigins('http://abcdefgh.supabase.co')).toEqual([]);
+    expect(supabaseOrigins('abcdefgh.supabase.co')).toEqual([]);
+    expect(supabaseOrigins('https://')).toEqual([]);
+  });
+
+  it('reads both switches from the same env Vite inlines', () => {
+    expect(cspOptions({})).toEqual({ turnstile: false, supabaseUrl: '' });
+    expect(
+      cspOptions({ VITE_SUPABASE_URL: 'https://x.supabase.co', VITE_TURNSTILE_SITE_KEY: 'k' }),
+    ).toEqual({
+      turnstile: true,
+      supabaseUrl: 'https://x.supabase.co',
+    });
   });
 });
 

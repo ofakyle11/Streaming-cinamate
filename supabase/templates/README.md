@@ -1,9 +1,12 @@
 # Auth email templates
 
-Branded (Lumen) templates for the Supabase Auth emails. Supabase does not read these files;
-paste them into the dashboard.
+Branded (Lumen) templates for the Supabase Auth emails.
 
-## Magic link
+The quick way: `supabase/config.toml` points `[auth.email.template.magic_link]` at
+`magic-link.html` with the subject below, so `npx supabase config push` installs it (see
+`docs/SUPABASE.md`). The dashboard steps are the fallback when the CLI is not at hand.
+
+## Magic link (by hand)
 
 1. Open **Authentication → Email Templates → Magic Link** in the Supabase dashboard.
 2. Subject: `Your Lastframe.tv sign-in link`.

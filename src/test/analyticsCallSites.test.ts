@@ -6,9 +6,21 @@ import { describe, expect, it } from 'vitest';
  * sync with `AnalyticsEvents` (Plausible goals key off them).
  */
 const sources = {
-  ...import.meta.glob('/src/pages/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }),
-  ...import.meta.glob('/src/components/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }),
-  ...import.meta.glob('/src/hooks/**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }),
+  ...import.meta.glob('/src/pages/**/*.{ts,tsx}', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }),
+  ...import.meta.glob('/src/components/**/*.{ts,tsx}', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }),
+  ...import.meta.glob('/src/hooks/**/*.{ts,tsx}', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }),
 } as Record<string, string>;
 
 const isTest = (path: string) => /\.test\.tsx?$/.test(path) || path.includes('/test/');

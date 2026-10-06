@@ -22,10 +22,8 @@ export type SignOutScope = 'local' | 'global';
 
 export interface AccountAuth {
   /**
-   * `'global'` signs out everywhere (revokes every refresh token). With no
-   * option the adapter decides: today's live adapter calls supabase-js with no
-   * scope, which it treats as global. Once the scoped adapter lands, "Sign out
-   * of this device" should pass `{ scope: 'local' }` explicitly.
+   * `'global'` signs out everywhere (revokes every refresh token and every
+   * other device row). With no option both adapters sign out this browser only.
    */
   signOut(options?: { scope?: SignOutScope }): Promise<void>;
   /** Newest-seen first. Mock returns this browser as the only device. */

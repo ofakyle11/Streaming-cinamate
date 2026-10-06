@@ -1,6 +1,11 @@
 import type { AuthService, OAuthProvider, User } from '../types';
 import { requireEmail, requirePassword } from './validate';
-import { callbackErrorMessage, LINK_INVALID_MESSAGE } from './messages';
+import { currentDeviceId, currentDeviceLabel, currentUserAgent, forgetDeviceId } from './devices';
+import {
+  callbackErrorMessage,
+  LINK_INVALID_MESSAGE,
+  SIGN_IN_TO_CHANGE_EMAIL_MESSAGE,
+} from './messages';
 
 /** localStorage key holding the fake session. */
 export const MOCK_SESSION_KEY = 'lf.mock.auth.session';
@@ -37,7 +42,9 @@ function defaultStorage(): MockAuthOptions['storage'] {
 function isUser(v: unknown): v is User {
   if (!v || typeof v !== 'object') return false;
   const u = v as Record<string, unknown>;
-  return typeof u.id === 'string' && typeof u.email === 'string' && typeof u.displayName === 'string';
+  return (
+    typeof u.id === 'string' && typeof u.email === 'string' && typeof u.displayName === 'string'
+  );
 }
 
 function isSession(v: unknown): v is MockSession {
@@ -48,7 +55,8 @@ function isSession(v: unknown): v is MockSession {
 
 function randomToken(): string {
   try {
-    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return `mock.${crypto.randomUUID()}`;
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+      return `mock.${crypto.randomUUID()}`;
   } catch {
     /* fall through */
   }
@@ -90,7 +98,11 @@ export function createMockAuth(opts: MockAuthOptions = {}): AuthService {
         storage?.removeItem(LEGACY_USER_KEY);
         const parsed: unknown = JSON.parse(legacy);
         if (isUser(parsed)) {
-          const migrated = { user: parsed, accessToken: randomToken(), expiresAt: now() + MOCK_SESSION_TTL_MS };
+          const migrated = {
+            user: parsed,
+            accessToken: randomToken(),
+            expiresAt: now() + MOCK_SESSION_TTL_MS,
+          };
           write(migrated);
           return migrated;
         }
@@ -112,6 +124,8 @@ export function createMockAuth(opts: MockAuthOptions = {}): AuthService {
 
   let session: MockSession | null = read();
   const listeners = new Set<(u: User | null) => void>();
+  // The mock has one device: this browser, "seen" when the session was created.
+  const deviceId = () => currentDeviceId(storage ?? null);
 
   const activeUser = (): User | null => {
     if (session && session.expiresAt <= now()) {
@@ -122,7 +136,9 @@ export function createMockAuth(opts: MockAuthOptions = {}): AuthService {
   };
 
   const set = (user: User | null) => {
-    session = user ? { user, accessToken: randomToken(), expiresAt: now() + MOCK_SESSION_TTL_MS } : null;
+    session = user
+      ? { user, accessToken: randomToken(), expiresAt: now() + MOCK_SESSION_TTL_MS }
+      : null;
     write(session);
     const current = activeUser();
     listeners.forEach((cb) => cb(current));
@@ -162,7 +178,8 @@ export function createMockAuth(opts: MockAuthOptions = {}): AuthService {
     },
     async completeSignIn(params) {
       // Mock sign-in completes immediately, so a callback only confirms it.
-      if (params.error || params.error_code) throw new Error(callbackErrorMessage(params.error_code ?? params.error));
+      if (params.error || params.error_code)
+        throw new Error(callbackErrorMessage(params.error_code ?? params.error));
       const user = activeUser();
       if (!user) throw new Error(LINK_INVALID_MESSAGE);
       return user;
@@ -173,7 +190,38 @@ export function createMockAuth(opts: MockAuthOptions = {}): AuthService {
       set(makeMockUser(demo.email, demo.name, now()));
     },
     async signOut() {
+      // local and global are the same thing with a single fake device.
       set(null);
+      forgetDeviceId(storage ?? null);
+    },
+    async listDevices() {
+      const user = activeUser();
+      if (!user) return [];
+      const seen = new Date(now()).toISOString();
+      return [
+        {
+          id: deviceId(),
+          label: currentDeviceLabel(),
+          userAgent: currentUserAgent(),
+          createdAt: user.createdAt,
+          lastSeenAt: seen,
+          revokedAt: null,
+          current: true,
+        },
+      ];
+    },
+    async forgetDevice(id) {
+      if (id === deviceId()) {
+        set(null);
+        forgetDeviceId(storage ?? null);
+      }
+      // Any other id belongs to no device in the mock: nothing to forget.
+    },
+    async changeEmail(newEmail) {
+      const normalized = requireEmail(newEmail);
+      const user = activeUser();
+      if (!user) throw new Error(SIGN_IN_TO_CHANGE_EMAIL_MESSAGE);
+      set({ ...user, email: normalized });
     },
     async requestDataDeletion() {
       try {

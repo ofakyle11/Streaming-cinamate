@@ -43,7 +43,8 @@ export interface TmdbPage<T> {
 /** Sort orders supported by `TmdbService.discover`. Always descending. */
 export type DiscoverSort = 'popularity' | 'rating' | 'date';
 
-export type TmdbImageSize = 'w342' | 'w500' | 'w780' | 'w1280' | 'original' | 'w92' | 'w154' | 'w185' | 'w300' | 'h632';
+export type TmdbImageSize =
+  'w342' | 'w500' | 'w780' | 'w1280' | 'original' | 'w92' | 'w154' | 'w185' | 'w300' | 'h632';
 
 export interface TmdbService {
   trending(page?: number, opts?: TmdbTrendingOptions): Promise<TmdbPage<TmdbTitle>>;
@@ -74,13 +75,20 @@ export interface TmdbService {
   /** Upcoming movie releases. */
   upcoming(page?: number): Promise<TmdbPage<TmdbTitle>>;
   /** Popular titles in a genre (movie by default). */
-  byGenre(genreId: number, opts?: { mediaType?: MediaType; page?: number }): Promise<TmdbPage<TmdbTitle>>;
+  byGenre(
+    genreId: number,
+    opts?: { mediaType?: MediaType; page?: number },
+  ): Promise<TmdbPage<TmdbTitle>>;
   /** Top-billed cast for a title (TMDB /credits `cast`, ordered by billing). */
   credits(mediaType: MediaType, id: number): Promise<TmdbCastMember[]>;
   /** Titles similar to the given one (TMDB /similar). Never includes the title itself. */
   similar(mediaType: MediaType, id: number, page?: number): Promise<TmdbPage<TmdbTitle>>;
   /** Where-to-watch offers for one region (TMDB /watch/providers, data by JustWatch). */
-  watchProviders(mediaType: MediaType, id: number, region: WatchRegion): Promise<TmdbWatchProviders | null>;
+  watchProviders(
+    mediaType: MediaType,
+    id: number,
+    region: WatchRegion,
+  ): Promise<TmdbWatchProviders | null>;
 }
 
 /* ------------------------------------------------------ TMDB extended types */
@@ -268,6 +276,31 @@ export type AuthUnsubscribe = () => void;
 /** OAuth providers the UI offers. */
 export type OAuthProvider = 'google';
 
+/** `global` signs out everywhere (every refresh token is revoked); `local` is this browser. */
+export interface SignOutOptions {
+  scope?: 'local' | 'global';
+}
+
+/**
+ * A browser the account is signed in on (public.devices, kept by the app since
+ * Supabase does not expose sessions to the client). `current` is this browser.
+ */
+export interface Device {
+  id: string;
+  /** e.g. "Chrome on macOS"; derived from the user agent on the client. */
+  label: string;
+  userAgent: string;
+  createdAt: string;
+  lastSeenAt: string;
+  /**
+   * When "forget this device" was used. `listDevices()` hides revoked rows (the
+   * forgotten browser deletes its row as it signs itself out), so this is null
+   * for everything the account page lists today.
+   */
+  revokedAt: string | null;
+  current: boolean;
+}
+
 export interface MagicLinkOptions {
   captchaToken?: string;
 }
@@ -299,8 +332,24 @@ export interface AuthService {
    * signed-in user; rejects with a readable error for expired or reused links.
    */
   completeSignIn(params: AuthCallbackParams): Promise<User>;
-  signOut(): Promise<void>;
+  /** Default scope is this browser; `global` is "sign out everywhere". */
+  signOut(options?: SignOutOptions): Promise<void>;
   onAuthStateChange(cb: (user: User | null) => void): AuthUnsubscribe;
+  /** Browsers this account is signed in on, newest activity first. Empty when signed out. */
+  listDevices(): Promise<Device[]>;
+  /**
+   * Forget one device: a browser still running the app signs itself out the
+   * next time it checks in (tab focus, or within a few minutes). It does not
+   * revoke that browser's tokens, so a lost or stolen device needs
+   * `signOut({ scope: 'global' })`. Forgetting the current device is a local sign-out.
+   */
+  forgetDevice(deviceId: string): Promise<void>;
+  /**
+   * Start an email change. Live: Supabase mails a confirmation to both the old
+   * and the new address and the change applies once both are confirmed. Mock:
+   * changes immediately.
+   */
+  changeEmail(newEmail: string): Promise<void>;
   /**
    * Start an OAuth sign-in. Live: redirects the browser to the provider and the
    * session is picked up on return. Mock: signs a demo user in immediately.
@@ -347,7 +396,12 @@ export interface DbService {
   getProfile(userId: string): Promise<UserProfile | null>;
   upsertProfile(profile: UserProfile): Promise<UserProfile>;
   listEntries(userId: string, kind: ListKind): Promise<ListEntry[]>;
-  addToList(userId: string, kind: ListKind, titleId: number, mediaType: MediaType): Promise<ListEntry>;
+  addToList(
+    userId: string,
+    kind: ListKind,
+    titleId: number,
+    mediaType: MediaType,
+  ): Promise<ListEntry>;
   removeFromList(userId: string, kind: ListKind, titleId: number): Promise<void>;
   getProgress(userId: string, titleId: number): Promise<WatchProgress | null>;
   setProgress(progress: WatchProgress): Promise<WatchProgress>;

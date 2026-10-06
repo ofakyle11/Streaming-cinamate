@@ -36,7 +36,12 @@ describe('AuthProvider cloud sync wiring', () => {
   it('does not sync guests', async () => {
     const startSync = vi.fn(() => fakeSync());
     render(
-      <AuthProvider service={createMockAuth()} mode="mock" clearLocal={vi.fn()} startSync={startSync}>
+      <AuthProvider
+        service={createMockAuth()}
+        mode="mock"
+        clearLocal={vi.fn()}
+        startSync={startSync}
+      >
         <Probe />
       </AuthProvider>,
     );
@@ -62,8 +67,32 @@ describe('AuthProvider cloud sync wiring', () => {
     fireEvent.click(screen.getByRole('button', { name: 'out' }));
     expect(await screen.findByText('guest')).toBeInTheDocument();
     expect(handle.flush).toHaveBeenCalled();
-    expect(handle.flush.mock.invocationCallOrder[0]).toBeLessThan(signOut.mock.invocationCallOrder[0]);
+    expect(handle.flush.mock.invocationCallOrder[0]).toBeLessThan(
+      signOut.mock.invocationCallOrder[0],
+    );
     await waitFor(() => expect(handle.stop).toHaveBeenCalled());
+  });
+
+  it('resets the synced data when the session ends from outside (forgotten device, expiry)', async () => {
+    const service = createMockAuth();
+    await service.signInWithMagicLink('ada@example.com');
+    const handle = fakeSync(true);
+    render(
+      <AuthProvider service={service} mode="mock" clearLocal={vi.fn()} startSync={() => handle}>
+        <Probe />
+      </AuthProvider>,
+    );
+    expect(await screen.findByText('authenticated')).toBeInTheDocument();
+    useLastFrameStore.setState({ watchlist: { p: [{ titleId: 603, addedAt: 1 }] } } as never);
+
+    // Another device forgot this one: the adapter signs out without going through signOut().
+    await act(async () => {
+      await service.forgetDevice((await service.listDevices())[0].id);
+    });
+    expect(await screen.findByText('guest')).toBeInTheDocument();
+    await waitFor(() => expect(handle.stop).toHaveBeenCalledWith({ flush: false }));
+    expect(handle.flush).not.toHaveBeenCalled();
+    expect(useLastFrameStore.getState().watchlist).toEqual({});
   });
 
   it('discards the sync queue before wiping local data', async () => {
@@ -80,7 +109,9 @@ describe('AuthProvider cloud sync wiring', () => {
     fireEvent.click(screen.getByRole('button', { name: 'wipe' }));
     await waitFor(() => expect(clearLocal).toHaveBeenCalled());
     expect(handle.stop).toHaveBeenCalledWith({ discard: true });
-    expect(handle.stop.mock.invocationCallOrder[0]).toBeLessThan(clearLocal.mock.invocationCallOrder[0]);
+    expect(handle.stop.mock.invocationCallOrder[0]).toBeLessThan(
+      clearLocal.mock.invocationCallOrder[0],
+    );
   });
 
   it('resumes sync when the deletion request fails', async () => {
@@ -110,7 +141,13 @@ describe('AuthProvider cloud sync wiring', () => {
       const resetSynced = vi.fn();
       const signOut = vi.spyOn(service, 'signOut');
       const view = render(
-        <AuthProvider service={service} mode="mock" clearLocal={vi.fn()} startSync={() => handle} resetSynced={resetSynced}>
+        <AuthProvider
+          service={service}
+          mode="mock"
+          clearLocal={vi.fn()}
+          startSync={() => handle}
+          resetSynced={resetSynced}
+        >
           <Probe />
         </AuthProvider>,
       );
@@ -121,8 +158,12 @@ describe('AuthProvider cloud sync wiring', () => {
       expect(handle.stop).toHaveBeenCalledWith({ flush: false });
       if (linked) {
         expect(resetSynced).toHaveBeenCalledTimes(1);
-        expect(handle.stop.mock.invocationCallOrder[0]).toBeLessThan(resetSynced.mock.invocationCallOrder[0]);
-        expect(signOut.mock.invocationCallOrder[0]).toBeLessThan(resetSynced.mock.invocationCallOrder[0]);
+        expect(handle.stop.mock.invocationCallOrder[0]).toBeLessThan(
+          resetSynced.mock.invocationCallOrder[0],
+        );
+        expect(signOut.mock.invocationCallOrder[0]).toBeLessThan(
+          resetSynced.mock.invocationCallOrder[0],
+        );
       } else {
         // Mock DB / sync never linked: the device copy is the only copy, keep it.
         expect(resetSynced).not.toHaveBeenCalled();
@@ -147,7 +188,13 @@ describe('AuthProvider cloud sync wiring', () => {
       );
     }
     render(
-      <AuthProvider service={service} mode="mock" clearLocal={vi.fn()} startSync={startSync} resetSynced={resetSynced}>
+      <AuthProvider
+        service={service}
+        mode="mock"
+        clearLocal={vi.fn()}
+        startSync={startSync}
+        resetSynced={resetSynced}
+      >
         <FailingProbe />
       </AuthProvider>,
     );
@@ -161,7 +208,12 @@ describe('AuthProvider cloud sync wiring', () => {
 
 /* ---------------------------------------------- end-to-end: account switch */
 
-const emptySnapshot = (): SyncSnapshot => ({ profiles: [], watchlist: [], history: [], ratings: [] });
+const emptySnapshot = (): SyncSnapshot => ({
+  profiles: [],
+  watchlist: [],
+  history: [],
+  ratings: [],
+});
 
 /** In-memory cloud: one snapshot per user, records every upload. */
 function fakeCloud(seed: Record<string, SyncSnapshot>) {
@@ -176,15 +228,48 @@ function fakeCloud(seed: Record<string, SyncSnapshot>) {
 }
 
 const accountA = (): SyncSnapshot => ({
-  profiles: [{ profileId: 'pa', name: 'Ada', avatar: 'aurora', kid: false, createdAt: 10, updatedAt: 10, deleted: false }],
+  profiles: [
+    {
+      profileId: 'pa',
+      name: 'Ada',
+      avatar: 'aurora',
+      kid: false,
+      createdAt: 10,
+      updatedAt: 10,
+      deleted: false,
+    },
+  ],
   watchlist: [{ profileId: 'pa', titleId: 11, addedAt: 20, updatedAt: 20, deleted: false }],
-  history: [{ profileId: 'pa', titleId: 12, position: 60, duration: 600, lastWatchedAt: 30, completed: false, updatedAt: 30, deleted: false }],
-  ratings: [{ profileId: 'pa', titleId: 13, rating: 5, ratedAt: 40, updatedAt: 40, deleted: false }],
+  history: [
+    {
+      profileId: 'pa',
+      titleId: 12,
+      position: 60,
+      duration: 600,
+      lastWatchedAt: 30,
+      completed: false,
+      updatedAt: 30,
+      deleted: false,
+    },
+  ],
+  ratings: [
+    { profileId: 'pa', titleId: 13, rating: 5, ratedAt: 40, updatedAt: 40, deleted: false },
+  ],
 });
 
 const accountB = (): SyncSnapshot => ({
   ...emptySnapshot(),
-  profiles: [{ profileId: 'pb', name: 'Bea', avatar: 'meadow', kid: false, createdAt: 15, updatedAt: 15, deleted: false }],
+  profiles: [
+    {
+      profileId: 'pb',
+      name: 'Bea',
+      avatar: 'meadow',
+      kid: false,
+      createdAt: 15,
+      updatedAt: 15,
+      deleted: false,
+    },
+  ],
 });
 
 const A_TITLES = new Set([11, 12, 13]);
@@ -207,10 +292,21 @@ describe('AuthProvider cloud sync: sign in A, sign out, sign in B', () => {
     const cloud = fakeCloud({ 'mock-ada': accountA(), 'mock-bea': accountB() });
     const service = createMockAuth();
     const startSync = (userId: string) =>
-      startCloudSync(userId, { db: cloud.db, store: useLastFrameStore, debounceMs: 5, flushOnHide: false });
+      startCloudSync(userId, {
+        db: cloud.db,
+        store: useLastFrameStore,
+        debounceMs: 5,
+        flushOnHide: false,
+      });
     const extra = resetSynced ? { resetSynced } : {};
     render(
-      <AuthProvider service={service} mode="mock" clearLocal={vi.fn()} startSync={startSync} {...extra}>
+      <AuthProvider
+        service={service}
+        mode="mock"
+        clearLocal={vi.fn()}
+        startSync={startSync}
+        {...extra}
+      >
         <Probe />
       </AuthProvider>,
     );
@@ -225,7 +321,10 @@ describe('AuthProvider cloud sync: sign in A, sign out, sign in B', () => {
     return { cloud, service };
   };
 
-  const signInB = async (service: ReturnType<typeof createMockAuth>, cloud: ReturnType<typeof fakeCloud>) => {
+  const signInB = async (
+    service: ReturnType<typeof createMockAuth>,
+    cloud: ReturnType<typeof fakeCloud>,
+  ) => {
     await act(() => service.signInWithMagicLink('bea@example.com'));
     expect(await screen.findByText('authenticated')).toBeInTheDocument();
     await waitFor(() => expect(readSyncOwner()).toBe('mock-bea'));
