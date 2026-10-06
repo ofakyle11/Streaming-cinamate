@@ -36,7 +36,7 @@ export function safeReturnTo(raw: string | null | undefined): string | null {
   if (value.includes('\\')) return null;
   if (hasControlOrSpace(value)) return null;
   if (value.length > 2048) return null;
-  const pathname = value.split(/[?#]/, 1)[0];
+  const pathname = value.split(/[?#]/, 1)[0].toLowerCase();
   if (AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return null;
   return value;
 }
@@ -83,14 +83,26 @@ export function rememberReturnTo(
   }
 }
 
-/** Read and forget the remembered path (one use), or null when none or expired. */
-export function takeReturnTo(
+/** Forget the remembered path. */
+export function forgetReturnTo(storage: KeyValueStorage | null = defaultStorage()): void {
+  try {
+    storage?.removeItem(RETURN_TO_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/**
+ * Read the remembered path without consuming it, or null when none or expired.
+ * Reading is non-destructive so a StrictMode double render or a reload during
+ * the callback keeps the path; the caller forgets it once it has navigated.
+ */
+export function peekReturnTo(
   storage: KeyValueStorage | null = defaultStorage(),
   now = Date.now(),
 ): string | null {
   try {
     const raw = storage?.getItem(RETURN_TO_KEY);
-    storage?.removeItem(RETURN_TO_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return null;
@@ -100,4 +112,14 @@ export function takeReturnTo(
   } catch {
     return null;
   }
+}
+
+/** Read and forget the remembered path (one use), or null when none or expired. */
+export function takeReturnTo(
+  storage: KeyValueStorage | null = defaultStorage(),
+  now = Date.now(),
+): string | null {
+  const path = peekReturnTo(storage, now);
+  forgetReturnTo(storage);
+  return path;
 }

@@ -1,3 +1,4 @@
+import { StrictMode, type ReactNode } from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,17 +17,21 @@ function renderAt(
   url: string,
   service: AuthService = createMockAuth(),
   mode: AdapterMode = 'mock',
+  strict = false,
 ) {
+  const Wrap = strict ? StrictMode : ({ children }: { children: ReactNode }) => <>{children}</>;
   render(
-    <AuthProvider service={service} mode={mode} clearLocal={vi.fn()} startSync={null}>
-      <MemoryRouter initialEntries={[url]}>
-        <Routes>
-          <Route path="/auth/callback" element={<AuthCallbackPage timeoutMs={50} />} />
-          <Route path="*" element={<p>elsewhere</p>} />
-        </Routes>
-        <LocationProbe />
-      </MemoryRouter>
-    </AuthProvider>,
+    <Wrap>
+      <AuthProvider service={service} mode={mode} clearLocal={vi.fn()} startSync={null}>
+        <MemoryRouter initialEntries={[url]}>
+          <Routes>
+            <Route path="/auth/callback" element={<AuthCallbackPage timeoutMs={50} />} />
+            <Route path="*" element={<p>elsewhere</p>} />
+          </Routes>
+          <LocationProbe />
+        </MemoryRouter>
+      </AuthProvider>
+    </Wrap>,
   );
 }
 
@@ -42,6 +47,15 @@ describe('AuthCallbackPage', () => {
     rememberReturnTo('/title/movie/42');
     renderAt('/auth/callback#access_token=abc&type=magiclink', service);
     await waitFor(() => expect(location()).toBe('/title/movie/42'));
+    expect(localStorage.getItem(RETURN_TO_KEY)).toBeNull();
+  });
+
+  it('keeps the remembered page under StrictMode double rendering (main.tsx uses it)', async () => {
+    const service = createMockAuth();
+    await service.signInWithMagicLink('ada@example.com');
+    rememberReturnTo('/plans');
+    renderAt('/auth/callback#access_token=abc', service, 'mock', true);
+    await waitFor(() => expect(location()).toBe('/plans'));
     expect(localStorage.getItem(RETURN_TO_KEY)).toBeNull();
   });
 

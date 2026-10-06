@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import AuthCard from '../components/auth/AuthCard';
 import { Button } from '../components/ui';
 import { useAuth } from '../auth';
-import { resolveReturnTo, signInHref } from '../auth/returnTo';
+import { rememberReturnTo, resolveReturnTo, signInHref } from '../auth/returnTo';
 import { isValidEmail } from '../services/auth/validate';
 import { useMeta } from '../hooks/useMeta';
 import { SENT_EMAIL_KEY } from './SignInPage';
@@ -76,6 +76,7 @@ export default function SignInSentPage({
     setBusy(true);
     setNotice(null);
     try {
+      rememberReturnTo(returnTo); // refresh the TTL for the new link
       await signInWithMagicLink(email);
       setNotice({ kind: 'success', text: 'A new link is on its way.' });
       setLeft(cooldownSeconds);

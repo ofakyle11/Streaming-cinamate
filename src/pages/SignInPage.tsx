@@ -46,6 +46,8 @@ export default function SignInPage({ googleEnabled = googleSignInEnabled() }: Si
   );
   const [busy, setBusy] = useState<null | 'magic' | 'google'>(null);
   const [error, setError] = useState<string | null>(null);
+  // Only a rejected address marks the field invalid; a failed send is not the field's fault.
+  const [fieldError, setFieldError] = useState(false);
   const emailId = useId();
   const errorId = useId();
 
@@ -59,6 +61,7 @@ export default function SignInPage({ googleEnabled = googleSignInEnabled() }: Si
   const run = async (kind: NonNullable<typeof busy>, action: () => Promise<void>) => {
     setBusy(kind);
     setError(null);
+    setFieldError(false);
     try {
       await action();
     } catch (err) {
@@ -71,11 +74,13 @@ export default function SignInPage({ googleEnabled = googleSignInEnabled() }: Si
     e.preventDefault();
     if (!isValidEmail(email)) {
       setError('Enter a valid email address.');
+      setFieldError(true);
       return;
     }
     const target = normalizeEmail(email);
     void run('magic', async () => {
-      rememberReturnTo(returnTo);
+      // The live link comes back through /auth/callback, which reads this.
+      if (mode === 'live') rememberReturnTo(returnTo);
       await signInWithMagicLink(target);
       if (mode === 'live') {
         try {
@@ -154,7 +159,7 @@ export default function SignInPage({ googleEnabled = googleSignInEnabled() }: Si
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         aria-describedby={error ? errorId : undefined}
-        aria-invalid={error ? true : undefined}
+        aria-invalid={fieldError || undefined}
         disabled={busy !== null || loading}
         autoFocus={!!linkError}
         required

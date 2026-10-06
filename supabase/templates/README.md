@@ -15,7 +15,8 @@ paste them into the dashboard.
 Variables used: `{{ .ConfirmationURL }}` (the link, which lands on `/auth/callback`),
 `{{ .SiteURL }}` (set under **Authentication → URL Configuration**) and `{{ .Email }}`.
 The mark is loaded from `{{ .SiteURL }}/apple-touch-icon.png`, so the Site URL must be the
-deployed origin.
+production origin (`https://lastframe.tv`), never a deploy preview, or production mail would carry a
+preview link and icon.
 
 Email clients do not support CSS custom properties, so the Lumen tokens are inlined as literal
 values in the template (they are copied from `src/styles/tokens.css`; update both together).

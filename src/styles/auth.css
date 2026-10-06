@@ -1,7 +1,9 @@
 /* Sign-in flow: /sign-in, /sign-in/sent, /auth/callback. Built on tokens.css. */
 
 .auth-page {
-  min-height: calc(100vh - var(--nav-top) - var(--nav-h) - 80px);
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: calc(var(--nav-top) + var(--nav-h) + 24px) var(--gutter, 24px) 40px;
@@ -150,6 +152,10 @@
   color: var(--color-text-soft);
 }
 .auth-help a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 8px;
   color: var(--color-accent-text);
   font-weight: 600;
   text-decoration: none;
@@ -289,7 +295,6 @@
 @media (max-width: 760px) {
   .auth-page {
     padding: calc(var(--nav-top) + var(--nav-h) + 16px) 16px 32px;
-    min-height: calc(100vh - var(--nav-top) - var(--nav-h) - 48px);
   }
   .auth-card {
     padding: 28px 22px;
@@ -302,8 +307,13 @@
   .auth-status {
     animation: none;
   }
-  .auth-sent-icon::after {
+  .auth-sent-icon::after,
+  .auth-spinner {
     animation: none;
+  }
+  .auth-spinner {
+    border-top-color: var(--glass-border-strong);
+    border-left-color: var(--color-accent);
   }
   .auth-input {
     transition: none;

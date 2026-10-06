@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   RETURN_TO_KEY,
   RETURN_TO_TTL_MS,
+  forgetReturnTo,
+  peekReturnTo,
   rememberReturnTo,
   resolveReturnTo,
   safeReturnTo,
@@ -66,6 +68,20 @@ describe('remembered return path', () => {
     rememberReturnTo('/my-list', storage, 1000);
     expect(takeReturnTo(storage, 2000)).toBe('/my-list');
     expect(takeReturnTo(storage, 2000)).toBeNull();
+  });
+
+  it('peeks without consuming, and forgets on request', () => {
+    const storage = memoryStorage();
+    rememberReturnTo('/my-list', storage, 1000);
+    expect(peekReturnTo(storage, 2000)).toBe('/my-list');
+    expect(peekReturnTo(storage, 2000)).toBe('/my-list');
+    forgetReturnTo(storage);
+    expect(peekReturnTo(storage, 2000)).toBeNull();
+  });
+
+  it('ignores the case of the auth routes', () => {
+    expect(safeReturnTo('/SIGN-IN')).toBeNull();
+    expect(safeReturnTo('/Auth/Callback')).toBeNull();
   });
 
   it('expires', () => {

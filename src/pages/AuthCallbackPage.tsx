@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import AuthCard from '../components/auth/AuthCard';
 import { useAuth } from '../auth';
-import { DEFAULT_RETURN_TO, takeReturnTo } from '../auth/returnTo';
+import { DEFAULT_RETURN_TO, forgetReturnTo, peekReturnTo } from '../auth/returnTo';
+import { SENT_EMAIL_KEY } from './SignInPage';
 import { useMeta } from '../hooks/useMeta';
 import { readCallbackError } from '../auth/callbackError';
 import type { SignInError } from './SignInPage';
@@ -32,12 +33,30 @@ export default function AuthCallbackPage({
 }: AuthCallbackPageProps) {
   const location = useLocation();
   const { status, mode } = useAuth();
-  // Read the remembered path once; the link is single-use and so is the path.
-  const [returnTo] = useState(() => takeReturnTo());
+  // Read the remembered path without consuming it: StrictMode renders twice and
+  // a reload mid-spinner must not lose it. It is forgotten below once we leave.
+  const [returnTo] = useState(() => peekReturnTo());
   const [linkError] = useState(() => readCallbackError(location.search, location.hash));
   const [timedOut, setTimedOut] = useState(false);
 
   useMeta({ title: 'Signing you in', noindex: true });
+
+  const done =
+    !!linkError ||
+    status === 'authenticated' ||
+    timedOut ||
+    (mode === 'mock' && status === 'guest');
+  useEffect(() => {
+    if (!done) return;
+    forgetReturnTo();
+    if (status === 'authenticated') {
+      try {
+        window.sessionStorage.removeItem(SENT_EMAIL_KEY);
+      } catch {
+        /* storage unavailable */
+      }
+    }
+  }, [done, status]);
 
   useEffect(() => {
     if (linkError || status === 'authenticated') return;
@@ -56,9 +75,12 @@ export default function AuthCallbackPage({
     <AuthCard
       title="Signing you in"
       lead="One moment while we finish your sign-in."
-      icon={<span className="auth-spinner" />}
+      icon={<span className="auth-spinner" aria-hidden="true" />}
       aria-busy="true"
-      role="status"
-    />
+    >
+      <p className="sr-only" role="status" aria-live="polite">
+        Signing you in…
+      </p>
+    </AuthCard>
   );
 }
