@@ -29,10 +29,13 @@ never used by the app and must never be put in Netlify.
 
 ## 2. Apply the schema and settings
 
+The repo is not linked to the Supabase project (and does not need to be). Either run the
+CLI from any machine with the repo, or paste the SQL by hand (below).
+
 From a machine with the repo and the [Supabase CLI](https://supabase.com/docs/guides/cli):
 
 ```bash
-npx supabase login                      # opens the browser once
+npx supabase login                      # opens the browser once (or export SUPABASE_ACCESS_TOKEN=sbp_...)
 npx supabase link --project-ref <ref>   # the <ref> from the project URL
 npx supabase db push                    # applies supabase/migrations/*.sql
 export RESEND_API_KEY=re_...            # from step 4; any value works before Resend exists
@@ -83,6 +86,25 @@ The next production build picks them up: `src/services/index.ts` switches auth a
 database to the live adapters, and `scripts/security-headers.mjs` pins the Content Security
 Policy's `connect-src` to `https://<ref>.supabase.co` and `wss://<ref>.supabase.co` instead
 of the `*.supabase.co` wildcard. Nothing else changes.
+
+### Deploying so the variables are inlined
+
+lastframe.tv is deployed from the Netlify CLI, not from a git build, and a plain
+`npm run build` on a laptop or in a cloud session does not see the Netlify UI variables. The
+deploy recipe therefore runs the build through the CLI, which injects the site's **Production**
+environment:
+
+```bash
+npm ci
+npx netlify link --id bd791a0a-dcc5-46d3-8e59-8b91a115d929   # once per checkout
+npx netlify env:list --context production                      # VITE_SUPABASE_URL and the anon key must appear
+npx netlify build --context production                         # runs `npm run build` with those variables
+npx netlify deploy --prod --site bd791a0a-dcc5-46d3-8e59-8b91a115d929
+```
+
+The build log prints `security-headers: ... supabase https://<ref>.supabase.co` when the pin
+took; `supabase off` means the variables did not reach the build and the deploy would ship
+guest mode. (`npx netlify build` without a linked site: add `--site <id>`.)
 
 ## 4. Email sender: Resend (hands)
 

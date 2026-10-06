@@ -2,11 +2,12 @@
  * Single source of truth for the Content-Security-Policy.
  *
  * The Vite plugin below writes it to `<outDir>/_headers` at the end of every
- * production build (`npm run build`); Netlify applies it alongside the static headers in netlify.toml. The CSP lives
- * here rather than in netlify.toml because one entry is conditional: the
- * Cloudflare Turnstile origin is allowed only when the build has a site key
- * (VITE_TURNSTILE_SITE_KEY), so a mock-mode build ships no third-party
- * challenge origin at all.
+ * production build (`npm run build`); Netlify applies it alongside the static
+ * headers in netlify.toml. The CSP lives here rather than in netlify.toml
+ * because two entries depend on the build's env: the Cloudflare Turnstile
+ * origin is allowed only when the build has a site key (VITE_TURNSTILE_SITE_KEY),
+ * and connect-src is pinned to the exact Supabase project host taken from
+ * VITE_SUPABASE_URL (no Supabase origin at all in a mock-mode build).
  *
  * src/test/csp.test.ts asserts on buildCsp(), so keep this file dependency-free
  * and side-effect-free except for main().
@@ -17,8 +18,27 @@ import { fileURLToPath } from 'node:url';
 
 export const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 
+/**
+ * The exact Supabase origins for connect-src from the project URL
+ * (`https://<ref>.supabase.co`): REST/auth over https and realtime over wss.
+ * Empty when the URL is unset or not an https origin, so a mock-mode build
+ * allows no Supabase host at all and a typo cannot widen the policy.
+ */
+export function supabaseOrigins(url) {
+  const trimmed = typeof url === 'string' ? url.trim() : '';
+  if (!trimmed) return [];
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return [];
+  }
+  if (parsed.protocol !== 'https:' || !parsed.hostname) return [];
+  return [`https://${parsed.host}`, `wss://${parsed.host}`];
+}
+
 /** Directives in the order they are emitted; values are source lists. */
-export function cspDirectives({ turnstile = false } = {}) {
+export function cspDirectives({ turnstile = false, supabaseUrl = '' } = {}) {
   const t = turnstile ? [TURNSTILE_ORIGIN] : [];
   return {
     'default-src': ["'self'"],
@@ -52,8 +72,7 @@ export function cspDirectives({ turnstile = false } = {}) {
       'https://api.themoviedb.org',
       'https://image.tmdb.org',
       'https://plausible.io',
-      'https://*.supabase.co',
-      'wss://*.supabase.co',
+      ...supabaseOrigins(supabaseUrl),
     ],
     'object-src': ["'none'"],
     'base-uri': ["'self'"],
@@ -75,6 +94,11 @@ export function turnstileEnabled(env = process.env) {
   return Boolean(env.VITE_TURNSTILE_SITE_KEY?.trim());
 }
 
+/** Build options read from the same env Vite inlines into the bundle. */
+export function cspOptions(env = process.env) {
+  return { turnstile: turnstileEnabled(env), supabaseUrl: env.VITE_SUPABASE_URL ?? '' };
+}
+
 /** Contents of the Netlify `_headers` file for this build. */
 export function headersFile(opts = {}) {
   return ['/*', `  Content-Security-Policy: ${buildCsp(opts)}`, ''].join('\n');
@@ -87,33 +111,36 @@ export function headersFile(opts = {}) {
  */
 export function securityHeadersPlugin() {
   let outDir = 'dist';
-  let turnstile = false;
+  let options = cspOptions({});
   return {
     name: 'lastframe-security-headers',
     apply: 'build',
     configResolved(config) {
       outDir = resolve(config.root, config.build.outDir);
-      turnstile = turnstileEnabled(config.env);
+      options = cspOptions(config.env);
     },
     async closeBundle() {
-      await writeHeaders(outDir, turnstile);
+      await writeHeaders(outDir, options);
     },
   };
 }
 
-async function writeHeaders(outDir, turnstile) {
+async function writeHeaders(outDir, options) {
   await mkdir(outDir, { recursive: true });
-  await writeFile(resolve(outDir, '_headers'), headersFile({ turnstile }), 'utf8');
-  console.log(`security-headers: wrote ${outDir}/_headers (turnstile ${turnstile ? 'on' : 'off'})`);
+  await writeFile(resolve(outDir, '_headers'), headersFile(options), 'utf8');
+  const supabase = supabaseOrigins(options.supabaseUrl)[0] ?? 'off';
+  console.log(
+    `security-headers: wrote ${outDir}/_headers (turnstile ${options.turnstile ? 'on' : 'off'}, supabase ${supabase})`,
+  );
 }
 
 /** CLI fallback: `node scripts/security-headers.mjs [dir]` (reads env files like Vite). */
 async function main() {
   const { loadEnv } = await import('vite');
   const mode = process.env.MODE || 'production';
-  const turnstile = turnstileEnabled({ ...loadEnv(mode, process.cwd(), 'VITE_'), ...process.env });
+  const options = cspOptions({ ...loadEnv(mode, process.cwd(), 'VITE_'), ...process.env });
   const dir = process.argv.slice(2).find((a) => !a.startsWith('-')) ?? 'dist';
-  await writeHeaders(resolve(process.cwd(), dir), turnstile);
+  await writeHeaders(resolve(process.cwd(), dir), options);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
