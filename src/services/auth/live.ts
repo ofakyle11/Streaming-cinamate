@@ -138,12 +138,15 @@ export function createLiveAuth(
    * `revoked_at` once set and bumps `last_seen_at`. Best effort: a failure
    * never affects the session.
    */
-  const touchDevice = async (sb: SupabaseLike): Promise<'ok' | 'revoked' | 'unknown'> => {
+  const touchDevice = async (
+    sb: SupabaseLike,
+    id: string,
+  ): Promise<'ok' | 'revoked' | 'unknown'> => {
     try {
       const { data, error } = await sb
         .from(DEVICES_TABLE)
         .upsert(
-          { id: deviceId(), label: currentDeviceLabel(), user_agent: currentUserAgent() },
+          { id, label: currentDeviceLabel(), user_agent: currentUserAgent() },
           { onConflict: 'user_id,id' },
         )
         .select('revoked_at')
@@ -198,7 +201,19 @@ export function createLiveAuth(
         }
         do {
           again = false;
-          if ((await touchDevice(sb)) === 'revoked') {
+          const id = deviceId();
+          const state = await touchDevice(sb, id);
+          if (watcher === null) {
+            // Another tab of this browser signed out while the upsert was in
+            // flight and forgot the id: the row it re-created belongs to nobody.
+            try {
+              await sb.from(DEVICES_TABLE).delete().eq('id', id);
+            } catch {
+              /* best effort */
+            }
+            return;
+          }
+          if (state === 'revoked') {
             await leaveRevokedDevice(sb);
             return;
           }
@@ -324,6 +339,10 @@ export function createLiveAuth(
       const sb = await client();
       const scope = options?.scope === 'global' ? 'global' : 'local';
       // Best effort on the device rows; the sign-out itself must not depend on them.
+      // Rows are touched before the sign-out on purpose: once the token is
+      // revoked nothing here can write them any more. If the sign-out call then
+      // fails, the other browsers still leave (the user asked for that) and
+      // this one stays signed in with the error shown.
       try {
         if (scope === 'global') {
           // The revocation only invalidates refresh tokens: another browser keeps

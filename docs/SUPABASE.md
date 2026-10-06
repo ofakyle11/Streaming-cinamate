@@ -151,6 +151,9 @@ CLI is ever used for a production deploy again, build through it so they are inj
   (`https://<ref>.supabase.co/auth/v1/callback`) as its redirect, export
   `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`, set `[auth.external.google] enabled =
 true`, push, then `VITE_AUTH_GOOGLE=1` in Netlify.
+- **Passwords**: the `lf_strip_password` trigger on `auth.users` makes password sign-in
+  impossible by design. Drop it (and update this runbook) before ever adding a password-based
+  sign-in, and check after Supabase platform upgrades that the trigger still exists.
 - **Paid tier** (25 USD a month) only for daily backups or to stop the free project pausing
   after a week without traffic.
 

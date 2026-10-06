@@ -45,5 +45,6 @@ $$;
 -- The deletion processor runs as service_role; nothing else is needed from auth.
 grant usage on schema auth to service_role;
 grant select, delete on auth.users to service_role;
--- The password-strip trigger function is security definer and owned by the
--- migration runner (postgres), which owns auth.users here as in Supabase.
+-- Here the migration runner owns auth.users; on Supabase supabase_auth_admin
+-- owns it and postgres holds TRIGGER and UPDATE on it, which the strip-password
+-- migration relies on. Trigger semantics do not depend on ownership.
