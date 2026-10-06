@@ -71,7 +71,7 @@ Build-time and script-only variables that do not configure the app are listed at
   alongside it, so always set both. Auth errors with `NotConfiguredError` if either is missing,
   and db methods without backing tables still reject with `NotConfiguredError`.
 - **CSP**: `scripts/security-headers.mjs` pins `connect-src` to the project host read from
-  `VITE_SUPABASE_URL` at build time (`https://<ref>.supabase.co` and `wss://<ref>.supabase.co`);
+  `VITE_SUPABASE_URL` at build time (`https://<ref>.supabase.co`; realtime is off, so no `wss:` entry);
   with the variable unset no Supabase origin is allowed at all. A self-hosted Supabase on
   another domain works the same way, since the origin comes from the variable.
 - **Redirect URLs, Site URL, link expiry, email template, SMTP**: all declared in

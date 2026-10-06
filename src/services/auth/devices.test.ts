@@ -26,6 +26,9 @@ describe('device identity', () => {
       setItem: () => {
         throw new Error('blocked');
       },
+      removeItem: () => {
+        throw new Error('blocked');
+      },
     };
     expect(currentDeviceId(throwing)).toBe(a);
   });

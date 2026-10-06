@@ -78,8 +78,21 @@ export default function AuthProvider({
 
   useEffect(() => {
     let active = true;
+    let previousUserId: string | null = null;
     const apply = (u: User | null) => {
       if (!active) return;
+      if (!u && previousUserId) {
+        // Signed out from outside this provider: the session expired, or the
+        // device was forgotten / signed out everywhere from another browser.
+        // Same cleanup as signOut(): stop syncing without uploading, and drop
+        // the account's data from this device when a cloud copy exists.
+        const sync = syncRef.current;
+        syncRef.current = null;
+        const holdsCloudData = !!sync?.linked || readSyncOwner() === previousUserId;
+        void sync?.stop({ flush: false }).catch(() => undefined);
+        if (holdsCloudData) resetSynced();
+      }
+      previousUserId = u?.id ?? null;
       setUser(u);
       setStatus(u ? 'authenticated' : 'guest');
     };
@@ -103,7 +116,7 @@ export default function AuthProvider({
         /* ignore */
       }
     };
-  }, [service]);
+  }, [service, resetSynced]);
 
   const signInWithMagicLink = useCallback(
     (email: string, options?: MagicLinkOptions) =>

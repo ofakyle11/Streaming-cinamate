@@ -27,8 +27,9 @@ alter default privileges in schema public grant all on functions to anon, authen
 create schema if not exists auth;
 
 create table if not exists auth.users (
-  id    uuid primary key,
-  email text
+  id                 uuid primary key,
+  email              text,
+  encrypted_password text
 );
 
 -- Supabase's auth.uid() reads the JWT claims PostgREST sets per request; tests
@@ -44,3 +45,5 @@ $$;
 -- The deletion processor runs as service_role; nothing else is needed from auth.
 grant usage on schema auth to service_role;
 grant select, delete on auth.users to service_role;
+-- The password-strip trigger function is security definer and owned by the
+-- migration runner (postgres), which owns auth.users here as in Supabase.

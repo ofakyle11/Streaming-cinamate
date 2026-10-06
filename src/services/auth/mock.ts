@@ -1,7 +1,11 @@
 import type { AuthService, OAuthProvider, User } from '../types';
 import { requireEmail, requirePassword } from './validate';
-import { currentDeviceId, currentDeviceLabel, currentUserAgent } from './devices';
-import { callbackErrorMessage, LINK_INVALID_MESSAGE } from './messages';
+import { currentDeviceId, currentDeviceLabel, currentUserAgent, forgetDeviceId } from './devices';
+import {
+  callbackErrorMessage,
+  LINK_INVALID_MESSAGE,
+  SIGN_IN_TO_CHANGE_EMAIL_MESSAGE,
+} from './messages';
 
 /** localStorage key holding the fake session. */
 export const MOCK_SESSION_KEY = 'lf.mock.auth.session';
@@ -188,6 +192,7 @@ export function createMockAuth(opts: MockAuthOptions = {}): AuthService {
     async signOut() {
       // local and global are the same thing with a single fake device.
       set(null);
+      forgetDeviceId(storage ?? null);
     },
     async listDevices() {
       const user = activeUser();
@@ -206,13 +211,16 @@ export function createMockAuth(opts: MockAuthOptions = {}): AuthService {
       ];
     },
     async forgetDevice(id) {
-      if (id === deviceId()) set(null);
+      if (id === deviceId()) {
+        set(null);
+        forgetDeviceId(storage ?? null);
+      }
       // Any other id belongs to no device in the mock: nothing to forget.
     },
     async changeEmail(newEmail) {
       const normalized = requireEmail(newEmail);
       const user = activeUser();
-      if (!user) throw new Error('Sign in to change your email address.');
+      if (!user) throw new Error(SIGN_IN_TO_CHANGE_EMAIL_MESSAGE);
       set({ ...user, email: normalized });
     },
     async requestDataDeletion() {

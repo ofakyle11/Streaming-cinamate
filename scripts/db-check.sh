@@ -10,6 +10,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 : "${DATABASE_URL:?set DATABASE_URL to a local PostgreSQL (never a real project)}"
+case "$DATABASE_URL" in
+  *\?*) echo "DATABASE_URL must not carry a query string (set PGSSLMODE etc. in the environment)" >&2; exit 2 ;;
+  postgres://*/*[!/]|postgresql://*/*[!/]) ;;
+  *) echo "DATABASE_URL must look like postgres://user:pass@host:5432/dbname" >&2; exit 2 ;;
+esac
 DB=lf_rls_check
 export PGOPTIONS="-c client_min_messages=warning"
 CHECK_URL="${DATABASE_URL%/*}/$DB"

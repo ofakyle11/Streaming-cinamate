@@ -119,6 +119,7 @@ describe('mock auth adapter', () => {
     expect(await auth.currentUser()).not.toBeNull();
     await auth.forgetDevice(device.id);
     expect(await auth.currentUser()).toBeNull();
+    expect(localStorage.getItem('lf.device')).toBeNull();
   });
 
   it('changes the email immediately when signed in', async () => {

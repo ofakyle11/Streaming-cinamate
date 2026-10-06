@@ -292,7 +292,11 @@ export interface Device {
   userAgent: string;
   createdAt: string;
   lastSeenAt: string;
-  /** Set once "forget this device" was used; that browser signs itself out next. */
+  /**
+   * When "forget this device" was used. `listDevices()` hides revoked rows (the
+   * forgotten browser deletes its row as it signs itself out), so this is null
+   * for everything the account page lists today.
+   */
   revokedAt: string | null;
   current: boolean;
 }
@@ -334,8 +338,10 @@ export interface AuthService {
   /** Browsers this account is signed in on, newest activity first. Empty when signed out. */
   listDevices(): Promise<Device[]>;
   /**
-   * Revoke one device: it signs itself out the next time it checks in (at most
-   * a few minutes). Forgetting the current device is a local sign-out.
+   * Forget one device: a browser still running the app signs itself out the
+   * next time it checks in (tab focus, or within a few minutes). It does not
+   * revoke that browser's tokens, so a lost or stolen device needs
+   * `signOut({ scope: 'global' })`. Forgetting the current device is a local sign-out.
    */
   forgetDevice(deviceId: string): Promise<void>;
   /**

@@ -19,10 +19,11 @@ import { fileURLToPath } from 'node:url';
 export const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 
 /**
- * The exact Supabase origins for connect-src from the project URL
- * (`https://<ref>.supabase.co`): REST/auth over https and realtime over wss.
- * Empty when the URL is unset or not an https origin, so a mock-mode build
- * allows no Supabase host at all and a typo cannot widen the policy.
+ * The exact Supabase origin for connect-src from the project URL
+ * (`https://<ref>.supabase.co`): REST and auth over https. Realtime (wss) is
+ * not used by the app and stays off until it is. Empty when the URL is unset
+ * or not an https origin, so a mock-mode build allows no Supabase host at all
+ * and a typo cannot widen the policy.
  */
 export function supabaseOrigins(url) {
   const trimmed = typeof url === 'string' ? url.trim() : '';
@@ -34,7 +35,7 @@ export function supabaseOrigins(url) {
     return [];
   }
   if (parsed.protocol !== 'https:' || !parsed.hostname) return [];
-  return [`https://${parsed.host}`, `wss://${parsed.host}`];
+  return [`https://${parsed.host}`];
 }
 
 /** Directives in the order they are emitted; values are source lists. */

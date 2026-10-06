@@ -1,9 +1,10 @@
 /**
  * Device identity for the "where you are signed in" list (public.devices).
  *
- * A device is a browser profile: a random id minted once per browser and kept
- * in localStorage, so it survives sign-out and identifies the same browser on
- * the next sign-in. It is not a fingerprint and never leaves the project.
+ * A device is a browser profile: a random id minted on first use and kept in
+ * localStorage for the life of the sign-in. It is forgotten on sign-out, so two
+ * accounts used from one browser never share an id (nothing in the database
+ * links them). It is not a fingerprint and never leaves the project.
  */
 
 /** localStorage key holding this browser's device id. Wiped by clearLocalData (lf.* prefix). */
@@ -11,7 +12,7 @@ export const DEVICE_ID_KEY = 'lf.device';
 /** Table name (see supabase/migrations/20261006000000_devices.sql). */
 export const DEVICES_TABLE = 'devices';
 
-type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
+type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 function defaultStorage(): StorageLike | null {
   try {
@@ -47,6 +48,16 @@ export function currentDeviceId(storage: StorageLike | null = defaultStorage()):
   } catch {
     memoryId ??= randomId();
     return memoryId;
+  }
+}
+
+/** Drop this browser's device id (on sign-out), so the next sign-in mints a new one. */
+export function forgetDeviceId(storage: StorageLike | null = defaultStorage()): void {
+  memoryId = null;
+  try {
+    storage?.removeItem(DEVICE_ID_KEY);
+  } catch {
+    /* storage unavailable */
   }
 }
 

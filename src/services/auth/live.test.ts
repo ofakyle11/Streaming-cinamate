@@ -65,9 +65,16 @@ function fakeClient(session: { user: SupabaseUser } | null = null) {
       };
     },
     update: (patch: unknown) => ({
-      eq: async (col: string, val: unknown) => {
+      eq: (col: string, val: unknown) => {
+        const result = Promise.resolve({ error: null });
         update(table, patch, col, val);
-        return { error: null };
+        return Object.assign(result, {
+          neq: async (col2: string, val2: unknown) => {
+            update.mock.calls.pop();
+            update(table, patch, col, val, col2, val2);
+            return { error: null };
+          },
+        });
       },
     }),
     select: (cols: string) => ({
@@ -95,7 +102,7 @@ function fakeClient(session: { user: SupabaseUser } | null = null) {
     calls,
     deleteErrors,
     unsubscribe,
-    emit: (s: { user: SupabaseUser } | null) => listener?.('X', s),
+    emit: (s: { user: SupabaseUser } | null, event = 'SIGNED_IN') => listener?.(event, s),
   };
 }
 
@@ -240,14 +247,27 @@ describe('live auth adapter (Supabase)', () => {
 
   it('signs out this browser by default and everywhere on request', async () => {
     const fake = fakeClient({ user: sbUser() });
+    localStorage.setItem('lf.device', 'this-device-1');
     await make(fake).signOut();
     expect(fake.auth.signOut).toHaveBeenLastCalledWith({ scope: 'local' });
     expect(fake.eq).toHaveBeenLastCalledWith(DEVICES_TABLE, 'id', 'this-device-1');
+    expect(fake.update).not.toHaveBeenCalled();
+    // The browser id is forgotten, so two accounts on one browser never share one.
+    expect(localStorage.getItem('lf.device')).toBeNull();
 
     await make(fake).signOut({ scope: 'global' });
     expect(fake.auth.signOut).toHaveBeenLastCalledWith({ scope: 'global' });
-    // Every device row goes with the global revocation.
-    expect(fake.eq).toHaveBeenLastCalledWith(DEVICES_TABLE, 'user_id', 'uuid-1');
+    // Every other device row is revoked (their browsers sign themselves out on
+    // the next check, before their access tokens expire); our own row goes.
+    expect(fake.update).toHaveBeenCalledWith(
+      DEVICES_TABLE,
+      { revoked_at: expect.stringMatching(/^\d{4}-/) },
+      'user_id',
+      'uuid-1',
+      'id',
+      'this-device-1',
+    );
+    expect(fake.eq).toHaveBeenLastCalledWith(DEVICES_TABLE, 'id', 'this-device-1');
   });
 
   it('lists active devices newest first and marks this browser', async () => {
@@ -305,8 +325,10 @@ describe('live auth adapter (Supabase)', () => {
     const fake = fakeClient();
     make(fake).onAuthStateChange(() => {});
     await vi.waitFor(() => expect(fake.auth.onAuthStateChange).toHaveBeenCalled());
-    fake.emit({ user: sbUser() });
+    fake.emit({ user: sbUser() }, 'INITIAL_SESSION');
     await vi.waitFor(() => expect(fake.upsert).toHaveBeenCalled());
+    // A restored session keeps its row; only a fresh SIGNED_IN clears a stale one.
+    expect(fake.del).not.toHaveBeenCalled();
     expect(fake.upsert).toHaveBeenCalledWith(
       DEVICES_TABLE,
       { id: 'this-device-1', label: expect.any(String), user_agent: expect.any(String) },
@@ -330,5 +352,19 @@ describe('live auth adapter (Supabase)', () => {
       { emailRedirectTo: `${window.location.origin}/auth/callback` },
     );
     await expect(make(fake).changeEmail('nope')).rejects.toThrow(/valid email/);
+  });
+
+  it('starts a fresh sign-in from a clean device row, so a device forgotten while closed is not bounced', async () => {
+    const fake = fakeClient();
+    fake.deviceState.revoked_at = null;
+    make(fake).onAuthStateChange(() => {});
+    await vi.waitFor(() => expect(fake.auth.onAuthStateChange).toHaveBeenCalled());
+    fake.emit({ user: sbUser() }, 'SIGNED_IN');
+    await vi.waitFor(() => expect(fake.upsert).toHaveBeenCalled());
+    expect(fake.eq).toHaveBeenCalledWith(DEVICES_TABLE, 'id', 'this-device-1');
+    expect(fake.eq.mock.invocationCallOrder[0]).toBeLessThan(
+      fake.upsert.mock.invocationCallOrder[0],
+    );
+    expect(fake.auth.signOut).not.toHaveBeenCalled();
   });
 });

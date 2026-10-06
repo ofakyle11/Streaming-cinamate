@@ -14,7 +14,10 @@ function get(params: Record<string, string | undefined> | null) {
 }
 
 function okResponse(body: unknown = { results: [{ id: 1 }] }) {
-  return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -78,7 +81,14 @@ describe('sanitizePath', () => {
 
 describe('buildForwardQuery', () => {
   it('drops path and client credentials, sorts keys', () => {
-    const q = buildForwardQuery({ path: 'x', page: '2', API_KEY: 'a', api_key: 'b', access_token: 'c', language: 'en-US' });
+    const q = buildForwardQuery({
+      path: 'x',
+      page: '2',
+      API_KEY: 'a',
+      api_key: 'b',
+      access_token: 'c',
+      language: 'en-US',
+    });
     expect(q?.toString()).toBe('language=en-US&page=2');
   });
 
@@ -115,7 +125,9 @@ describe('handleTmdbRequest', () => {
     await get({ path: 'movie/popular' });
     expect(calledUrl().searchParams.has('api_key')).toBe(false);
     const init = fetchMock.mock.calls[0][1] as RequestInit;
-    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer eyJhbGciOiJIUzI1NiJ9.token');
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      'Bearer eyJhbGciOiJIUzI1NiJ9.token',
+    );
   });
 
   it('returns 503 JSON when TMDB_API_KEY is missing', async () => {
@@ -148,7 +160,10 @@ describe('handleTmdbRequest', () => {
   });
 
   it('returns 405 for non-GET', async () => {
-    const res = await handleTmdbRequest({ httpMethod: 'POST', queryStringParameters: { path: 'movie/popular' } });
+    const res = await handleTmdbRequest({
+      httpMethod: 'POST',
+      queryStringParameters: { path: 'movie/popular' },
+    });
     expect(res.statusCode).toBe(405);
     expect(res.headers?.Allow).toBe('GET, HEAD');
   });
@@ -171,7 +186,9 @@ describe('handleTmdbRequest', () => {
   });
 
   it('does not cache upstream errors and maps them to error JSON', async () => {
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ status_message: `bad key ${KEY}` }), { status: 401 }));
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ status_message: `bad key ${KEY}` }), { status: 401 }),
+    );
     const res = await get({ path: 'movie/popular' });
     expect(res.statusCode).toBe(502);
     expect(res.headers?.['Cache-Control']).toBe('no-store');

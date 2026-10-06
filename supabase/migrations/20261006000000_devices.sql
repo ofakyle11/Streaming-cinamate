@@ -4,9 +4,12 @@
 -- its own list. The browser registers itself after sign-in under a random
 -- per-browser id (localStorage `lf.device`, see src/services/auth/devices.ts)
 -- and refreshes `last_seen_at` while it is used. "Forget this device" on the
--- account page sets `revoked_at`; the browser sees that on its next check
--- (sign-in, tab focus, every few minutes) and signs itself out locally.
--- "Sign out everywhere" is Supabase's global sign-out and needs no row here.
+-- account page sets `revoked_at`; a browser still running the app sees that on
+-- its next check (tab focus, every few minutes), deletes its row and signs
+-- itself out locally. That is cooperative: it does not revoke that browser's
+-- tokens, so a lost or stolen device needs "Sign out everywhere" (Supabase's
+-- global sign-out), which also revokes every other row so those browsers leave
+-- promptly instead of lingering until their access token expires.
 --
 -- Every row belongs to one auth user; RLS confines each signed-in user to their
 -- own rows and anonymous clients to nothing. Deleting the auth user cascades.
@@ -43,11 +46,17 @@ begin
     if old.revoked_at is not null then
       new.revoked_at := old.revoked_at;
     end if;
+    -- Being revoked from another device is not activity of this one.
+    if new.revoked_at is null or old.revoked_at is not null then
+      new.last_seen_at := now();
+    else
+      new.last_seen_at := old.last_seen_at;
+    end if;
   else
     new.created_at := now();
     new.revoked_at := null;
+    new.last_seen_at := now();
   end if;
-  new.last_seen_at := now();
   return new;
 end;
 $$;

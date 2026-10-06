@@ -3,6 +3,7 @@ import schema from '../../supabase/schema.sql?raw';
 import migration from '../../supabase/migrations/20260929010000_sync_tables.sql?raw';
 import processDeletions from '../../supabase/migrations/20260929020000_process_account_deletions.sql?raw';
 import devices from '../../supabase/migrations/20261006000000_devices.sql?raw';
+import stripPassword from '../../supabase/migrations/20261006010000_disable_password_sign_in.sql?raw';
 import rlsCheck from '../../supabase/tests/rls_check.sql?raw';
 import config from '../../supabase/config.toml?raw';
 import ci from '../../.github/workflows/ci.yml?raw';
@@ -13,6 +14,12 @@ import { AUTH_CALLBACK_PATH } from '../services/auth/validate';
 import { DEVICES_TABLE } from '../services/auth/devices';
 
 const SYNC_TABLES = ['profiles', 'watchlist', 'history', 'ratings'] as const;
+
+/** First `key = value` line in supabase/config.toml. */
+const value = (key: string) => {
+  const m = new RegExp(`^${key}\\s*=\\s*(.+)$`, 'm').exec(config);
+  return m?.[1].trim();
+};
 
 describe('supabase/schema.sql', () => {
   it('ships identically as a migration', () => {
@@ -154,13 +161,30 @@ describe('supabase/migrations/20261006000000_devices.sql', () => {
   });
 });
 
+describe('supabase/migrations/20261006010000_disable_password_sign_in.sql', () => {
+  it('strips the password from every auth.users write, so only email links sign in', () => {
+    expect(stripPassword).toContain('new.encrypted_password := null;');
+    expect(stripPassword).toMatch(
+      /create trigger lf_strip_password\s+before insert or update of encrypted_password on auth\.users\s+for each row execute function public\.lf_strip_password\(\);/,
+    );
+    expect(stripPassword).toMatch(
+      /revoke all on function public\.lf_strip_password\(\) from public, anon, authenticated;/,
+    );
+    expect(stripPassword).toContain(
+      'update auth.users set encrypted_password = null where encrypted_password is not null;',
+    );
+  });
+});
+
 describe('RLS check (supabase/tests/rls_check.sql) and CI', () => {
   it('covers every per-user table as a second user and as anon', () => {
     for (const t of [...SYNC_TABLES, 'devices', 'account_deletion_requests']) {
       expect(rlsCheck).toContain(`public.${t}`);
     }
     expect(rlsCheck).toContain('set local role anon;');
-    expect(rlsCheck).toContain("'B can read rows of A");
+    expect(rlsCheck).toContain("'B can read % rows of A in %'");
+    expect(rlsCheck).toContain('on conflict (user_id, id) do update'); // the client\'s real upsert against a revoked row
+    expect(rlsCheck).toContain('a password survived insert into auth.users');
     expect(rlsCheck).toContain('lf_process_account_deletions()');
     expect(rlsCheck.trim().endsWith('rollback;')).toBe(true);
   });
@@ -168,16 +192,12 @@ describe('RLS check (supabase/tests/rls_check.sql) and CI', () => {
   it('runs in CI against a plain PostgreSQL through npm run db:check', () => {
     expect(pkg.scripts['db:check']).toBe('./scripts/db-check.sh');
     expect(ci).toContain('run: ./scripts/db-check.sh');
-    expect(ci).toMatch(/image: postgres:16/);
+    expect(ci).toMatch(/image: postgres:17/); // matches [db] major_version in config.toml
+    expect(value('major_version')).toBe('17');
   });
 });
 
 describe('supabase/config.toml', () => {
-  const value = (key: string) => {
-    const m = new RegExp(`^${key}\\s*=\\s*(.+)$`, 'm').exec(config);
-    return m?.[1].trim();
-  };
-
   it('points the magic link at the callback route on the production origin', () => {
     expect(value('site_url')).toBe('"https://lastframe.tv"');
     const urls = config.split('additional_redirect_urls = [')[1].split(']')[0];
@@ -188,11 +208,15 @@ describe('supabase/config.toml', () => {
 
   it('applies the agreed auth settings: 15 minute links, 45 s resend, signups on, double confirm', () => {
     expect(value('otp_expiry')).toBe('900');
+    // Email confirmation on: a password sign-up through the public API cannot
+    // produce a ready account for someone else's address (see the strip-password migration).
+    expect(value('enable_confirmations')).toBe('true');
+    expect(config).toContain('[auth.email.template.confirmation]');
+    expect(config.match(/content_path = "\.\/templates\/magic-link\.html"/g)).toHaveLength(2);
     expect(value('max_frequency')).toBe('"45s"');
     expect(value('enable_signup')).toBe('true');
     expect(value('double_confirm_changes')).toBe('true');
     expect(value('enable_anonymous_sign_ins')).toBe('false');
-    expect(value('content_path')).toBe('"./templates/magic-link.html"');
     expect(value('subject')).toBe('"Your Lastframe.tv sign-in link"');
   });
 

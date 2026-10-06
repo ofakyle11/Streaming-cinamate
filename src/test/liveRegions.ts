@@ -18,6 +18,7 @@ export const getLive = (role: LiveRole) => {
   return found[0];
 };
 
-export const findLive = (role: LiveRole, options?: waitForOptions) => waitFor(() => getLive(role), options);
+export const findLive = (role: LiveRole, options?: waitForOptions) =>
+  waitFor(() => getLive(role), options);
 
 export const queryLive = (role: LiveRole) => liveRegions(role)[0] ?? null;

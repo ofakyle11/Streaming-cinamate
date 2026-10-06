@@ -90,8 +90,9 @@ describe('Supabase pin', () => {
     const csp = parseCsp(buildCsp({ supabaseUrl: 'https://abcdefgh.supabase.co' }));
     const connectSrc = csp.get('connect-src') ?? [];
     expect(connectSrc).toContain('https://abcdefgh.supabase.co');
-    expect(connectSrc).toContain('wss://abcdefgh.supabase.co');
     expect(connectSrc).not.toContain('https://*.supabase.co');
+    // Realtime is off ([realtime] enabled = false) and no client code opens a channel.
+    expect(connectSrc.some((s) => s.startsWith('wss:'))).toBe(false);
     for (const directive of ['script-src', 'img-src', 'frame-src', 'default-src']) {
       expect((csp.get(directive) ?? []).some((s) => s.includes('supabase'))).toBe(false);
     }
@@ -100,15 +101,12 @@ describe('Supabase pin', () => {
   it('derives the origins from the URL only when it is a clean https origin', () => {
     expect(supabaseOrigins('https://abcdefgh.supabase.co')).toEqual([
       'https://abcdefgh.supabase.co',
-      'wss://abcdefgh.supabase.co',
     ]);
     expect(supabaseOrigins(' https://abcdefgh.supabase.co/ ')).toEqual([
       'https://abcdefgh.supabase.co',
-      'wss://abcdefgh.supabase.co',
     ]);
     expect(supabaseOrigins('https://db.example.com:8443/rest')).toEqual([
       'https://db.example.com:8443',
-      'wss://db.example.com:8443',
     ]);
     expect(supabaseOrigins('')).toEqual([]);
     expect(supabaseOrigins(undefined)).toEqual([]);

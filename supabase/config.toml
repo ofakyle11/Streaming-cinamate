@@ -78,8 +78,12 @@ anonymous_users = 30
 enable_signup = true
 # A change of address is confirmed from both the old and the new mailbox.
 double_confirm_changes = true
-# Magic links need no separate confirmation step.
-enable_confirmations = false
+# New addresses must confirm by email. For link sign-in this costs nothing
+# (the first link a new user receives is the confirmation, same template,
+# same landing on /auth/callback) and it stops a password sign-up through the
+# public API from creating a ready-to-use account for someone else's address.
+# The lf_strip_password trigger removes passwords altogether as a second layer.
+enable_confirmations = true
 secure_password_change = false
 # One link request per address per 45 seconds; /sign-in/sent shows the same timer.
 max_frequency = "45s"
@@ -91,10 +95,16 @@ otp_expiry = 900
 subject = "Your Lastframe.tv sign-in link"
 content_path = "./templates/magic-link.html"
 
+# First sign-in of a new address: the same email, so the person never sees a
+# difference between "confirm" and "sign in".
+[auth.email.template.confirmation]
+subject = "Your Lastframe.tv sign-in link"
+content_path = "./templates/magic-link.html"
+
 # Resend as the sender. RESEND_API_KEY is read from the environment when the
-# config is pushed; it is never committed. Local `supabase start` uses Inbucket
-# instead, so run it with this section's enabled flag overridden to false or
-# with the key exported.
+# config is pushed; it is never committed. For a local `supabase start`, export
+# any placeholder (RESEND_API_KEY=local): the local stack delivers mail to
+# Inbucket on port 54324 regardless (docs/SUPABASE.md).
 [auth.email.smtp]
 enabled = true
 host = "smtp.resend.com"

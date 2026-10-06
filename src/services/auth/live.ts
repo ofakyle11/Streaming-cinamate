@@ -3,7 +3,13 @@ import { NotConfiguredError, type AuthService, type Device, type User } from '..
 import { SYNC_TABLES } from '../db/live';
 import { authRedirectUrl, requireEmail, requirePassword } from './validate';
 import { callbackErrorMessage, LINK_INVALID_MESSAGE } from './messages';
-import { currentDeviceId, currentDeviceLabel, currentUserAgent, DEVICES_TABLE } from './devices';
+import {
+  currentDeviceId,
+  currentDeviceLabel,
+  currentUserAgent,
+  DEVICES_TABLE,
+  forgetDeviceId,
+} from './devices';
 
 export { callbackErrorMessage, LINK_INVALID_MESSAGE } from './messages';
 
@@ -161,13 +167,14 @@ export function createLiveAuth(
     } catch {
       /* already signed out */
     }
+    forgetDeviceId();
   };
 
   // While a session exists: touch on start, on every tab focus and every few
   // minutes, so a device forgotten from the account page signs out within
   // minutes. Only one watcher runs, whatever the number of subscribers.
   let watcher: { stop: () => void } | null = null;
-  const watchDevice = (sb: SupabaseLike) => {
+  const watchDevice = (sb: SupabaseLike, fresh = false) => {
     if (watcher || typeof window === 'undefined') return;
     // One check at a time; a request that lands mid-check runs once it is done.
     let running = false;
@@ -179,6 +186,16 @@ export function createLiveAuth(
       }
       running = true;
       try {
+        if (fresh) {
+          // A new sign-in on a browser that was forgotten while closed: its old
+          // row is still revoked and would bounce it. Start from a clean row.
+          fresh = false;
+          try {
+            await sb.from(DEVICES_TABLE).delete().eq('id', deviceId());
+          } catch {
+            /* the touch below re-creates it either way */
+          }
+        }
         do {
           again = false;
           if ((await touchDevice(sb)) === 'revoked') {
@@ -201,14 +218,15 @@ export function createLiveAuth(
         window.clearInterval(timer);
       },
     };
-    void check();
+    // Off the auth callback's stack: the SDK may hold its session lock there.
+    window.setTimeout(() => void check(), 0);
   };
   const unwatchDevice = () => {
     watcher?.stop();
     watcher = null;
   };
 
-  return {
+  const service: AuthService = {
     async currentUser() {
       try {
         const sb = await client();
@@ -305,26 +323,29 @@ export function createLiveAuth(
     async signOut(options) {
       const sb = await client();
       const scope = options?.scope === 'global' ? 'global' : 'local';
-      if (scope === 'global') {
-        // Every other browser is signed out by the token revocation; clear the
-        // list so the account page does not show ghosts. Our own row goes too
-        // (we are signing out here as well).
-        try {
+      // Best effort on the device rows; the sign-out itself must not depend on them.
+      try {
+        if (scope === 'global') {
+          // The revocation only invalidates refresh tokens: another browser keeps
+          // its access token for up to jwt_expiry. Revoking its row makes it take
+          // the self sign-out path on its next check instead of lingering.
           const { data } = await sb.auth.getSession();
           const userId = data.session?.user.id;
-          if (userId) await sb.from(DEVICES_TABLE).delete().eq('user_id', userId);
-        } catch {
-          /* best effort */
+          if (userId) {
+            await sb
+              .from(DEVICES_TABLE)
+              .update({ revoked_at: new Date().toISOString() })
+              .eq('user_id', userId)
+              .neq('id', deviceId());
+          }
         }
-      } else {
-        try {
-          await sb.from(DEVICES_TABLE).delete().eq('id', deviceId());
-        } catch {
-          /* best effort */
-        }
+        await sb.from(DEVICES_TABLE).delete().eq('id', deviceId());
+      } catch {
+        /* best effort */
       }
       const { error } = await sb.auth.signOut({ scope });
       if (error) throw asError(error, 'Sign-out failed.');
+      forgetDeviceId();
     },
 
     async listDevices() {
@@ -342,7 +363,7 @@ export function createLiveAuth(
     },
 
     async forgetDevice(id) {
-      if (id === deviceId()) return this.signOut();
+      if (id === deviceId()) return service.signOut();
       const sb = await client();
       const { error } = await sb
         .from(DEVICES_TABLE)
@@ -389,8 +410,8 @@ export function createLiveAuth(
       client()
         .then((sb) => {
           if (cancelled) return;
-          const { data } = sb.auth.onAuthStateChange((_event, session) => {
-            if (session?.user) watchDevice(sb);
+          const { data } = sb.auth.onAuthStateChange((event, session) => {
+            if (session?.user) watchDevice(sb, event === 'SIGNED_IN');
             else unwatchDevice();
             cb(session?.user ? toUser(session.user) : null);
           });
@@ -408,4 +429,5 @@ export function createLiveAuth(
       };
     },
   };
+  return service;
 }

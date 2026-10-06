@@ -11,3 +11,6 @@ export function callbackErrorMessage(code?: string): string {
   if (code === 'access_denied') return SIGN_IN_CANCELLED_MESSAGE;
   return LINK_INVALID_MESSAGE;
 }
+
+/** changeEmail() while signed out (mock; live rejects at Supabase). */
+export const SIGN_IN_TO_CHANGE_EMAIL_MESSAGE = 'Sign in to change your email address.';
