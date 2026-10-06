@@ -67,6 +67,10 @@ export default function AuthCallbackPage({
     initialLinkError(captured, location.search, location.hash),
   );
   const exchanged = useRef(false);
+  // The give-up timer waits while an exchange is in flight (slow network, lazy SDK chunk).
+  const [exchanging, setExchanging] = useState(
+    () => !linkError && mode === 'live' && hasCredentials(captured),
+  );
 
   // Exchange the captured credentials once (StrictMode runs effects twice),
   // then drop them from memory whatever the outcome.
@@ -74,12 +78,15 @@ export default function AuthCallbackPage({
     if (exchanged.current) return;
     exchanged.current = true;
     if (linkError || mode !== 'live' || !hasCredentials(captured)) {
-      clearAuthCallback();
+      clearAuthCallback(); // `exchanging` started false for exactly these cases
       return;
     }
     completeSignIn(captured!.params)
       .catch(() => setLinkError('link'))
-      .finally(clearAuthCallback);
+      .finally(() => {
+        clearAuthCallback();
+        setExchanging(false);
+      });
   }, [captured, completeSignIn, linkError, mode]);
   const [timedOut, setTimedOut] = useState(false);
 
@@ -103,10 +110,10 @@ export default function AuthCallbackPage({
   }, [done, status]);
 
   useEffect(() => {
-    if (linkError || status === 'authenticated') return;
+    if (linkError || status === 'authenticated' || exchanging) return;
     const id = window.setTimeout(() => setTimedOut(true), timeoutMs);
     return () => window.clearTimeout(id);
-  }, [linkError, status, timeoutMs]);
+  }, [linkError, status, timeoutMs, exchanging]);
 
   if (linkError) return <Navigate to={signInUrl(linkError, returnTo)} replace />;
   if (status === 'authenticated') return <Navigate to={returnTo ?? DEFAULT_RETURN_TO} replace />;

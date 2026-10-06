@@ -134,6 +134,23 @@ describe('AuthCallbackPage', () => {
       expect(readAuthCallback()).toBeNull();
     });
 
+    it('does not give up while the exchange is still running', async () => {
+      captureAt('/auth/callback?code=slow');
+      const service = createMockAuth();
+      let finish: () => void = () => {};
+      const completeSignIn = vi.fn(
+        () =>
+          new Promise<never>((_, reject) => {
+            finish = () => reject(new Error('used'));
+          }),
+      );
+      renderAt('/auth/callback', { ...service, completeSignIn }, 'live');
+      await new Promise((r) => setTimeout(r, 150)); // three times the 50ms test timeout
+      expect(location()).toBe('/auth/callback');
+      finish();
+      await waitFor(() => expect(location()).toBe('/sign-in?error=link'));
+    });
+
     it('sends a link the adapter rejects back to sign-in', async () => {
       captureAt('/auth/callback#access_token=a&refresh_token=r');
       const completeSignIn = vi.fn().mockRejectedValue(new Error('used'));
