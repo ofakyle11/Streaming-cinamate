@@ -51,3 +51,25 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Applies the Supabase migrations to a plain PostgreSQL twice (idempotence)
+  # and runs supabase/tests/rls_check.sql: one user must never read, change or
+  # delete another's rows, anon must see nothing, deletion must cascade.
+  db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migrations + RLS check
+        run: ./scripts/db-check.sh
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres

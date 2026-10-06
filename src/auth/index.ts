@@ -13,3 +13,4 @@ export {
   takeReturnTo,
   forgetReturnTo,
 } from './returnTo';
+export { currentDeviceId, describeUserAgent } from '../services/auth/devices';

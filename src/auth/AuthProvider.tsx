@@ -1,7 +1,14 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { readSyncOwner, services, startCloudSync, type CloudSync } from '../services';
 import { useLastFrameStore } from '../state/store';
-import type { AdapterMode, AuthService, OAuthProvider, User } from '../services/types';
+import type {
+  AdapterMode,
+  AuthService,
+  OAuthProvider,
+  SignOutOptions,
+  User,
+} from '../services/types';
+import { currentDeviceId } from '../services/auth/devices';
 import { AuthContext, type AuthContextValue, type AuthStatus } from './context';
 import { clearLocalData, resetSyncedData } from './localData';
 import { clearImageCache } from '../pwa/imageCache';
@@ -96,29 +103,35 @@ export default function AuthProvider({
     };
   }, [service]);
 
-  const signInWithMagicLink = useCallback((email: string) => service.signInWithMagicLink(email), [service]);
+  const signInWithMagicLink = useCallback(
+    (email: string) => service.signInWithMagicLink(email),
+    [service],
+  );
   const signInWithOAuth = useCallback((p: OAuthProvider) => service.signInWithOAuth(p), [service]);
 
-  const signOut = useCallback(async () => {
-    const sync = syncRef.current;
-    syncRef.current = null;
-    // Upload unsent edits while the session is still valid, then stop syncing
-    // so resetting the local data below is not uploaded as deletions.
-    await sync?.flush().catch(() => undefined);
-    await sync?.stop({ flush: false }).catch(() => undefined);
-    const holdsCloudData = !!sync?.linked || (!!userId && readSyncOwner() === userId);
-    try {
-      await service.signOut();
-    } catch (err) {
-      if (sync) setSyncEpoch((n) => n + 1); // still signed in: resume syncing
-      throw err;
-    }
-    // The account's data lives in the cloud; drop the device copy so the next
-    // guest or account never sees (or uploads) it.
-    if (holdsCloudData) resetSynced();
-    setUser(null);
-    setStatus('guest');
-  }, [service, userId, resetSynced]);
+  const signOut = useCallback(
+    async (options?: SignOutOptions) => {
+      const sync = syncRef.current;
+      syncRef.current = null;
+      // Upload unsent edits while the session is still valid, then stop syncing
+      // so resetting the local data below is not uploaded as deletions.
+      await sync?.flush().catch(() => undefined);
+      await sync?.stop({ flush: false }).catch(() => undefined);
+      const holdsCloudData = !!sync?.linked || (!!userId && readSyncOwner() === userId);
+      try {
+        await service.signOut(options);
+      } catch (err) {
+        if (sync) setSyncEpoch((n) => n + 1); // still signed in: resume syncing
+        throw err;
+      }
+      // The account's data lives in the cloud; drop the device copy so the next
+      // guest or account never sees (or uploads) it.
+      if (holdsCloudData) resetSynced();
+      setUser(null);
+      setStatus('guest');
+    },
+    [service, userId, resetSynced],
+  );
 
   const deleteData = useCallback(async () => {
     // Stop sync and forget its queue first: nothing more should be uploaded for
@@ -141,6 +154,14 @@ export default function AuthProvider({
     await clearImageCache();
   }, [service, user, clearLocal]);
 
+  const listDevices = useCallback(() => service.listDevices(), [service]);
+  // Forgetting this browser is a sign-out here, with the same local cleanup.
+  const forgetDevice = useCallback(
+    (id: string) => (id === currentDeviceId() ? signOut() : service.forgetDevice(id)),
+    [service, signOut],
+  );
+  const changeEmail = useCallback((email: string) => service.changeEmail(email), [service]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
@@ -151,8 +172,22 @@ export default function AuthProvider({
       signInWithOAuth,
       signOut,
       deleteData,
+      listDevices,
+      forgetDevice,
+      changeEmail,
     }),
-    [status, user, mode, signInWithMagicLink, signInWithOAuth, signOut, deleteData],
+    [
+      status,
+      user,
+      mode,
+      signInWithMagicLink,
+      signInWithOAuth,
+      signOut,
+      deleteData,
+      listDevices,
+      forgetDevice,
+      changeEmail,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

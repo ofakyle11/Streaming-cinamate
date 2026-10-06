@@ -1,7 +1,8 @@
 import type { SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
-import { NotConfiguredError, type AuthService, type User } from '../types';
+import { NotConfiguredError, type AuthService, type Device, type User } from '../types';
 import { SYNC_TABLES } from '../db/live';
 import { authRedirectUrl, requireEmail, requirePassword } from './validate';
+import { currentDeviceId, currentDeviceLabel, currentUserAgent, DEVICES_TABLE } from './devices';
 
 /** Table that queues server-side erasure (see supabase/migrations). */
 export const DELETION_REQUESTS_TABLE = 'account_deletion_requests';
@@ -15,6 +16,34 @@ export interface LiveAuthOptions {
    * @supabase/supabase-js so the SDK is code-split out of the main bundle.
    */
   loadClient?: () => Promise<SupabaseLike>;
+  /** This browser's device id (tests). Defaults to the stored `lf.device` id. */
+  deviceId?: () => string;
+  /** How often a signed-in tab re-checks that its device was not forgotten. */
+  deviceCheckIntervalMs?: number;
+}
+
+/** Re-check the device row this often while signed in (also on every tab focus). */
+export const DEVICE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+
+interface DeviceRow {
+  id: string;
+  label: string;
+  user_agent: string;
+  created_at: string;
+  last_seen_at: string;
+  revoked_at: string | null;
+}
+
+function toDevice(row: DeviceRow, currentId: string): Device {
+  return {
+    id: row.id,
+    label: row.label,
+    userAgent: row.user_agent,
+    createdAt: row.created_at,
+    lastSeenAt: row.last_seen_at,
+    revokedAt: row.revoked_at,
+    current: row.id === currentId,
+  };
 }
 
 function str(v: unknown): string | undefined {
@@ -29,7 +58,10 @@ export function toUser(u: SupabaseUser): User {
     id: u.id,
     email,
     displayName:
-      str(meta.display_name) ?? str(meta.full_name) ?? str(meta.name) ?? (email.split('@')[0] || 'Viewer'),
+      str(meta.display_name) ??
+      str(meta.full_name) ??
+      str(meta.name) ??
+      (email.split('@')[0] || 'Viewer'),
     avatarUrl: str(meta.avatar_url) ?? str(meta.picture),
     createdAt: u.created_at,
   };
@@ -37,7 +69,11 @@ export function toUser(u: SupabaseUser): User {
 
 function asError(err: unknown, fallback: string): Error {
   if (err instanceof Error) return err;
-  if (err && typeof err === 'object' && typeof (err as { message?: unknown }).message === 'string') {
+  if (
+    err &&
+    typeof err === 'object' &&
+    typeof (err as { message?: unknown }).message === 'string'
+  ) {
     return new Error((err as { message: string }).message);
   }
   return new Error(fallback);
@@ -49,7 +85,11 @@ function asError(err: unknown, fallback: string): Error {
  * VITE_* env vars. If the client cannot be created the adapter degrades: the
  * user is reported as signed out and sign-in calls reject with a readable error.
  */
-export function createLiveAuth(supabaseUrl: string, anonKey: string, opts: LiveAuthOptions = {}): AuthService {
+export function createLiveAuth(
+  supabaseUrl: string,
+  anonKey: string,
+  opts: LiveAuthOptions = {},
+): AuthService {
   const loadClient =
     opts.loadClient ??
     (async () => {
@@ -62,7 +102,9 @@ export function createLiveAuth(supabaseUrl: string, anonKey: string, opts: LiveA
   let clientPromise: Promise<SupabaseLike> | null = null;
   const client = (): Promise<SupabaseLike> => {
     if (!supabaseUrl || !anonKey) {
-      return Promise.reject(new NotConfiguredError('Auth', 'VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY'));
+      return Promise.reject(
+        new NotConfiguredError('Auth', 'VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY'),
+      );
     }
     if (!clientPromise) {
       clientPromise = loadClient().catch((err: unknown) => {
@@ -71,6 +113,91 @@ export function createLiveAuth(supabaseUrl: string, anonKey: string, opts: LiveA
       });
     }
     return clientPromise;
+  };
+
+  const deviceId = opts.deviceId ?? currentDeviceId;
+  const checkEvery = opts.deviceCheckIntervalMs ?? DEVICE_CHECK_INTERVAL_MS;
+
+  /**
+   * Register (or touch) this browser in public.devices and report whether it
+   * was forgotten from another device. One upsert does both: the trigger keeps
+   * `revoked_at` once set and bumps `last_seen_at`. Best effort: a failure
+   * never affects the session.
+   */
+  const touchDevice = async (sb: SupabaseLike): Promise<'ok' | 'revoked' | 'unknown'> => {
+    try {
+      const { data, error } = await sb
+        .from(DEVICES_TABLE)
+        .upsert(
+          { id: deviceId(), label: currentDeviceLabel(), user_agent: currentUserAgent() },
+          { onConflict: 'user_id,id' },
+        )
+        .select('revoked_at')
+        .single();
+      if (error || !data) return 'unknown';
+      return (data as { revoked_at: string | null }).revoked_at ? 'revoked' : 'ok';
+    } catch {
+      return 'unknown';
+    }
+  };
+
+  /** Forgotten elsewhere: drop our row and sign this browser out. */
+  const leaveRevokedDevice = async (sb: SupabaseLike) => {
+    try {
+      await sb.from(DEVICES_TABLE).delete().eq('id', deviceId());
+    } catch {
+      /* the row is revoked either way */
+    }
+    try {
+      await sb.auth.signOut({ scope: 'local' });
+    } catch {
+      /* already signed out */
+    }
+  };
+
+  // While a session exists: touch on start, on every tab focus and every few
+  // minutes, so a device forgotten from the account page signs out within
+  // minutes. Only one watcher runs, whatever the number of subscribers.
+  let watcher: { stop: () => void } | null = null;
+  const watchDevice = (sb: SupabaseLike) => {
+    if (watcher || typeof window === 'undefined') return;
+    // One check at a time; a request that lands mid-check runs once it is done.
+    let running = false;
+    let again = false;
+    const check = async () => {
+      if (running) {
+        again = true;
+        return;
+      }
+      running = true;
+      try {
+        do {
+          again = false;
+          if ((await touchDevice(sb)) === 'revoked') {
+            await leaveRevokedDevice(sb);
+            return;
+          }
+        } while (again);
+      } finally {
+        running = false;
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void check();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    const timer = window.setInterval(() => void check(), checkEvery);
+    watcher = {
+      stop: () => {
+        document.removeEventListener('visibilitychange', onVisible);
+        window.clearInterval(timer);
+      },
+    };
+    void check();
+  };
+  const unwatchDevice = () => {
+    watcher?.stop();
+    watcher = null;
   };
 
   return {
@@ -129,10 +256,63 @@ export function createLiveAuth(supabaseUrl: string, anonKey: string, opts: LiveA
       if (error) throw asError(error, 'Could not start sign-in.');
     },
 
-    async signOut() {
+    async signOut(options) {
       const sb = await client();
-      const { error } = await sb.auth.signOut();
+      const scope = options?.scope === 'global' ? 'global' : 'local';
+      if (scope === 'global') {
+        // Every other browser is signed out by the token revocation; clear the
+        // list so the account page does not show ghosts. Our own row goes too
+        // (we are signing out here as well).
+        try {
+          const { data } = await sb.auth.getSession();
+          const userId = data.session?.user.id;
+          if (userId) await sb.from(DEVICES_TABLE).delete().eq('user_id', userId);
+        } catch {
+          /* best effort */
+        }
+      } else {
+        try {
+          await sb.from(DEVICES_TABLE).delete().eq('id', deviceId());
+        } catch {
+          /* best effort */
+        }
+      }
+      const { error } = await sb.auth.signOut({ scope });
       if (error) throw asError(error, 'Sign-out failed.');
+    },
+
+    async listDevices() {
+      const sb = await client();
+      const { data: sess } = await sb.auth.getSession();
+      if (!sess.session?.user) return [];
+      const { data, error } = await sb
+        .from(DEVICES_TABLE)
+        .select('id, label, user_agent, created_at, last_seen_at, revoked_at')
+        .is('revoked_at', null)
+        .order('last_seen_at', { ascending: false });
+      if (error) throw asError(error, 'Could not load your devices.');
+      const me = deviceId();
+      return ((data ?? []) as DeviceRow[]).map((row) => toDevice(row, me));
+    },
+
+    async forgetDevice(id) {
+      if (id === deviceId()) return this.signOut();
+      const sb = await client();
+      const { error } = await sb
+        .from(DEVICES_TABLE)
+        .update({ revoked_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw asError(error, 'Could not forget that device.');
+    },
+
+    async changeEmail(newEmail) {
+      const normalized = requireEmail(newEmail);
+      const sb = await client();
+      const { error } = await sb.auth.updateUser(
+        { email: normalized },
+        { emailRedirectTo: authRedirectUrl() },
+      );
+      if (error) throw asError(error, 'Could not change your email address.');
     },
 
     async requestDataDeletion() {
@@ -164,9 +344,14 @@ export function createLiveAuth(supabaseUrl: string, anonKey: string, opts: LiveA
         .then((sb) => {
           if (cancelled) return;
           const { data } = sb.auth.onAuthStateChange((_event, session) => {
+            if (session?.user) watchDevice(sb);
+            else unwatchDevice();
             cb(session?.user ? toUser(session.user) : null);
           });
-          unsubscribe = () => data.subscription.unsubscribe();
+          unsubscribe = () => {
+            data.subscription.unsubscribe();
+            unwatchDevice();
+          };
         })
         .catch(() => {
           /* auth unavailable: stay in guest mode */

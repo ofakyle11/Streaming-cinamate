@@ -15,15 +15,20 @@ a `VITE_` prefix, and never read a server-only variable from `src/`.
 
 ## Summary
 
-| Variable                 | Kind        | Used by                                  | Enables                       |
-| ------------------------ | ----------- | ---------------------------------------- | ----------------------------- |
-| `VITE_TMDB_PROXY`        | Client      | `src/services/index.ts` → `tmdb/live.ts` | Live TMDB catalogue via proxy |
-| `TMDB_API_KEY`           | Server-only | Netlify TMDB proxy function              | Proxy calls to TMDB           |
-| `VITE_SUPABASE_URL`      | Client      | `src/services/index.ts` → `auth`, `db`   | Live Supabase auth + database |
-| `VITE_SUPABASE_ANON_KEY` | Client      | `src/services/index.ts` → `auth`, `db`   | (paired with the URL)         |
-| `VITE_AUTH_GOOGLE`       | Client      | `src/auth/flags.ts` → `/sign-in`         | Shows the Google button       |
-| `VITE_PLAUSIBLE_DOMAIN`  | Client      | Analytics adapter (Plausible)            | Privacy-friendly page views   |
+| Variable                  | Kind        | Used by                                  | Enables                                |
+| ------------------------- | ----------- | ---------------------------------------- | -------------------------------------- |
+| `VITE_TMDB_PROXY`         | Client      | `src/services/index.ts` → `tmdb/live.ts` | Live TMDB catalogue via proxy          |
+| `TMDB_API_KEY`            | Server-only | Netlify TMDB proxy function              | Proxy calls to TMDB                    |
+| `VITE_SUPABASE_URL`       | Client      | `src/services/index.ts` → `auth`, `db`   | Live Supabase auth + database          |
+| `VITE_SUPABASE_ANON_KEY`  | Client      | `src/services/index.ts` → `auth`, `db`   | (paired with the URL)                  |
+| `VITE_AUTH_GOOGLE`        | Client      | `src/auth/flags.ts` → `/sign-in`         | Shows the Google button                |
+| `VITE_PLAUSIBLE_DOMAIN`   | Client      | Analytics adapter (Plausible)            | Privacy-friendly page views            |
 | `VITE_PLAUSIBLE_API_HOST` | Client      | Analytics adapter (Plausible)            | Optional custom/proxied Plausible host |
+
+Variables used only when pushing `supabase/config.toml` to the project (never in Netlify, never
+in `src/`): `RESEND_API_KEY` (SMTP password for Resend), `TURNSTILE_SECRET_KEY` (only once the
+bot check is on), `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` (only once Google is
+on). `config.toml` references them as `env(NAME)`, so the file holds no secret; a test guards that.
 
 Build-time and script-only variables that do not configure the app are listed at the end.
 
@@ -66,13 +71,11 @@ Build-time and script-only variables that do not configure the app are listed at
   and db methods without backing tables still reject with `NotConfiguredError`.
 - **CSP**: when going live, add `https://<ref>.supabase.co` (and `wss://<ref>.supabase.co` for
   realtime) to `connect-src` in `netlify.toml`.
-- **Redirect URLs**: in **Authentication → URL Configuration** set the Site URL to the
-  production origin and add `<origin>/auth/callback` for every origin that signs users in
-  (production, deploy previews, `http://localhost:5173`). The sign-in link lands on
-  `/auth/callback`, which then returns the user to the page they came from.
-- **Email template**: paste `supabase/templates/magic-link.html` (and the `.txt` plain-text
-  version) into **Authentication → Email Templates → Magic Link**; see
-  `supabase/templates/README.md`.
+- **Redirect URLs, Site URL, link expiry, email template, SMTP**: all declared in
+  `supabase/config.toml` and applied with `npx supabase config push` (the sign-in link lands on
+  `/auth/callback`, which returns the user to the page they came from). The full switch-on
+  runbook, including the Netlify scopes and the Resend DNS records, is `docs/SUPABASE.md`.
+- **Scope**: **Builds**, **Production** context only, so deploy previews stay in mock mode.
 
 ### `VITE_AUTH_GOOGLE` (client)
 
@@ -158,19 +161,24 @@ GET /api/tmdb?path=movie/popular&page=2&language=en-US
 Error shape (always JSON):
 
 ```json
-{ "error": { "code": "not_configured", "message": "TMDB proxy is not configured (TMDB_API_KEY missing)." } }
+{
+  "error": {
+    "code": "not_configured",
+    "message": "TMDB proxy is not configured (TMDB_API_KEY missing)."
+  }
+}
 ```
 
-| Status | code |
-| --- | --- |
-| 400 | `missing_path`, `invalid_path`, `invalid_query` |
-| 403 | `path_not_allowed` |
-| 404 | `not_found` (TMDB 404) |
-| 405 | `method_not_allowed` |
-| 429 | `rate_limited` (TMDB 429) |
-| 502 | `upstream_error`, `upstream_unreachable`, `upstream_bad_response` |
-| 503 | `not_configured` (`TMDB_API_KEY` unset) |
-| 504 | `upstream_timeout` |
+| Status | code                                                              |
+| ------ | ----------------------------------------------------------------- |
+| 400    | `missing_path`, `invalid_path`, `invalid_query`                   |
+| 403    | `path_not_allowed`                                                |
+| 404    | `not_found` (TMDB 404)                                            |
+| 405    | `method_not_allowed`                                              |
+| 429    | `rate_limited` (TMDB 429)                                         |
+| 502    | `upstream_error`, `upstream_unreachable`, `upstream_bad_response` |
+| 503    | `not_configured` (`TMDB_API_KEY` unset)                           |
+| 504    | `upstream_timeout`                                                |
 
 ## Setting keys (quick reference)
 

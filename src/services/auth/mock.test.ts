@@ -71,7 +71,12 @@ describe('mock auth adapter', () => {
   it('migrates the legacy bare-user key', async () => {
     localStorage.setItem(
       'lf.mock.auth.user',
-      JSON.stringify({ id: 'mock-x', email: 'x@y.z', displayName: 'x', createdAt: new Date().toISOString() }),
+      JSON.stringify({
+        id: 'mock-x',
+        email: 'x@y.z',
+        displayName: 'x',
+        createdAt: new Date().toISOString(),
+      }),
     );
     expect(await createMockAuth().currentUser()).toMatchObject({ id: 'mock-x' });
     expect(localStorage.getItem('lf.mock.auth.user')).toBeNull();
@@ -100,5 +105,27 @@ describe('mock auth adapter', () => {
     const noStorage = createMockAuth({ storage: null });
     await noStorage.signInWithOAuth('google');
     expect(await noStorage.currentUser()).not.toBeNull();
+  });
+
+  it('has one device, this browser, and forgetting it signs out', async () => {
+    const auth = createMockAuth();
+    expect(await auth.listDevices()).toEqual([]);
+    await auth.signInWithMagicLink('ada@example.com');
+    const [device, ...rest] = await auth.listDevices();
+    expect(rest).toEqual([]);
+    expect(device).toMatchObject({ current: true, revokedAt: null });
+    expect(device.id).toBe(localStorage.getItem('lf.device'));
+    await auth.forgetDevice('someone-elses-device');
+    expect(await auth.currentUser()).not.toBeNull();
+    await auth.forgetDevice(device.id);
+    expect(await auth.currentUser()).toBeNull();
+  });
+
+  it('changes the email immediately when signed in', async () => {
+    const auth = createMockAuth();
+    await expect(auth.changeEmail('new@example.com')).rejects.toThrow(/Sign in/);
+    await auth.signInWithMagicLink('ada@example.com');
+    await auth.changeEmail(' New@Example.com ');
+    expect(await auth.currentUser()).toMatchObject({ email: 'new@example.com' });
   });
 });

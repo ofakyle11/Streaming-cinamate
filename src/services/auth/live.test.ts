@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { SYNC_TABLES } from '../db/live';
 import { createLiveAuth, DELETION_REQUESTS_TABLE, toUser, type SupabaseLike } from './live';
+import { DEVICES_TABLE } from './devices';
 
 const sbUser = (over: Partial<SupabaseUser> = {}): SupabaseUser =>
   ({
@@ -26,7 +27,14 @@ function fakeClient(session: { user: SupabaseUser } | null = null) {
   const deleteErrors: Record<string, unknown> = {};
   const eq = vi.fn();
   const del = vi.fn();
+  const upsert = vi.fn();
+  const update = vi.fn();
+  const select = vi.fn();
+  // Row returned to the device registration upsert (`.select('revoked_at').single()`).
+  const deviceState = { revoked_at: null as string | null };
+  const deviceRows: unknown[] = [];
   const auth = {
+    updateUser: vi.fn().mockResolvedValue({ data: {}, error: null }),
     getSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
     signInWithOtp: vi.fn().mockResolvedValue({ data: {}, error: null }),
     signInWithOAuth: vi.fn().mockResolvedValue({ data: {}, error: null }),
@@ -50,13 +58,53 @@ function fakeClient(session: { user: SupabaseUser } | null = null) {
         },
       };
     },
+    upsert: (row: unknown, opts: unknown) => {
+      upsert(table, row, opts);
+      return {
+        select: () => ({ single: async () => ({ data: { ...deviceState }, error: null }) }),
+      };
+    },
+    update: (patch: unknown) => ({
+      eq: async (col: string, val: unknown) => {
+        update(table, patch, col, val);
+        return { error: null };
+      },
+    }),
+    select: (cols: string) => ({
+      is: (col: string, val: unknown) => ({
+        order: async (by: string, o: unknown) => {
+          select(table, cols, col, val, by, o);
+          return { data: deviceRows, error: null };
+        },
+      }),
+    }),
   }));
   const client = { auth, from } as unknown as SupabaseLike;
-  return { client, auth, from, insert, del, eq, calls, deleteErrors, unsubscribe, emit: (s: { user: SupabaseUser } | null) => listener?.('X', s) };
+  return {
+    client,
+    auth,
+    from,
+    insert,
+    del,
+    eq,
+    upsert,
+    update,
+    select,
+    deviceState,
+    deviceRows,
+    calls,
+    deleteErrors,
+    unsubscribe,
+    emit: (s: { user: SupabaseUser } | null) => listener?.('X', s),
+  };
 }
 
-const make = (fake: ReturnType<typeof fakeClient>) =>
-  createLiveAuth('https://proj.supabase.co', 'anon-key', { loadClient: async () => fake.client });
+const make = (fake: ReturnType<typeof fakeClient>, deviceId = 'this-device-1') =>
+  createLiveAuth('https://proj.supabase.co', 'anon-key', {
+    loadClient: async () => fake.client,
+    deviceId: () => deviceId,
+    deviceCheckIntervalMs: 60_000,
+  });
 
 describe('live auth adapter (Supabase)', () => {
   it('maps Supabase users to domain users', () => {
@@ -72,7 +120,9 @@ describe('live auth adapter (Supabase)', () => {
 
   it('reads the current session', async () => {
     expect(await make(fakeClient()).currentUser()).toBeNull();
-    expect(await make(fakeClient({ user: sbUser() })).currentUser()).toMatchObject({ id: 'uuid-1' });
+    expect(await make(fakeClient({ user: sbUser() })).currentUser()).toMatchObject({
+      id: 'uuid-1',
+    });
   });
 
   it('sends a magic link with a redirect back to /account', async () => {
@@ -80,7 +130,10 @@ describe('live auth adapter (Supabase)', () => {
     await make(fake).signInWithMagicLink(' Ada@Example.com ');
     expect(fake.auth.signInWithOtp).toHaveBeenCalledWith({
       email: 'ada@example.com',
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback`, shouldCreateUser: true },
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        shouldCreateUser: true,
+      },
     });
   });
 
@@ -146,13 +199,17 @@ describe('live auth adapter (Supabase)', () => {
   it('rejects without queuing or signing out when a cloud delete fails', async () => {
     const fake = fakeClient({ user: sbUser() });
     fake.deleteErrors.history = { message: 'permission denied for table history' };
-    await expect(make(fake).requestDataDeletion()).rejects.toThrow('permission denied for table history');
+    await expect(make(fake).requestDataDeletion()).rejects.toThrow(
+      'permission denied for table history',
+    );
     expect(fake.insert).not.toHaveBeenCalled();
     expect(fake.auth.signOut).not.toHaveBeenCalled();
 
     const fallback = fakeClient({ user: sbUser() });
     fallback.deleteErrors.ratings = {};
-    await expect(make(fallback).requestDataDeletion()).rejects.toThrow('Could not delete your cloud data.');
+    await expect(make(fallback).requestDataDeletion()).rejects.toThrow(
+      'Could not delete your cloud data.',
+    );
     expect(fallback.insert).not.toHaveBeenCalled();
     expect(fallback.auth.signOut).not.toHaveBeenCalled();
   });
@@ -170,11 +227,108 @@ describe('live auth adapter (Supabase)', () => {
     await expect(noKeys.signInWithMagicLink('a@b.co')).rejects.toThrow(/not configured/);
     expect(() => noKeys.onAuthStateChange(() => {})()).not.toThrow();
 
-    const loadClient = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(fakeClient().client);
+    const loadClient = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue(fakeClient().client);
     const flaky = createLiveAuth('https://x.supabase.co', 'k', { loadClient });
     expect(await flaky.currentUser()).toBeNull();
     // Retries after a failed load.
     await expect(flaky.signInWithOAuth('google')).resolves.toBeUndefined();
     expect(loadClient).toHaveBeenCalledTimes(2);
+  });
+
+  it('signs out this browser by default and everywhere on request', async () => {
+    const fake = fakeClient({ user: sbUser() });
+    await make(fake).signOut();
+    expect(fake.auth.signOut).toHaveBeenLastCalledWith({ scope: 'local' });
+    expect(fake.eq).toHaveBeenLastCalledWith(DEVICES_TABLE, 'id', 'this-device-1');
+
+    await make(fake).signOut({ scope: 'global' });
+    expect(fake.auth.signOut).toHaveBeenLastCalledWith({ scope: 'global' });
+    // Every device row goes with the global revocation.
+    expect(fake.eq).toHaveBeenLastCalledWith(DEVICES_TABLE, 'user_id', 'uuid-1');
+  });
+
+  it('lists active devices newest first and marks this browser', async () => {
+    const fake = fakeClient({ user: sbUser() });
+    fake.deviceRows.push(
+      {
+        id: 'other-device-2',
+        label: 'Safari on iPhone',
+        user_agent: 'ua2',
+        created_at: 'c2',
+        last_seen_at: 's2',
+        revoked_at: null,
+      },
+      {
+        id: 'this-device-1',
+        label: 'Chrome on macOS',
+        user_agent: 'ua1',
+        created_at: 'c1',
+        last_seen_at: 's1',
+        revoked_at: null,
+      },
+    );
+    const devices = await make(fake).listDevices();
+    expect(devices.map((d) => [d.id, d.current, d.label])).toEqual([
+      ['other-device-2', false, 'Safari on iPhone'],
+      ['this-device-1', true, 'Chrome on macOS'],
+    ]);
+    expect(fake.select).toHaveBeenCalledWith(
+      DEVICES_TABLE,
+      'id, label, user_agent, created_at, last_seen_at, revoked_at',
+      'revoked_at',
+      null,
+      'last_seen_at',
+      { ascending: false },
+    );
+    expect(await make(fakeClient(null)).listDevices()).toEqual([]);
+  });
+
+  it('forgets another device by revoking it, and this one by signing out', async () => {
+    const fake = fakeClient({ user: sbUser() });
+    const auth = make(fake);
+    await auth.forgetDevice('other-device-2');
+    expect(fake.update).toHaveBeenCalledWith(
+      DEVICES_TABLE,
+      { revoked_at: expect.stringMatching(/^\d{4}-/) },
+      'id',
+      'other-device-2',
+    );
+    expect(fake.auth.signOut).not.toHaveBeenCalled();
+    await auth.forgetDevice('this-device-1');
+    expect(fake.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it('registers this browser when a session appears and signs out once it is revoked', async () => {
+    const fake = fakeClient();
+    make(fake).onAuthStateChange(() => {});
+    await vi.waitFor(() => expect(fake.auth.onAuthStateChange).toHaveBeenCalled());
+    fake.emit({ user: sbUser() });
+    await vi.waitFor(() => expect(fake.upsert).toHaveBeenCalled());
+    expect(fake.upsert).toHaveBeenCalledWith(
+      DEVICES_TABLE,
+      { id: 'this-device-1', label: expect.any(String), user_agent: expect.any(String) },
+      { onConflict: 'user_id,id' },
+    );
+    expect(fake.auth.signOut).not.toHaveBeenCalled();
+
+    // Forgotten from another device: the next check (tab focus) signs us out.
+    fake.deviceState.revoked_at = '2026-10-06T00:00:00Z';
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.waitFor(() => expect(fake.auth.signOut).toHaveBeenCalledWith({ scope: 'local' }));
+    expect(fake.eq).toHaveBeenCalledWith(DEVICES_TABLE, 'id', 'this-device-1');
+  });
+
+  it('starts an email change confirmed through the callback route', async () => {
+    const fake = fakeClient({ user: sbUser() });
+    await make(fake).changeEmail(' New@Example.com ');
+    expect(fake.auth.updateUser).toHaveBeenCalledWith(
+      { email: 'new@example.com' },
+      { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    );
+    await expect(make(fake).changeEmail('nope')).rejects.toThrow(/valid email/);
   });
 });
