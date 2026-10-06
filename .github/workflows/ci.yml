@@ -5,6 +5,9 @@ on:
     branches: ['**']
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -28,6 +31,8 @@ jobs:
         run: npm test --if-present
       - name: Build
         run: npm run build
+      - name: Build output carries the CSP
+        run: grep -q '^  Content-Security-Policy: ' dist/_headers
 
   e2e:
     runs-on: ubuntu-latest

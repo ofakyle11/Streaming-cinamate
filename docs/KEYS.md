@@ -93,12 +93,13 @@ Build-time and script-only variables that do not configure the app are listed at
   mode **Managed**. Copy the **Site Key** into Netlify; paste the **Secret Key** into
   Supabase → **Authentication** → **Attack Protection** (Bot and Abuse Protection) →
   **Enable CAPTCHA protection** → provider **Turnstile**.
-- **Effect**: when set at build time, the sign-in form renders the `<Turnstile>` widget and
-  sends its token as `captchaToken` with the magic-link request, and the build adds
+- **Effect**: when set at build time, a sign-in form that mounts `<Turnstile>` shows the
+  widget and sends its token as `captchaToken` with the magic-link request, and the build adds
   `https://challenges.cloudflare.com` to `script-src` and `frame-src` in the CSP. When unset
   (mock mode, previews) no widget, no script and no CSP entry. Set it only together with live
   Supabase and CAPTCHA protection enabled there; with CAPTCHA on in Supabase but no site key
-  in the build, every sign-in fails.
+  in the build, every sign-in fails. The `/sign-in` page must mount the widget first; the
+  older form on `/account` does not send a token.
 - **Scope**: **Builds**, Production context only (same as the Supabase variables).
 
 ## Billing: no keys

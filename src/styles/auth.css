@@ -1,0 +1,6 @@
+/* Sign-in helpers: Cloudflare Turnstile bot check (src/components/auth/Turnstile.tsx). */
+.turnstile-error {
+  margin: 6px 0 0;
+  font-size: 0.875rem;
+  color: var(--color-danger);
+}

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import ts from 'typescript';
 
 /**
  * Guard: client code (everything under src/) is bundled and public. It may
@@ -14,9 +15,25 @@ const sources = import.meta.glob('/src/**/*.{ts,tsx,js,jsx,mjs}', {
 const isTest = (path: string) => /\.test\.[jt]sx?$/.test(path) || path.startsWith('/src/test/');
 const VITE_BUILTINS = new Set(['DEV', 'PROD', 'MODE', 'BASE_URL', 'SSR']);
 
-/** Strip comments so documentation that names a variable does not trip the guard. */
+/**
+ * Strip comments with the TypeScript scanner, so documentation that names a
+ * variable does not trip the guard, while `/*` inside strings, templates and
+ * regex literals is left alone.
+ */
 function code(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.JSX, text);
+  let out = '';
+  for (let kind = scanner.scan(); kind !== ts.SyntaxKind.EndOfFileToken; kind = scanner.scan()) {
+    if (
+      kind === ts.SyntaxKind.SingleLineCommentTrivia ||
+      kind === ts.SyntaxKind.MultiLineCommentTrivia
+    ) {
+      out += ' ';
+    } else {
+      out += scanner.getTokenText();
+    }
+  }
+  return out;
 }
 
 function offendingEnvNames(path: string, text: string): string[] {
@@ -31,6 +48,18 @@ function offendingEnvNames(path: string, text: string): string[] {
     const name = m[1] ?? m[2];
     if (!name.startsWith('VITE_') && !VITE_BUILTINS.has(name))
       out.push(`${path}: import.meta.env.${name}`);
+  }
+  // Destructuring such as `const { TMDB_API_KEY } = import.meta.env`.
+  for (const m of src.matchAll(/\{([^{}]*)\}\s*=\s*import\.meta\.env\b/g)) {
+    for (const part of m[1].split(',')) {
+      const name = part
+        .split(':')[0]
+        .replace(/\.\.\./, '')
+        .split('=')[0]
+        .trim();
+      if (name && !name.startsWith('VITE_') && !VITE_BUILTINS.has(name))
+        out.push(`${path}: { ${name} } = import.meta.env`);
+    }
   }
   // Aliases such as `const env = import.meta.env; env.TMDB_API_KEY`.
   for (const alias of src.matchAll(

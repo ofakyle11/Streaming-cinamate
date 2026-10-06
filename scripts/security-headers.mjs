@@ -1,8 +1,8 @@
 /**
  * Single source of truth for the Content-Security-Policy.
  *
- * `npm run build` runs this after `vite build` to write `dist/_headers`, which
- * Netlify applies alongside the static headers in netlify.toml. The CSP lives
+ * The Vite plugin below writes it to `<outDir>/_headers` at the end of every
+ * production build (`npm run build`); Netlify applies it alongside the static headers in netlify.toml. The CSP lives
  * here rather than in netlify.toml because one entry is conditional: the
  * Cloudflare Turnstile origin is allowed only when the build has a site key
  * (VITE_TURNSTILE_SITE_KEY), so a mock-mode build ships no third-party
@@ -80,12 +80,40 @@ export function headersFile(opts = {}) {
   return ['/*', `  Content-Security-Policy: ${buildCsp(opts)}`, ''].join('\n');
 }
 
-async function main() {
-  const turnstile = turnstileEnabled();
-  const outDir = resolve(process.cwd(), process.argv[2] ?? 'dist');
+/**
+ * Vite plugin: writes `_headers` into the build's outDir after the bundle is
+ * written, using the same env files and mode Vite used for the bundle, so the
+ * CSP always matches what the client code will load. Honors `--outDir`.
+ */
+export function securityHeadersPlugin() {
+  let outDir = 'dist';
+  let turnstile = false;
+  return {
+    name: 'lastframe-security-headers',
+    apply: 'build',
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+      turnstile = turnstileEnabled(config.env);
+    },
+    async closeBundle() {
+      await writeHeaders(outDir, turnstile);
+    },
+  };
+}
+
+async function writeHeaders(outDir, turnstile) {
   await mkdir(outDir, { recursive: true });
   await writeFile(resolve(outDir, '_headers'), headersFile({ turnstile }), 'utf8');
   console.log(`security-headers: wrote ${outDir}/_headers (turnstile ${turnstile ? 'on' : 'off'})`);
+}
+
+/** CLI fallback: `node scripts/security-headers.mjs [dir]` (reads env files like Vite). */
+async function main() {
+  const { loadEnv } = await import('vite');
+  const mode = process.env.MODE || 'production';
+  const turnstile = turnstileEnabled({ ...loadEnv(mode, process.cwd(), 'VITE_'), ...process.env });
+  const dir = process.argv.slice(2).find((a) => !a.startsWith('-')) ?? 'dist';
+  await writeHeaders(resolve(process.cwd(), dir), turnstile);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

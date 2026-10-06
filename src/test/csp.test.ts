@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import netlifyToml from '../../netlify.toml?raw';
 import pkg from '../../package.json';
+import viteConfig from '../../vite.config.ts?raw';
 import { DEFAULT_PLAUSIBLE_HOST } from '../services/analytics/plausible';
 import { TURNSTILE_ORIGIN as CLIENT_TURNSTILE_ORIGIN } from '../services/auth/turnstile';
 import {
@@ -23,7 +24,8 @@ function parseCsp(csp: string): Map<string, string[]> {
 describe('CSP source of truth', () => {
   it('is generated into dist/_headers by the build, not hard-coded in netlify.toml', () => {
     expect(netlifyToml).not.toMatch(/^\s*Content-Security-Policy\s*=/m);
-    expect(pkg.scripts.build).toMatch(/vite build && node scripts\/security-headers\.mjs$/);
+    expect(pkg.scripts.build).toMatch(/vite build$/);
+    expect(viteConfig).toContain('securityHeadersPlugin()');
   });
 
   it('writes a _headers file for every path', () => {

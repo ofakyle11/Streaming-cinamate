@@ -54,14 +54,16 @@ export function loadTurnstile(doc: Document = document): Promise<TurnstileApi> {
   if (window.turnstile) return Promise.resolve(window.turnstile);
   if (!scriptPromise) {
     scriptPromise = new Promise<TurnstileApi>((resolve, reject) => {
-      const fail = (msg: string) => {
-        scriptPromise = null;
-        reject(new Error(msg));
-      };
       const existing = doc.querySelector<HTMLScriptElement>(
         `script[src="${TURNSTILE_SCRIPT_URL}"]`,
       );
       const script = existing ?? doc.createElement('script');
+      const fail = (msg: string) => {
+        scriptPromise = null;
+        // Drop the dead element so a retry injects a fresh one instead of waiting on it forever.
+        script.remove();
+        reject(new Error(msg));
+      };
       const onLoad = () =>
         window.turnstile ? resolve(window.turnstile) : fail('Turnstile did not initialise.');
       script.addEventListener('load', onLoad, { once: true });

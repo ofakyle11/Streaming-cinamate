@@ -2,6 +2,9 @@ import type { EmailOtpType, SupabaseClient, User as SupabaseUser } from '@supaba
 import { NotConfiguredError, type AuthService, type User } from '../types';
 import { SYNC_TABLES } from '../db/live';
 import { authRedirectUrl, requireEmail, requirePassword } from './validate';
+import { callbackErrorMessage, LINK_INVALID_MESSAGE } from './messages';
+
+export { callbackErrorMessage, LINK_INVALID_MESSAGE } from './messages';
 
 /** Table that queues server-side erasure (see supabase/migrations). */
 export const DELETION_REQUESTS_TABLE = 'account_deletion_requests';
@@ -17,16 +20,9 @@ export interface LiveAuthOptions {
   loadClient?: () => Promise<SupabaseLike>;
 }
 
-/** Shown for expired, reused or malformed sign-in links. Never echoes provider text. */
-export const LINK_INVALID_MESSAGE = 'This sign-in link has expired or was already used. Request a new one.';
 
 const OTP_TYPES = new Set(['magiclink', 'signup', 'invite', 'recovery', 'email_change', 'email']);
 
-/** Maps a callback error code to fixed copy; the provider's description is never shown. */
-export function callbackErrorMessage(code?: string): string {
-  if (code === 'access_denied') return 'Sign-in was cancelled.';
-  return LINK_INVALID_MESSAGE;
-}
 
 function str(v: unknown): string | undefined {
   return typeof v === 'string' && v.trim() ? v.trim() : undefined;

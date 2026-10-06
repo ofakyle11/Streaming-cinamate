@@ -288,8 +288,8 @@ Use these for any new modal, menu or card rail rather than hand-rolling focus lo
 Netlify builds with `npm run build` and publishes `dist/`. `netlify.toml` adds the SPA
 fallback, an `/api/*` → `/.netlify/functions/*` rewrite (rate limited to 60 requests a minute
 per IP) and static security headers (HSTS, `X-Frame-Options: DENY` and others). The
-Content-Security-Policy is generated at the end of `npm run build` by
-`scripts/security-headers.mjs` into `dist/_headers`, because it changes when a Turnstile site
+Content-Security-Policy is generated at the end of every production build by the Vite
+plugin in `scripts/security-headers.mjs` into `dist/_headers`, because it changes when a Turnstile site
 key is set. When a live integration adds a new origin, extend the CSP there in the same change.
 See [SECURITY.md](SECURITY.md). CI (`.github/workflows/ci.yml`, Node 20) runs lint, typecheck,
 test and build, plus a dependency audit and a secret scan, on every push.

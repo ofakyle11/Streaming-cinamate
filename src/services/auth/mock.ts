@@ -1,5 +1,6 @@
 import type { AuthService, OAuthProvider, User } from '../types';
 import { requireEmail, requirePassword } from './validate';
+import { callbackErrorMessage, LINK_INVALID_MESSAGE } from './messages';
 
 /** localStorage key holding the fake session. */
 export const MOCK_SESSION_KEY = 'lf.mock.auth.session';
@@ -161,9 +162,9 @@ export function createMockAuth(opts: MockAuthOptions = {}): AuthService {
     },
     async completeSignIn(params) {
       // Mock sign-in completes immediately, so a callback only confirms it.
-      if (params.error || params.error_code) throw new Error('This sign-in link has expired or was already used. Request a new one.');
+      if (params.error || params.error_code) throw new Error(callbackErrorMessage(params.error_code ?? params.error));
       const user = activeUser();
-      if (!user) throw new Error('This sign-in link has expired or was already used. Request a new one.');
+      if (!user) throw new Error(LINK_INVALID_MESSAGE);
       return user;
     },
     async signInWithOAuth(provider) {

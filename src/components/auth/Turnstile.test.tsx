@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import Turnstile from './Turnstile';
 import {
   isTurnstileEnabled,
+  loadTurnstile,
   resetTurnstileLoader,
   turnstileSiteKey,
   type TurnstileApi,
@@ -54,6 +55,37 @@ describe('<Turnstile>', () => {
     expect(api.remove).toHaveBeenCalledWith('w1');
   });
 
+  it('clears the parent token when the widget resets (tokens are single use)', async () => {
+    const api: TurnstileApi = { render: vi.fn(() => 'w1'), reset: vi.fn(), remove: vi.fn() };
+    window.turnstile = api;
+    const onToken = vi.fn();
+    const { rerender } = render(<Turnstile siteKey="0xKEY" onToken={onToken} resetKey={0} />);
+    await waitFor(() => expect(api.render).toHaveBeenCalledTimes(1));
+    onToken.mockClear();
+    rerender(<Turnstile siteKey="0xKEY" onToken={onToken} resetKey={1} />);
+    expect(onToken).toHaveBeenCalledWith(null);
+    await waitFor(() => expect(api.render).toHaveBeenCalledTimes(2));
+  });
+
+  it('retries with a fresh script after a failed load', async () => {
+    const first = loadTurnstile();
+    const dead = document.head.querySelector<HTMLScriptElement>(
+      'script[src*="challenges.cloudflare.com"]',
+    );
+    dead?.dispatchEvent(new Event('error'));
+    await expect(first).rejects.toThrow();
+    expect(dead?.isConnected).toBe(false);
+    const second = loadTurnstile();
+    const fresh = document.head.querySelector<HTMLScriptElement>(
+      'script[src*="challenges.cloudflare.com"]',
+    );
+    expect(fresh).not.toBeNull();
+    expect(fresh).not.toBe(dead);
+    window.turnstile = { render: vi.fn(), reset: vi.fn(), remove: vi.fn() };
+    fresh?.dispatchEvent(new Event('load'));
+    await expect(second).resolves.toBe(window.turnstile);
+  });
+
   it('shows an error when the script cannot load', async () => {
     const onToken = vi.fn();
     render(<Turnstile siteKey="0xKEY" onToken={onToken} />);
@@ -64,7 +96,7 @@ describe('<Turnstile>', () => {
       'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit',
     );
     script?.dispatchEvent(new Event('error'));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/bot check/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/not a bot/i);
     expect(onToken).toHaveBeenLastCalledWith(null);
   });
 });
