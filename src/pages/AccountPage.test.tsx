@@ -202,8 +202,8 @@ describe('AccountPage: signed in', () => {
     fireEvent.click(screen.getByRole('button', { name: /sign out of this device/i }));
     expect(await screen.findByText('Guest mode')).toBeInTheDocument();
     expect(spy).toHaveBeenCalledTimes(1);
-    // No scope means this browser only (the live adapter maps it to Supabase's local scope).
-    expect(spy.mock.calls[0][0]).toBeUndefined();
+    // Explicit local scope: this browser only, whatever an adapter's default is.
+    expect(spy).toHaveBeenCalledWith({ scope: 'local' });
     expect(getLive('status')).toHaveTextContent(/signed out of this device\. guest mode/i);
   });
 
