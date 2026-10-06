@@ -2,8 +2,9 @@ import { lazy } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import AppLayout from './AppLayout';
 import RouteError from '../components/errors/RouteError';
+// Eager: a few hundred bytes that decide between the (lazy) Home and LandingPage chunks.
+import FrontDoor from '../pages/FrontDoor';
 
-const Home = lazy(() => import('../pages/Home'));
 const TitlePage = lazy(() => import('../pages/TitlePage'));
 const SearchPage = lazy(() => import('../pages/SearchPage'));
 const MyListPage = lazy(() => import('../pages/MyListPage'));
@@ -17,6 +18,7 @@ const BrandPage = lazy(() => import('../pages/BrandPage'));
 const SignInPage = lazy(() => import('../pages/SignInPage'));
 const SignInSentPage = lazy(() => import('../pages/SignInSentPage'));
 const AuthCallbackPage = lazy(() => import('../pages/AuthCallbackPage'));
+const LegalPage = lazy(() => import('../pages/LegalPage'));
 
 export const router = createBrowserRouter([
   {
@@ -24,7 +26,8 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <Home /> },
+      // `/` is the front door: the landing page for signed-out first-time visitors, Home otherwise.
+      { index: true, element: <FrontDoor /> },
       { path: 'title/:type/:id', element: <TitlePage /> },
       { path: 'search', element: <SearchPage /> },
       { path: 'my-list', element: <MyListPage /> },
@@ -37,6 +40,9 @@ export const router = createBrowserRouter([
       { path: 'sign-in', element: <SignInPage /> },
       { path: 'sign-in/sent', element: <SignInSentPage /> },
       { path: 'auth/callback', element: <AuthCallbackPage /> },
+      { path: 'privacy', element: <LegalPage doc="privacy" /> },
+      { path: 'terms', element: <LegalPage doc="terms" /> },
+      { path: 'security', element: <LegalPage doc="security" /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

@@ -16,6 +16,8 @@ export const AnalyticsEvents = {
   thumbDown: 'thumb-down',
   thumbClear: 'thumb-clear',
   historyClear: 'history-clear',
+  /** Landing page: the visitor chose to browse without an account. */
+  browseAsGuest: 'browse-as-guest',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

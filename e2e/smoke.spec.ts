@@ -12,6 +12,34 @@ async function openTitle(page: Page, name = TITLE) {
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
 }
 
+test('the landing page is the front door until you browse as a guest', async ({ browser }) => {
+  // A first visit: no guest choice remembered yet.
+  const context = await browser.newContext({ storageState: undefined });
+  const page = await context.newPage();
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', { level: 1, name: /Know where it streams/ }),
+  ).toBeVisible();
+  await expect(page.getByRole('link', { name: /Get started/ })).toHaveAttribute(
+    'href',
+    '/sign-in?new=1',
+  );
+  const wall = page.getByTestId('landing-wall');
+  await expect(wall).toHaveClass(/is-ready/);
+  expect(await wall.locator('.land-poster-fit').count()).toBe(9);
+  await expect(page).toHaveTitle('Find where to watch · Lastframe.tv');
+
+  await page.getByRole('button', { name: 'Browse as a guest' }).click();
+  await expect(page.locator('section.row').first()).toBeVisible();
+  // The choice is remembered: `/` opens the app from now on.
+  await page.reload();
+  await expect(page.locator('section.row').first()).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /Know where it streams/ })).toHaveCount(
+    0,
+  );
+  await context.close();
+});
+
 test('home renders catalogue rows', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible();

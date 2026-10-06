@@ -13,6 +13,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROUTES = [
+  // The front door: the landing page for new visitors, the app for guests and members.
   { path: '/', changefreq: 'daily', priority: '1.0' },
   { path: '/search', changefreq: 'weekly', priority: '0.8' },
   { path: '/my-list', changefreq: 'weekly', priority: '0.5' },
@@ -20,6 +21,9 @@ const ROUTES = [
   { path: '/account', changefreq: 'monthly', priority: '0.3' },
   { path: '/plans', changefreq: 'monthly', priority: '0.6' },
   { path: '/brand', changefreq: 'monthly', priority: '0.3' },
+  { path: '/privacy', changefreq: 'monthly', priority: '0.3' },
+  { path: '/terms', changefreq: 'monthly', priority: '0.3' },
+  { path: '/security', changefreq: 'monthly', priority: '0.3' },
 ];
 
 const origin = (process.env.SITE_ORIGIN || 'https://lastframe.tv').replace(/\/+$/, '');
