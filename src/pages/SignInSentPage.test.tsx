@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../auth';
+import { RETURN_TO_KEY, rememberReturnTo } from '../auth/returnTo';
 import { createMockAuth } from '../services/auth/mock';
 import type { AuthService } from '../services/types';
 import { SENT_EMAIL_KEY } from './SignInPage';
@@ -88,10 +89,18 @@ describe('SignInSentPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Rate limited');
   });
 
-  it('survives a reload through sessionStorage', async () => {
+  it('survives a reload through sessionStorage and keeps the remembered return path', async () => {
     sessionStorage.setItem(SENT_EMAIL_KEY, 'ada@example.com');
-    renderSent(null);
+    rememberReturnTo('/plans');
+    const service = renderSent(null, liveLikeAuth(), 0);
     expect(await screen.findByText('ada@example.com')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /different email/i })).toHaveAttribute(
+      'href',
+      '/sign-in?returnTo=%2Fplans',
+    );
+    fireEvent.click(screen.getByRole('button', { name: /resend link/i }));
+    await waitFor(() => expect(service.signInWithMagicLink).toHaveBeenCalled());
+    expect(JSON.parse(localStorage.getItem(RETURN_TO_KEY) ?? '{}').path).toBe('/plans');
   });
 
   it('goes back to sign-in when there is nothing to show', async () => {

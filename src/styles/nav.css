@@ -262,9 +262,12 @@ a.avatar {
   .navbar .profile-trigger-name {
     display: none;
   }
-  /* One button on narrow bars: Sign in covers both paths. */
+  /* One button on narrow bars: Sign in covers both paths, at the bar's tap height. */
   .navbar .nav-start {
     display: none;
+  }
+  .navbar .nav-auth .btn {
+    min-height: var(--tap);
   }
 }
 

@@ -156,6 +156,7 @@
   align-items: center;
   min-height: var(--tap);
   padding: 0 8px;
+  margin: 0 -8px;
   color: var(--color-accent-text);
   font-weight: 600;
   text-decoration: none;

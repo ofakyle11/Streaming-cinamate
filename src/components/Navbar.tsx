@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useOptionalAuth } from '../auth/context';
-import { safeReturnTo, signInHref } from '../auth/returnTo';
+import { getStartedHref, signInHref } from '../auth/returnTo';
 import ProfileMenu from '../features/profiles/ProfileMenu';
 import BrandMark from './brand/BrandMark';
 import LogoMark from './brand/LogoMark';
@@ -50,11 +50,13 @@ export default function Navbar() {
   // Signed out (next-phase plan, T1/T2): Sign in and Get started replace the profile
   // menu. The context is read optionally so the bar still renders outside AuthProvider
   // (unit tests) and keeps the menu while auth is resolving (no flash for members).
-  const signedOut = useOptionalAuth()?.status === 'guest';
+  // On the sign-in pages themselves the buttons would only reload the page.
+  const onAuthRoute = pathname.startsWith('/sign-in') || pathname.startsWith('/auth/');
+  const signedOut = useOptionalAuth()?.status === 'guest' && !onAuthRoute;
   // Both buttons bring the visitor back to the page they were on.
   const here = `${pathname}${location.search}`;
   const signInTo = signInHref(here);
-  const startTo = `/sign-in?new=1${safeReturnTo(here) && here !== '/' ? `&returnTo=${encodeURIComponent(here)}` : ''}`;
+  const startTo = getStartedHref(here);
 
   const submitSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

@@ -3,6 +3,7 @@ import {
   RETURN_TO_KEY,
   RETURN_TO_TTL_MS,
   forgetReturnTo,
+  getStartedHref,
   peekReturnTo,
   rememberReturnTo,
   resolveReturnTo,
@@ -53,6 +54,14 @@ describe('safeReturnTo', () => {
   });
 });
 
+describe('getStartedHref', () => {
+  it('adds new=1 and the same return path', () => {
+    expect(getStartedHref('/my-list')).toBe('/sign-in?new=1&returnTo=%2Fmy-list');
+    expect(getStartedHref('/')).toBe('/sign-in?new=1');
+    expect(getStartedHref('//evil.example')).toBe('/sign-in?new=1');
+  });
+});
+
 describe('signInHref', () => {
   it('carries a safe path and drops the rest', () => {
     expect(signInHref('/account')).toBe('/sign-in?returnTo=%2Faccount');
@@ -79,9 +88,11 @@ describe('remembered return path', () => {
     expect(peekReturnTo(storage, 2000)).toBeNull();
   });
 
-  it('ignores the case of the auth routes', () => {
+  it('ignores the case and encoding of the auth routes', () => {
     expect(safeReturnTo('/SIGN-IN')).toBeNull();
     expect(safeReturnTo('/Auth/Callback')).toBeNull();
+    expect(safeReturnTo('/sign%2Din')).toBeNull();
+    expect(safeReturnTo('/%E0%A4%A')).toBeNull();
   });
 
   it('expires', () => {

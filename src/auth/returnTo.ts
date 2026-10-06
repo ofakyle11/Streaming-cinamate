@@ -36,7 +36,12 @@ export function safeReturnTo(raw: string | null | undefined): string | null {
   if (value.includes('\\')) return null;
   if (hasControlOrSpace(value)) return null;
   if (value.length > 2048) return null;
-  const pathname = value.split(/[?#]/, 1)[0].toLowerCase();
+  let pathname = value.split(/[?#]/, 1)[0].toLowerCase();
+  try {
+    pathname = decodeURIComponent(pathname); // the router decodes before matching
+  } catch {
+    return null; // malformed escape
+  }
   if (AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return null;
   return value;
 }
@@ -46,12 +51,22 @@ export function resolveReturnTo(raw: string | null | undefined): string {
   return safeReturnTo(raw) ?? DEFAULT_RETURN_TO;
 }
 
+function authHref(path: string | null | undefined, params: Record<string, string>): string {
+  const query = new URLSearchParams(params);
+  const target = safeReturnTo(path);
+  if (target && target !== DEFAULT_RETURN_TO) query.set('returnTo', target);
+  const qs = query.toString();
+  return qs ? `/sign-in?${qs}` : '/sign-in';
+}
+
 /** Build the sign-in URL that comes back to `path` afterwards. */
 export function signInHref(path?: string | null): string {
-  const target = safeReturnTo(path);
-  return target && target !== DEFAULT_RETURN_TO
-    ? `/sign-in?returnTo=${encodeURIComponent(target)}`
-    : '/sign-in';
+  return authHref(path, {});
+}
+
+/** The "Get started" variant of the sign-in URL (new-visitor wording), same return path. */
+export function getStartedHref(path?: string | null): string {
+  return authHref(path, { new: '1' });
 }
 
 type KeyValueStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;

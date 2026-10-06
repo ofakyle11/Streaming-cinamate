@@ -203,6 +203,12 @@ describe('Navbar signed-out state', () => {
     expect(nav().queryByRole('button', { name: /switch profile/i })).toBeNull();
   });
 
+  it('hides the buttons on the sign-in pages themselves', async () => {
+    await renderWithAuth(createMockAuth(), '/sign-in?returnTo=%2Fmy-list');
+    await waitFor(() => expect(nav().queryByRole('link', { name: 'Sign in' })).toBeNull());
+    expect(nav().queryByRole('link', { name: 'Get started' })).toBeNull();
+  });
+
   it('shows the profile menu to members', async () => {
     const service = createMockAuth();
     await service.signInWithMagicLink('ada@example.com');

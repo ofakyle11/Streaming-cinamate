@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import AuthCard from '../components/auth/AuthCard';
 import { Button } from '../components/ui';
 import { useAuth } from '../auth';
-import { rememberReturnTo, resolveReturnTo, signInHref } from '../auth/returnTo';
+import { peekReturnTo, rememberReturnTo, resolveReturnTo, signInHref } from '../auth/returnTo';
 import { isValidEmail } from '../services/auth/validate';
 import { useMeta } from '../hooks/useMeta';
 import { SENT_EMAIL_KEY } from './SignInPage';
@@ -56,7 +56,10 @@ export default function SignInSentPage({
   const { status, signInWithMagicLink } = useAuth();
   const state = (location.state ?? null) as SentState | null;
   const [email] = useState(() => readSentEmail(state));
-  const returnTo = resolveReturnTo(typeof state?.returnTo === 'string' ? state.returnTo : null);
+  // After a reload the router state is gone; the remembered path still knows where to go.
+  const returnTo = resolveReturnTo(
+    typeof state?.returnTo === 'string' ? state.returnTo : peekReturnTo(),
+  );
   const [left, setLeft] = useState(cooldownSeconds);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);

@@ -7,6 +7,7 @@ export {
   safeReturnTo,
   resolveReturnTo,
   signInHref,
+  getStartedHref,
   rememberReturnTo,
   peekReturnTo,
   takeReturnTo,
