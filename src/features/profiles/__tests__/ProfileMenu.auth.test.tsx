@@ -8,7 +8,7 @@ import type { AuthService } from '../../../services/types';
 import { useLastFrameStore } from '../../../state/store';
 import ProfileMenu from '../ProfileMenu';
 
-function renderMenu(service?: AuthService, path = '/title/movie/42?from=home') {
+function renderMenu(service?: AuthService, path = '/title/movie/42') {
   const tree = (
     <MemoryRouter initialEntries={[path]}>
       <ProfileMenu />
@@ -40,18 +40,12 @@ describe('ProfileMenu account items', () => {
     });
   });
 
-  it('offers Account and Sign in to a guest, returning to the current page', async () => {
+  it('shows no account items to a guest (the bar offers Sign in instead)', async () => {
     renderMenu(createMockAuth());
     open();
-    expect(await screen.findByRole('menuitem', { name: 'Account' })).toHaveAttribute(
-      'href',
-      '/account',
-    );
-    expect(screen.getByRole('menuitem', { name: 'Sign in' })).toHaveAttribute(
-      'href',
-      '/sign-in?returnTo=%2Ftitle%2Fmovie%2F42%3Ffrom%3Dhome',
-    );
-    expect(screen.queryByRole('menuitem', { name: 'Sign out' })).toBeNull();
+    expect(await screen.findByRole('menuitem', { name: 'Manage profiles' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Account' })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: /sign/i })).toBeNull();
   });
 
   it('offers Account and Sign out when signed in, and signs out', async () => {
@@ -65,8 +59,6 @@ describe('ProfileMenu account items', () => {
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
     expect(await service.currentUser()).toBeNull();
     expect(await screen.findByText(/signed out/i)).toBeInTheDocument();
-    open();
-    expect(await screen.findByRole('menuitem', { name: 'Sign in' })).toBeInTheDocument();
   });
 
   it('keeps the profile items only when rendered without auth', () => {

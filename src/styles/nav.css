@@ -107,6 +107,17 @@ a.logo:hover {
 .search:focus {
   width: 240px;
 }
+/* Signed out: Sign in (glass) and Get started (accent) in place of the profile menu. */
+.nav-auth {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-auth .btn {
+  white-space: nowrap;
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
 a.avatar {
   display: block;
 }
@@ -249,6 +260,10 @@ a.avatar {
 /* Between the phone bar and a 600px tablet there is no room for the profile name. */
 @media (max-width: 600px) {
   .navbar .profile-trigger-name {
+    display: none;
+  }
+  /* One button on narrow bars: Sign in covers both paths. */
+  .navbar .nav-start {
     display: none;
   }
 }
