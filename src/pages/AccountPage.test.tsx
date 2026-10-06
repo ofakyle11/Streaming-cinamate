@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthContext, AuthProvider, clearLocalData, isLastFrameKey } from '../auth';
+import type { AuthContextValue } from '../auth';
 import { createMockAuth, makeMockUser } from '../services/auth/mock';
 import { createMockDb } from '../services/db/mock';
 import type { AuthService, DbService } from '../services/types';
@@ -28,8 +29,12 @@ function LocationProbe() {
  * methods the backend thread adds to useAuth() (listDevices, forgetDevice,
  * changeEmail), which the current AuthProvider does not forward yet.
  */
-function renderWithContext(extra: Partial<ExtendedAuth>, path = '/account') {
+function renderWithContext(
+  extra: Partial<Pick<ExtendedAuth, 'listDevices' | 'forgetDevice' | 'changeEmail'>>,
+  path = '/account',
+) {
   const user = makeMockUser('ada@example.com');
+  const base = createMockAuth();
   const value = {
     status: 'authenticated' as const,
     user,
@@ -37,10 +42,11 @@ function renderWithContext(extra: Partial<ExtendedAuth>, path = '/account') {
     mode: 'mock' as const,
     signInWithMagicLink: vi.fn(async () => undefined),
     signInWithOAuth: vi.fn(async () => undefined),
+    completeSignIn: base.completeSignIn,
     signOut: vi.fn(async () => undefined),
     deleteData: vi.fn(async () => undefined),
     ...extra,
-  };
+  } satisfies AuthContextValue & Partial<ExtendedAuth>;
   render(
     <ToastProvider>
       <AuthContext.Provider value={value}>
