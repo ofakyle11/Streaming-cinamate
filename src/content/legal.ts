@@ -65,7 +65,7 @@ export const privacy: LegalDocument = {
           '**Your email address**, used to send you a sign-in link and to recognise you next time. If you sign in with Google, we also receive the name and avatar on your Google account.',
           '**The profiles you create**, with their names and avatars.',
           '**Your list, viewing history and ratings**, so they follow you between devices.',
-          '**Basic security records**: when you signed in, so we can spot abuse. A list of your signed-in devices on the Account page is coming.',
+          '**Basic security records**: when you signed in, so we can spot abuse. You can see your signed-in devices on the [Account page](/account) and sign any of them out.',
         ],
         'We do not collect payment details, your contacts, your location, or anything you do inside another streaming service.',
       ],
@@ -124,7 +124,7 @@ export const privacy: LegalDocument = {
           '**Stay a guest.** Everything works without an account; your data just stays on this device.',
           '**Delete everything.** Open your [Account page](/account) and choose Delete my data. Deletion completes within 24 hours and cannot be undone.',
           '**Take a copy.** Download your profiles, list, history and ratings as a file from the [Account page](/account?tab=data), or ask us at the address below.',
-          '**Sign out.** From the Account page. Signing out of every device at once is coming.',
+          '**Sign out.** From the [Account page](/account), one device at a time or every device at once.',
           '**Clear this device.** Signing out of an account removes its local copy from this browser. Deleting your data also clears cached artwork.',
         ],
         'If you live somewhere that gives you extra rights over your data, such as Canada, the United Kingdom or the European Economic Area, you can exercise them through the same channels, and we will answer within 30 days.',
@@ -274,7 +274,7 @@ export const security: LegalDocument = {
       heading: 'Signing in',
       body: [
         'There are no Lastframe.tv passwords to leak. You sign in with a one-time link sent to your email address, or with a Google account where that is offered. Each link works once and expires after a short time, and sign-in requests are rate limited.',
-        'You can sign out from your [Account page](/account). A list of signed-in devices, with one button to sign out of all of them, is coming.',
+        'You can sign out from your [Account page](/account). It lists your signed-in devices, with one button to sign out of all of them.',
       ],
     },
     {

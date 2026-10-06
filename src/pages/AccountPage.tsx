@@ -83,7 +83,7 @@ export default function AccountPage({ db = services.db }: AccountPageProps) {
   const signOutHere = () =>
     run(
       'signout',
-      () => ext.signOut(),
+      () => ext.signOut({ scope: 'local' }),
       ext.canSignOutEverywhere
         ? 'You are signed out of this device. Guest mode is on.'
         : 'You are signed out. Guest mode is on.',

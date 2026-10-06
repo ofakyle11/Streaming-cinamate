@@ -2,10 +2,9 @@ import type { AuthContextValue } from '../../auth/context';
 
 /**
  * The account-area view of useAuth(). The devices list, sign-out scope and
- * change-email calls arrive with the Supabase backend thread (T3); until that
- * merges they are optional here, and the page shows the local-only state when
- * they are missing. Shapes match T3's contract exactly so nothing changes
- * when it lands.
+ * change-email calls come from the auth layer (src/auth); they stay optional
+ * here so a context without them (tests, a reduced adapter) still renders the
+ * local-only state instead of promising features it cannot deliver.
  */
 export interface Device {
   id: string;
@@ -34,8 +33,8 @@ export interface AccountAuth {
   changeEmail?: (newEmail: string) => Promise<void>;
   /**
    * Whether `signOut({ scope: 'global' })` is honoured. The scope option
-   * lands together with the devices list, so its presence is the signal;
-   * before that, "sign out everywhere" is hidden rather than shown as a
+   * ships together with the devices list, so its presence is the signal;
+   * without it, "sign out everywhere" is hidden rather than shown as a
    * button that would only sign out this device.
    */
   canSignOutEverywhere: boolean;
