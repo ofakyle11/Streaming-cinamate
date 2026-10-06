@@ -269,7 +269,7 @@ adapter, so live TMDB fills it once configured); tiles are tinted with the `--av
 their poster loads and stay tinted if it never does. Playwright projects start with `lf.guest=1` in
 `storageState` (playwright.config.ts) so every app spec still lands on Home; the landing test in
 `smoke.spec.ts` opens a fresh context. The signed-out navbar (Sign in / Get started) ships with the
-sign-in flow thread, which owns `Navbar.tsx`; the footer's Privacy, Terms and Security links ship with the legal pages.
+sign-in flow thread, which owns `Navbar.tsx`.
 
 ## Accessibility hooks
 

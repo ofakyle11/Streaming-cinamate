@@ -21,6 +21,9 @@ const ROUTES = [
   { path: '/account', changefreq: 'monthly', priority: '0.3' },
   { path: '/plans', changefreq: 'monthly', priority: '0.6' },
   { path: '/brand', changefreq: 'monthly', priority: '0.3' },
+  { path: '/privacy', changefreq: 'monthly', priority: '0.3' },
+  { path: '/terms', changefreq: 'monthly', priority: '0.3' },
+  { path: '/security', changefreq: 'monthly', priority: '0.3' },
 ];
 
 const origin = (process.env.SITE_ORIGIN || 'https://lastframe.tv').replace(/\/+$/, '');
