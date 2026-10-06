@@ -13,6 +13,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROUTES = [
+  // The front door: the landing page for new visitors, the app for guests and members.
   { path: '/', changefreq: 'daily', priority: '1.0' },
   { path: '/search', changefreq: 'weekly', priority: '0.8' },
   { path: '/my-list', changefreq: 'weekly', priority: '0.5' },

@@ -1,6 +1,7 @@
 import { STORAGE_KEY, useLastFrameStore } from '../state/store';
 import { freshGuestState } from '../services/db/sync';
 import { clearSyncOwner } from '../services/db/syncEngine';
+import { forgetGuest } from '../lib/guest';
 
 /** localStorage keys owned by Lastframe.tv: the zustand store and every `lf.*` key. */
 export function isLastFrameKey(key: string): boolean {
@@ -28,6 +29,8 @@ export function clearLocalData(): number {
   }
 
   useLastFrameStore.setState(freshGuestState());
+  // The `lf.guest` key went with the rest; notify FrontDoor so the landing page returns.
+  forgetGuest();
   return removed;
 }
 
