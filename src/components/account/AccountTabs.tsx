@@ -30,7 +30,7 @@ export default function AccountTabs({ active, onChange }: AccountTabsProps) {
   };
 
   return (
-    <nav className="acct-tabs" aria-label="Account sections">
+    <div className="acct-tabs">
       <div role="tablist" aria-label="Account sections" className="acct-tablist">
         {ACCOUNT_TABS.map((tab, i) => {
           const selected = tab.id === active;
@@ -45,10 +45,12 @@ export default function AccountTabs({ active, onChange }: AccountTabsProps) {
               role="tab"
               id={`acct-tab-${tab.id}`}
               aria-selected={selected}
-              aria-controls={`acct-panel-${tab.id}`}
+              aria-controls="acct-panel"
               tabIndex={selected ? 0 : -1}
               className={`acct-tab${selected ? ' is-on' : ''}`}
               onClick={(e) => {
+                // Modifier or middle clicks open the URL in a new tab/window as a normal link.
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
                 e.preventDefault();
                 onChange(tab.id);
               }}
@@ -59,6 +61,6 @@ export default function AccountTabs({ active, onChange }: AccountTabsProps) {
           );
         })}
       </div>
-    </nav>
+    </div>
   );
 }

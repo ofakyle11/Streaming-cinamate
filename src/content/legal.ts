@@ -65,7 +65,7 @@ export const privacy: LegalDocument = {
           '**Your email address**, used to send you a sign-in link and to recognise you next time. If you sign in with Google, we also receive the name and avatar on your Google account.',
           '**The profiles you create**, with their names and avatars.',
           '**Your list, viewing history and ratings**, so they follow you between devices.',
-          '**Basic security records**: when you signed in and which devices you signed in from, so we can spot abuse and so you can see them on your [Account page](/account).',
+          '**Basic security records**: when you signed in, so we can spot abuse. A list of your signed-in devices on the Account page is coming.',
         ],
         'We do not collect payment details, your contacts, your location, or anything you do inside another streaming service.',
       ],
@@ -274,7 +274,7 @@ export const security: LegalDocument = {
       heading: 'Signing in',
       body: [
         'There are no Lastframe.tv passwords to leak. You sign in with a one-time link sent to your email address, or with a Google account where that is offered. Each link works once and expires after a short time, and sign-in requests are rate limited.',
-        'Your [Account page](/account) lists the devices signed in to your account. You can sign out of any one of them, or of all of them at once.',
+        'You can sign out from your [Account page](/account). A list of signed-in devices, with one button to sign out of all of them, is coming.',
       ],
     },
     {

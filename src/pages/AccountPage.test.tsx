@@ -113,6 +113,14 @@ describe('AccountPage: guest', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(/^\/account$/);
   });
 
+  it('leaves modifier clicks on a tab to the browser', async () => {
+    renderPage();
+    await screen.findByText('Guest mode');
+    fireEvent.click(tab(/your data/i), { metaKey: true });
+    expect(tab(/sign-in & security/i)).toHaveAttribute('aria-selected', 'true');
+    expect(tab(/your data/i)).toHaveAttribute('href', '/account?tab=data');
+  });
+
   it('opens the tab named in the URL and ignores unknown ones', async () => {
     renderPage(createMockAuth(), vi.fn(), { path: '/account?tab=history' });
     expect(await screen.findByRole('heading', { name: 'Viewing history' })).toBeInTheDocument();
@@ -179,15 +187,20 @@ describe('AccountPage: signed in', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('This device')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /change email/i })).toBeNull(); // not offered by this adapter
+    // Without a scoped sign-out there is one Sign out button and no "everywhere".
+    expect(screen.queryByRole('button', { name: /sign out everywhere/i })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: /sign out of this device/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
     expect(await screen.findByText('Guest mode')).toBeInTheDocument();
     expect(spy).toHaveBeenCalledTimes(1);
-    expect(getLive('status')).toHaveTextContent(/signed out of this device/i);
+    expect(getLive('status')).toHaveTextContent(/you are signed out\. guest mode/i);
   });
 
   it('signs out everywhere after a confirm step with the global scope', async () => {
-    const { signOut } = renderWithContext({});
+    const { signOut } = renderWithContext({ listDevices: async () => [] });
+    expect(
+      await screen.findByRole('button', { name: /sign out of this device/i }),
+    ).toBeInTheDocument();
     await screen.findByText('ada@example.com', { selector: '.acct-email' });
 
     fireEvent.click(screen.getByRole('button', { name: /sign out everywhere/i }));
@@ -197,19 +210,6 @@ describe('AccountPage: signed in', () => {
 
     await waitFor(() => expect(signOut).toHaveBeenCalledWith({ scope: 'global' }));
     expect(await findLive('status')).toHaveTextContent(/signed out everywhere/i);
-  });
-
-  it('signs out everywhere through the real provider too', async () => {
-    const service = await signedIn();
-    const spy = vi.spyOn(service, 'signOut');
-    renderPage(service);
-    await screen.findByText('ada@example.com', { selector: '.acct-email' });
-    fireEvent.click(screen.getByRole('button', { name: /sign out everywhere/i }));
-    fireEvent.click(
-      within(screen.getByRole('group')).getByRole('button', { name: /sign out everywhere/i }),
-    );
-    expect(await screen.findByText('Guest mode')).toBeInTheDocument();
-    expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it('lists devices from the adapter and signs one out', async () => {
@@ -260,8 +260,55 @@ describe('AccountPage: signed in', () => {
   it('keeps sign-out available when the device list fails', async () => {
     renderWithContext({ listDevices: async () => Promise.reject(new Error('down')) });
     expect(await screen.findByText(/device list is not available/i)).toBeInTheDocument();
+    expect(screen.getByText(/sign out of this device, or everywhere/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign out everywhere/i })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  });
+
+  it('retries a failed device load', async () => {
+    let calls = 0;
+    const listDevices = async () => {
+      calls += 1;
+      if (calls === 1) throw new Error('down');
+      return [
+        {
+          id: 'd1',
+          label: 'Mac · Chrome',
+          userAgent: 'Mac',
+          createdAt: '',
+          lastSeenAt: new Date().toISOString(),
+          revokedAt: null,
+          current: true,
+        },
+      ];
+    };
+    renderWithContext({ listDevices });
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+    expect(await screen.findByRole('list', { name: 'Signed-in devices' })).toBeInTheDocument();
+    expect(screen.queryByText(/device list is not available/i)).toBeNull();
+  });
+
+  it('keeps a device listed when signing it out fails', async () => {
+    const devices: Device[] = [
+      {
+        id: 'd2',
+        label: 'iPhone · Safari',
+        userAgent: 'iPhone',
+        createdAt: '',
+        lastSeenAt: new Date().toISOString(),
+        revokedAt: null,
+        current: false,
+      },
+    ];
+    renderWithContext({
+      listDevices: async () => devices,
+      forgetDevice: async () => Promise.reject(new Error('Nope')),
+    });
+    const list = await screen.findByRole('list', { name: 'Signed-in devices' });
+    fireEvent.click(within(list).getByRole('button', { name: 'Sign out iPhone · Safari' }));
+    expect(await findLive('alert')).toHaveTextContent('Nope');
+    expect(within(list).getByText('iPhone · Safari')).toBeInTheDocument();
+    expect(within(list).getByRole('button', { name: 'Sign out iPhone · Safari' })).toBeEnabled();
   });
 
   it('changes the sign-in email when the adapter offers it', async () => {
@@ -281,6 +328,11 @@ describe('AccountPage: signed in', () => {
     await waitFor(() => expect(changeEmail).toHaveBeenCalledWith('ada.new@example.com'));
     expect(await findLive('status')).toHaveTextContent(/ada@example.com and ada.new@example.com/);
     expect(screen.queryByLabelText('New email address')).toBeNull();
+
+    // Reopening starts clean.
+    fireEvent.click(screen.getByRole('button', { name: /change email/i }));
+    expect(screen.getByLabelText('New email address')).toHaveValue('');
+    expect(queryLive('alert')).toBeNull();
   });
 
   it('deletes the account after confirmation', async () => {
@@ -347,7 +399,7 @@ describe('AccountPage: download my data', () => {
     expect(await findLive('status')).toHaveTextContent(/2 saved items/); // default profile + 1 list entry
   });
 
-  it('prefers the cloud snapshot when signed in', async () => {
+  it('exports this device’s copy when there is no cloud copy, even when signed in', async () => {
     const { clicks } = stubDownload();
     const service = await signedIn();
     const db: DbService = {
@@ -376,7 +428,8 @@ describe('AccountPage: download my data', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /download/i }));
     await waitFor(() => expect(clicks).toHaveLength(1));
-    expect(await findLive('status')).toHaveTextContent(/2 saved items/); // tombstone excluded
+    // Mock mode holds no cloud copy, so the device store (one default profile) is exported, not the snapshot.
+    expect(await findLive('status')).toHaveTextContent(/1 saved item\b/);
   });
 
   it('reports a blocked download', async () => {

@@ -1,4 +1,4 @@
-import { FormEvent, useId, useState } from 'react';
+import { FormEvent, useEffect, useId, useRef, useState } from 'react';
 import type { User } from '../../services/types';
 import { Button } from '../ui';
 
@@ -23,6 +23,25 @@ export default function SignInSection({ user, changeEmail, onNotice }: SignInSec
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [invalid, setInvalid] = useState<string | null>(null);
+  const openRef = useRef<HTMLButtonElement>(null);
+  const wasEditing = useRef(false);
+
+  // Return focus to "Change email" when the form closes, like the other confirm steps.
+  useEffect(() => {
+    if (!editing && wasEditing.current) openRef.current?.focus();
+    wasEditing.current = editing;
+  }, [editing]);
+
+  const open = () => {
+    setEmail('');
+    setInvalid(null);
+    setEditing(true);
+  };
+  const close = () => {
+    setEmail('');
+    setInvalid(null);
+    setEditing(false);
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -40,8 +59,7 @@ export default function SignInSection({ user, changeEmail, onNotice }: SignInSec
     setBusy(true);
     try {
       await changeEmail(next);
-      setEditing(false);
-      setEmail('');
+      close();
       onNotice({
         kind: 'success',
         text: `Check ${user.email} and ${next}: the change takes effect once you confirm the link in both.`,
@@ -72,7 +90,7 @@ export default function SignInSection({ user, changeEmail, onNotice }: SignInSec
         </div>
         <span className="acct-tag ok">Primary</span>
         {changeEmail && !editing && (
-          <Button variant="glass" size="sm" onClick={() => setEditing(true)}>
+          <Button ref={openRef} variant="glass" size="sm" onClick={open}>
             Change email
           </Button>
         )}
@@ -101,7 +119,7 @@ export default function SignInSection({ user, changeEmail, onNotice }: SignInSec
             <Button type="submit" variant="accent" size="sm" loading={busy}>
               Send confirmation
             </Button>
-            <Button variant="ghost" size="sm" disabled={busy} onClick={() => setEditing(false)}>
+            <Button variant="ghost" size="sm" disabled={busy} onClick={close}>
               Cancel
             </Button>
           </div>

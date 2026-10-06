@@ -57,12 +57,10 @@ export default function AccountPage({ db = services.db }: AccountPageProps) {
   const selectTab = useCallback(
     (next: AccountTabId) => {
       setNotice(null); // a notice belongs to the tab it was raised on
-      const nextParams = new URLSearchParams(params);
-      if (next === 'security') nextParams.delete('tab');
-      else nextParams.set('tab', next);
-      setParams(nextParams, { replace: true });
+      // Matches accountTabHref: the tab is the only query the page carries.
+      setParams(next === 'security' ? {} : { tab: next }, { replace: true });
     },
-    [params, setParams],
+    [setParams],
   );
 
   const run = async (
@@ -83,7 +81,13 @@ export default function AccountPage({ db = services.db }: AccountPageProps) {
   };
 
   const signOutHere = () =>
-    run('signout', () => ext.signOut(), 'You are signed out of this device. Guest mode is on.');
+    run(
+      'signout',
+      () => ext.signOut(),
+      ext.canSignOutEverywhere
+        ? 'You are signed out of this device. Guest mode is on.'
+        : 'You are signed out. Guest mode is on.',
+    );
 
   const signOutEverywhere = () =>
     run(
@@ -94,7 +98,15 @@ export default function AccountPage({ db = services.db }: AccountPageProps) {
 
   const onExport = () =>
     run('export', async () => {
-      const snapshot = user ? await db.pullSnapshot(user.id).catch(() => null) : null;
+      // Signed in with a cloud copy: the export must come from it, so a failed pull is an error, not a device fallback.
+      const snapshot =
+        synced && user
+          ? await db.pullSnapshot(user.id).catch(() => {
+              throw new Error(
+                'Could not reach your cloud data. Check your connection and try again.',
+              );
+            })
+          : null;
       const data = buildDataExport(useLastFrameStore.getState(), user, snapshot);
       if (!downloadJson(data, exportFileName()))
         throw new Error('Your browser blocked the download.');
@@ -132,7 +144,7 @@ export default function AccountPage({ db = services.db }: AccountPageProps) {
 
         <div
           role="tabpanel"
-          id={`acct-panel-${tab}`}
+          id="acct-panel"
           aria-labelledby={`acct-tab-${tab}`}
           className="acct-panel"
           key={tab}
@@ -148,7 +160,7 @@ export default function AccountPage({ db = services.db }: AccountPageProps) {
                 <DevicesSection
                   listDevices={ext.listDevices}
                   forgetDevice={ext.forgetDevice}
-                  signOutEverywhere={signOutEverywhere}
+                  signOutEverywhere={ext.canSignOutEverywhere ? signOutEverywhere : undefined}
                   signOutHere={signOutHere}
                   busy={busy !== null}
                   onNotice={setNotice}
@@ -173,7 +185,7 @@ export default function AccountPage({ db = services.db }: AccountPageProps) {
           {tab === 'data' && status !== 'loading' && (
             <DataSection
               signedIn={signedIn}
-              busy={busy !== null && busy !== 'export'}
+              busy={busy !== null}
               exporting={busy === 'export'}
               onExport={onExport}
               onDelete={onDelete}

@@ -29,15 +29,25 @@ export interface AccountAuth {
   forgetDevice?: (deviceId: string) => Promise<void>;
   /** A confirmation goes to both the old and the new address. */
   changeEmail?: (newEmail: string) => Promise<void>;
+  /**
+   * Whether `signOut({ scope: 'global' })` is honoured. The scope option
+   * lands together with the devices list, so its presence is the signal;
+   * before that, "sign out everywhere" is hidden rather than shown as a
+   * button that would only sign out this device.
+   */
+  canSignOutEverywhere: boolean;
 }
 
 /** Reads the optional account methods off whatever useAuth() currently returns. */
 export function accountAuth(auth: AuthContextValue): AccountAuth {
-  const a = auth as AuthContextValue & Partial<AccountAuth>;
+  // Widening, not a cast: a `() => Promise<void>` is assignable to the optional-options shape.
+  const a: AuthContextValue & Partial<Omit<AccountAuth, 'signOut' | 'canSignOutEverywhere'>> = auth;
+  const signOut: AccountAuth['signOut'] = a.signOut;
   return {
-    signOut: (options) => (a.signOut as AccountAuth['signOut'])(options),
+    signOut: (options) => signOut.call(a, options),
     listDevices: typeof a.listDevices === 'function' ? () => a.listDevices!() : undefined,
     forgetDevice: typeof a.forgetDevice === 'function' ? (id) => a.forgetDevice!(id) : undefined,
     changeEmail: typeof a.changeEmail === 'function' ? (email) => a.changeEmail!(email) : undefined,
+    canSignOutEverywhere: typeof a.listDevices === 'function',
   };
 }

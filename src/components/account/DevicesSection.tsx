@@ -6,8 +6,8 @@ import { Button } from '../ui';
 interface DevicesSectionProps {
   listDevices?: () => Promise<Device[]>;
   forgetDevice?: (deviceId: string) => Promise<void>;
-  /** Signs out everywhere, then this device. */
-  signOutEverywhere: () => Promise<void>;
+  /** Signs out everywhere, then this device. Absent when the adapter cannot do it. */
+  signOutEverywhere?: () => Promise<void>;
   /** Plain sign-out from this device. */
   signOutHere: () => Promise<void>;
   busy: boolean;
@@ -131,7 +131,7 @@ export default function DevicesSection({
 
   const everywhere = async () => {
     setConfirmAll(false);
-    await signOutEverywhere();
+    await signOutEverywhere?.();
   };
 
   const devices = state.kind === 'ready' ? state.devices : [];
@@ -154,7 +154,9 @@ export default function DevicesSection({
         <div className="acct-row">
           <span className="acct-row-text">
             <b>Your device list is not available right now.</b>
-            <span>You can still sign out of this device, or everywhere.</span>
+            <span>
+              You can still sign out{signOutEverywhere ? ' of this device, or everywhere' : ''}.
+            </span>
           </span>
           <Button variant="glass" size="sm" onClick={() => void load()}>
             Retry
@@ -243,18 +245,25 @@ export default function DevicesSection({
           </div>
         ) : (
           <>
-            <Button variant="ghost" size="sm" disabled={busy} onClick={() => void signOutHere()}>
-              Sign out of this device
-            </Button>
             <Button
-              ref={allRef}
-              variant="glass"
+              variant={signOutEverywhere ? 'ghost' : 'glass'}
               size="sm"
               disabled={busy}
-              onClick={() => setConfirmAll(true)}
+              onClick={() => void signOutHere()}
             >
-              Sign out everywhere
+              {signOutEverywhere ? 'Sign out of this device' : 'Sign out'}
             </Button>
+            {signOutEverywhere && (
+              <Button
+                ref={allRef}
+                variant="glass"
+                size="sm"
+                disabled={busy}
+                onClick={() => setConfirmAll(true)}
+              >
+                Sign out everywhere
+              </Button>
+            )}
           </>
         )}
       </div>
