@@ -170,7 +170,9 @@ export default function AccountPage({ db = services.db }: AccountPageProps) {
                 <section className="acct-sec" aria-label="Signed-in devices">
                   <h2>Where you are signed in</h2>
                   <p className="acct-lead">
-                    Sign in to see every device on your account and sign any of them out from here.
+                    {ext.canSignOutEverywhere
+                      ? 'Sign in to see every device on your account and sign any of them out from here.'
+                      : 'Sign in to manage where you are signed in.'}
                   </p>
                 </section>
               )}

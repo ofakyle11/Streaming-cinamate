@@ -75,29 +75,32 @@ export default function DevicesSection({
   const allRef = useRef<HTMLButtonElement>(null);
   const wasConfirming = useRef(false);
 
-  const load = useCallback(async () => {
-    if (!listDevices) return;
-    try {
-      const devices = await listDevices();
-      setState({ kind: 'ready', devices: devices.filter((d) => !d.revokedAt) });
-    } catch {
-      setState({ kind: 'error' });
-    }
-  }, [listDevices]);
+  // One fetch path for mount and Retry: the list without revoked rows.
+  const fetchDevices = useCallback(
+    () => (listDevices ? listDevices().then((ds) => ds.filter((d) => !d.revokedAt)) : null),
+    [listDevices],
+  );
 
   useEffect(() => {
     let active = true;
-    if (!listDevices) return;
-    void listDevices()
-      .then(
-        (devices) =>
-          active && setState({ kind: 'ready', devices: devices.filter((d) => !d.revokedAt) }),
-      )
+    const pending = fetchDevices();
+    if (!pending) return;
+    pending
+      .then((devices) => active && setState({ kind: 'ready', devices }))
       .catch(() => active && setState({ kind: 'error' }));
     return () => {
       active = false;
     };
-  }, [listDevices]);
+  }, [fetchDevices]);
+
+  const retry = () => {
+    const pending = fetchDevices();
+    if (!pending) return;
+    setState({ kind: 'loading' });
+    pending
+      .then((devices) => setState({ kind: 'ready', devices }))
+      .catch(() => setState({ kind: 'error' }));
+  };
 
   useEffect(() => {
     if (confirmAll) cancelRef.current?.focus();
@@ -158,7 +161,7 @@ export default function DevicesSection({
               You can still sign out{signOutEverywhere ? ' of this device, or everywhere' : ''}.
             </span>
           </span>
-          <Button variant="glass" size="sm" onClick={() => void load()}>
+          <Button variant="glass" size="sm" onClick={retry}>
             Retry
           </Button>
         </div>
