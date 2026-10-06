@@ -14,6 +14,7 @@ const GenrePage = lazy(() => import('../pages/GenrePage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 const NewPopularPage = lazy(() => import('../pages/NewPopularPage'));
 const BrandPage = lazy(() => import('../pages/BrandPage'));
+const LegalPage = lazy(() => import('../pages/LegalPage'));
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,9 @@ export const router = createBrowserRouter([
       { path: 'genre/:id', element: <GenrePage /> },
       { path: 'new', element: <NewPopularPage /> },
       { path: 'brand', element: <BrandPage /> },
+      { path: 'privacy', element: <LegalPage doc="privacy" /> },
+      { path: 'terms', element: <LegalPage doc="terms" /> },
+      { path: 'security', element: <LegalPage doc="security" /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
