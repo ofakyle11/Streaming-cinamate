@@ -1,3 +1,5 @@
+// Must stay first: strips sign-in tokens from the URL before anything else runs.
+import './auth/callbackBoot';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';

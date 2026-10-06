@@ -15,15 +15,16 @@ a `VITE_` prefix, and never read a server-only variable from `src/`.
 
 ## Summary
 
-| Variable                  | Kind        | Used by                                  | Enables                                |
-| ------------------------- | ----------- | ---------------------------------------- | -------------------------------------- |
-| `VITE_TMDB_PROXY`         | Client      | `src/services/index.ts` → `tmdb/live.ts` | Live TMDB catalogue via proxy          |
-| `TMDB_API_KEY`            | Server-only | Netlify TMDB proxy function              | Proxy calls to TMDB                    |
-| `VITE_SUPABASE_URL`       | Client      | `src/services/index.ts` → `auth`, `db`   | Live Supabase auth + database          |
-| `VITE_SUPABASE_ANON_KEY`  | Client      | `src/services/index.ts` → `auth`, `db`   | (paired with the URL)                  |
-| `VITE_AUTH_GOOGLE`        | Client      | `src/auth/flags.ts` → `/sign-in`         | Shows the Google button                |
-| `VITE_PLAUSIBLE_DOMAIN`   | Client      | Analytics adapter (Plausible)            | Privacy-friendly page views            |
-| `VITE_PLAUSIBLE_API_HOST` | Client      | Analytics adapter (Plausible)            | Optional custom/proxied Plausible host |
+| Variable                  | Kind        | Used by                                                                                       | Enables                                   |
+| ------------------------- | ----------- | --------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `VITE_TMDB_PROXY`         | Client      | `src/services/index.ts` → `tmdb/live.ts`                                                      | Live TMDB catalogue via proxy             |
+| `TMDB_API_KEY`            | Server-only | Netlify TMDB proxy function                                                                   | Proxy calls to TMDB                       |
+| `VITE_SUPABASE_URL`       | Client      | `src/services/index.ts` → `auth`, `db`                                                        | Live Supabase auth + database             |
+| `VITE_SUPABASE_ANON_KEY`  | Client      | `src/services/index.ts` → `auth`, `db`                                                        | (paired with the URL)                     |
+| `VITE_AUTH_GOOGLE`        | Client      | `src/auth/flags.ts` → `/sign-in`                                                              | Shows the Google button                   |
+| `VITE_PLAUSIBLE_DOMAIN`   | Client      | Analytics adapter (Plausible)                                                                 | Privacy-friendly page views               |
+| `VITE_PLAUSIBLE_API_HOST` | Client      | Analytics adapter (Plausible)                                                                 | Optional custom/proxied Plausible host    |
+| `VITE_TURNSTILE_SITE_KEY` | Client      | `services/auth/turnstile.ts`, `components/auth/Turnstile.tsx`, `scripts/security-headers.mjs` | Cloudflare Turnstile bot check on sign-in |
 
 Variables used only when pushing `supabase/config.toml` to the project (never in Netlify, never
 in `src/`): `RESEND_API_KEY` (SMTP password for Resend), `TURNSTILE_SECRET_KEY` (only once the
@@ -69,8 +70,10 @@ Build-time and script-only variables that do not configure the app are listed at
 - **Effect**: live mode is chosen when `VITE_SUPABASE_URL` is set, and the anon key is passed
   alongside it, so always set both. Auth errors with `NotConfiguredError` if either is missing,
   and db methods without backing tables still reject with `NotConfiguredError`.
-- **CSP**: when going live, add `https://<ref>.supabase.co` (and `wss://<ref>.supabase.co` for
-  realtime) to `connect-src` in `netlify.toml`.
+- **CSP**: `scripts/security-headers.mjs` pins `connect-src` to the project host read from
+  `VITE_SUPABASE_URL` at build time (`https://<ref>.supabase.co` and `wss://<ref>.supabase.co`);
+  with the variable unset no Supabase origin is allowed at all. A self-hosted Supabase on
+  another domain works the same way, since the origin comes from the variable.
 - **Redirect URLs, Site URL, link expiry, email template, SMTP**: all declared in
   `supabase/config.toml` and applied with `npx supabase config push` (the sign-in link lands on
   `/auth/callback`, which returns the user to the page they came from). The full switch-on
@@ -101,6 +104,24 @@ Build-time and script-only variables that do not configure the app are listed at
 
 - **What**: a self-hosted or proxied Plausible host (default `https://plausible.io`). Only used
   when `VITE_PLAUSIBLE_DOMAIN` is set. A different origin must also be added to the CSP.
+
+### `VITE_TURNSTILE_SITE_KEY` (client, optional)
+
+- **What**: the **site key** of a Cloudflare Turnstile widget. It is public by design (it is
+  visible in the page). The matching **secret key** is a secret and never goes in Netlify or
+  any `VITE_` variable: it goes into Supabase only.
+- **Where to get it**: Cloudflare dashboard → **Turnstile** → **Add widget**. Hostnames
+  `lastframe.tv` and `www.lastframe.tv` (add `localhost` only for a test widget). Widget
+  mode **Managed**. Copy the **Site Key** into Netlify; paste the **Secret Key** into
+  Supabase → **Authentication** → **Attack Protection** (Bot and Abuse Protection) →
+  **Enable CAPTCHA protection** → provider **Turnstile**.
+- **Effect**: when set at build time, `/sign-in` and the resend button on `/sign-in/sent`
+  show the widget and send its token as `captchaToken` with the magic-link request, and the build adds
+  `https://challenges.cloudflare.com` to `script-src` and `frame-src` in the CSP. When unset
+  (mock mode, previews) no widget, no script and no CSP entry. Set it only together with live
+  Supabase and CAPTCHA protection enabled there; with CAPTCHA on in Supabase but no site key
+  in the build, every sign-in fails, so change both in the same release.
+- **Scope**: **Builds**, Production context only (same as the Supabase variables).
 
 ## Billing: no keys
 
@@ -141,7 +162,7 @@ environment variables or a local `.env`.
 - `identify()` is a deliberate no-op in the Plausible adapter: Plausible is cookieless and anonymous, so user ids and traits are never sent.
 - Event names (see `AnalyticsEvents` in `src/services/analytics/types.ts`; keep them stable, goals key off them): `search`, `add-to-list`, `play-trailer`, `title-open`. Page views are sent as `pageview`.
 - `title-open` fires when a title card is selected. Props: `id` (TMDB id), `mediaType` (`movie` | `tv`), `source` (`home` | `search` | `genre` | `new`); Genre also adds `genreId`, `page`, `sortBy`. Always emit it through the typed `track(AnalyticsEvents.titleOpen, ...)` helper in `src/services/analytics/track.ts`; `src/test/analyticsCallSites.test.ts` fails if a page or component calls `analytics.track('...')` directly or uses the legacy `title_open` name.
-- **CSP.** `netlify.toml` allows `https://plausible.io` in `script-src` and `connect-src` (a test in `src/test/csp.test.ts` keeps this in sync with `DEFAULT_PLAUSIBLE_HOST`). If you set a custom `VITE_PLAUSIBLE_API_HOST` on another origin, add that origin to both directives too, or the browser will block the script and the `/api/event` beacons. Alternatively proxy Plausible same-origin through a `netlify.toml` redirect under `/api` (e.g. `/api/plausible/*`, placed before the `/api/*` functions redirect) and point `VITE_PLAUSIBLE_API_HOST` at your own site; same-origin requests are covered by `'self'` and need no CSP change.
+- **CSP.** `scripts/security-headers.mjs` allows `https://plausible.io` in `script-src` and `connect-src` (a test in `src/test/csp.test.ts` keeps this in sync with `DEFAULT_PLAUSIBLE_HOST`). If you set a custom `VITE_PLAUSIBLE_API_HOST` on another origin, add that origin to both directives there too, or the browser will block the script and the `/api/event` beacons. Alternatively proxy Plausible same-origin through a `netlify.toml` redirect under `/api` (e.g. `/api/plausible/*`, placed before the `/api/*` functions redirect) and point `VITE_PLAUSIBLE_API_HOST` at your own site; same-origin requests are covered by `'self'` and need no CSP change.
 
 ## TMDB proxy (`netlify/functions/tmdb.ts`)
 

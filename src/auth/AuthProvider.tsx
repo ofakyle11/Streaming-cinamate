@@ -3,7 +3,9 @@ import { readSyncOwner, services, startCloudSync, type CloudSync } from '../serv
 import { useLastFrameStore } from '../state/store';
 import type {
   AdapterMode,
+  AuthCallbackParams,
   AuthService,
+  MagicLinkOptions,
   OAuthProvider,
   SignOutOptions,
   User,
@@ -104,10 +106,20 @@ export default function AuthProvider({
   }, [service]);
 
   const signInWithMagicLink = useCallback(
-    (email: string) => service.signInWithMagicLink(email),
+    (email: string, options?: MagicLinkOptions) =>
+      options ? service.signInWithMagicLink(email, options) : service.signInWithMagicLink(email),
     [service],
   );
   const signInWithOAuth = useCallback((p: OAuthProvider) => service.signInWithOAuth(p), [service]);
+  const completeSignIn = useCallback(
+    async (params: AuthCallbackParams) => {
+      const u = await service.completeSignIn(params);
+      setUser(u);
+      setStatus('authenticated');
+      return u;
+    },
+    [service],
+  );
 
   const signOut = useCallback(
     async (options?: SignOutOptions) => {
@@ -170,6 +182,7 @@ export default function AuthProvider({
       mode,
       signInWithMagicLink,
       signInWithOAuth,
+      completeSignIn,
       signOut,
       deleteData,
       listDevices,
@@ -182,6 +195,7 @@ export default function AuthProvider({
       mode,
       signInWithMagicLink,
       signInWithOAuth,
+      completeSignIn,
       signOut,
       deleteData,
       listDevices,

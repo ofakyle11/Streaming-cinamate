@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import netlifyToml from '../../netlify.toml?raw';
+import pkg from '../../package.json';
+import viteConfig from '../../vite.config.ts?raw';
 import { DEFAULT_PLAUSIBLE_HOST } from '../services/analytics/plausible';
-
-/** Extract the Content-Security-Policy header value from netlify.toml text. */
-function readCsp(toml: string): string {
-  const match = /^\s*Content-Security-Policy\s*=\s*"([^"]*)"/m.exec(toml);
-  if (!match) throw new Error('Content-Security-Policy not found in netlify.toml');
-  return match[1];
-}
+import { TURNSTILE_ORIGIN as CLIENT_TURNSTILE_ORIGIN } from '../services/auth/turnstile';
+import {
+  buildCsp,
+  headersFile,
+  TURNSTILE_ORIGIN,
+  turnstileEnabled,
+} from '../../scripts/security-headers.mjs';
 
 /** Parse a CSP string into directive -> source list. */
 function parseCsp(csp: string): Map<string, string[]> {
@@ -19,8 +21,22 @@ function parseCsp(csp: string): Map<string, string[]> {
   return out;
 }
 
-describe('netlify.toml CSP', () => {
-  const csp = parseCsp(readCsp(netlifyToml));
+describe('CSP source of truth', () => {
+  it('is generated into dist/_headers by the build, not hard-coded in netlify.toml', () => {
+    expect(netlifyToml).not.toMatch(/^\s*Content-Security-Policy\s*=/m);
+    expect(pkg.scripts.build).toMatch(/vite build$/);
+    expect(viteConfig).toContain('securityHeadersPlugin()');
+  });
+
+  it('writes a _headers file for every path', () => {
+    const file = headersFile();
+    expect(file.startsWith('/*\n  Content-Security-Policy: ')).toBe(true);
+    expect(file).toContain(buildCsp());
+  });
+});
+
+describe.each([false, true])('CSP (turnstile %s)', (turnstile) => {
+  const csp = parseCsp(buildCsp({ turnstile }));
   const connectSrc = csp.get('connect-src') ?? [];
 
   it.each(['script-src', 'connect-src'])('%s allows the default Plausible host', (directive) => {
@@ -54,5 +70,39 @@ describe('netlify.toml CSP', () => {
     expect(csp.get('object-src')).toEqual(["'none'"]);
     expect(csp.get('frame-ancestors')).toEqual(["'none'"]);
     expect(csp.get('form-action')).toEqual(["'self'"]);
+    expect(csp.get('base-uri')).toEqual(["'self'"]);
+    expect(csp.has('upgrade-insecure-requests')).toBe(true);
+  });
+
+  it('allows Turnstile in script-src and frame-src only when a site key is set', () => {
+    for (const directive of ['script-src', 'frame-src']) {
+      expect((csp.get(directive) ?? []).includes(TURNSTILE_ORIGIN)).toBe(turnstile);
+    }
+    for (const directive of ['connect-src', 'img-src', 'default-src']) {
+      expect(csp.get(directive) ?? []).not.toContain(TURNSTILE_ORIGIN);
+    }
+  });
+});
+
+describe('Turnstile switch', () => {
+  it('uses the same origin as the client loader', () => {
+    expect(TURNSTILE_ORIGIN).toBe(CLIENT_TURNSTILE_ORIGIN);
+  });
+
+  it('turns on only for a non-blank VITE_TURNSTILE_SITE_KEY', () => {
+    expect(turnstileEnabled({})).toBe(false);
+    expect(turnstileEnabled({ VITE_TURNSTILE_SITE_KEY: '  ' })).toBe(false);
+    expect(turnstileEnabled({ VITE_TURNSTILE_SITE_KEY: '0x4AAA' })).toBe(true);
+  });
+});
+
+describe('rate limit on /api/*', () => {
+  it('limits the functions rewrite to 60 requests a minute per IP', () => {
+    const block =
+      /\[\[redirects\]\]\s*from = "\/api\/\*"[\s\S]*?(?=\[\[)/.exec(netlifyToml)?.[0] ?? '';
+    expect(block).toContain('[redirects.rate_limit]');
+    expect(block).toMatch(/window_limit = 60\b/);
+    expect(block).toMatch(/window_size = 60\b/);
+    expect(block).toMatch(/aggregate_by = \["ip", "domain"\]/);
   });
 });

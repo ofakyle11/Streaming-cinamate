@@ -1,0 +1,6 @@
+# Lastframe.tv security contact (RFC 9116)
+Contact: mailto:security@lastframe.tv
+Expires: 2027-10-01T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://lastframe.tv/.well-known/security.txt
+Policy: https://lastframe.tv/security

@@ -297,11 +297,37 @@ export interface Device {
   current: boolean;
 }
 
+export interface MagicLinkOptions {
+  captchaToken?: string;
+}
+
+/** Auth values captured from the /auth/callback URL (see src/auth/callback.ts). */
+export interface AuthCallbackParams {
+  code?: string;
+  access_token?: string;
+  refresh_token?: string;
+  token_hash?: string;
+  type?: string;
+  error?: string;
+  error_code?: string;
+  error_description?: string;
+}
+
 export interface AuthService {
   currentUser(): Promise<User | null>;
   signInWithEmail(email: string, password: string): Promise<User>;
   signUpWithEmail(email: string, password: string, displayName?: string): Promise<User>;
-  signInWithMagicLink(email: string): Promise<void>;
+  /**
+   * Emails a magic link. `captchaToken` is the Cloudflare Turnstile token when
+   * the bot check is enabled (VITE_TURNSTILE_SITE_KEY); Supabase verifies it.
+   */
+  signInWithMagicLink(email: string, options?: MagicLinkOptions): Promise<void>;
+  /**
+   * Finishes a magic link / OAuth return from the parameters the callback
+   * route captured (and already stripped from the URL). Resolves with the
+   * signed-in user; rejects with a readable error for expired or reused links.
+   */
+  completeSignIn(params: AuthCallbackParams): Promise<User>;
   /** Default scope is this browser; `global` is "sign out everywhere". */
   signOut(options?: SignOutOptions): Promise<void>;
   onAuthStateChange(cb: (user: User | null) => void): AuthUnsubscribe;
