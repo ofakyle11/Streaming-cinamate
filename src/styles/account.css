@@ -1,97 +1,325 @@
-/* Account page (auth, guest mode, delete data). Built on tokens.css. */
+/* Account page: header card, pill tabs, sections, rows, danger zone. Built on tokens.css. */
 
-.account {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.acct-page {
+  padding-bottom: 48px;
+}
+.acct {
+  max-width: 860px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
 }
 
-.account-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.account-heading {
-  font-size: 1.15rem;
-  margin: 0;
-}
-
-.account-loading {
+/* ---------- header ---------- */
+.acct-head {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
+  padding: 24px 28px;
+  border-radius: var(--radius-xl);
+  animation: acct-rise var(--dur-slow) var(--ease-enter);
 }
-
-/* ---------- signed-in card ---------- */
-.account-profile {
-  flex-direction: row;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  border-radius: var(--radius-lg);
-  animation: account-rise var(--dur-slow) var(--ease-enter);
+.acct-head-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.account-avatar {
+.acct-avatar {
   flex: none;
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   object-fit: cover;
   display: grid;
   place-items: center;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0.02em;
+  color: var(--color-on-accent);
   background: linear-gradient(135deg, var(--color-accent), var(--color-violet));
   box-shadow: 0 0 0 2px var(--glass-border-strong);
 }
-.account-identity {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
+.acct-avatar-guest {
+  background: var(--color-surface-2);
+  color: var(--color-text-soft);
 }
-.account-name {
-  font-size: 1.05rem;
+.acct-name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1.15;
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.account-email {
+.acct-sub {
+  margin: 0;
   color: var(--color-text-soft);
   overflow-wrap: anywhere;
 }
-.account-meta {
+.acct-since {
   color: var(--color-muted);
-  font-size: 0.85rem;
 }
-
-/* ---------- guest sign-in ---------- */
-.account-pill {
+.acct-sync {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  color: var(--color-text-soft);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.acct-sync i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-muted);
+}
+.acct-sync.is-on i {
+  background: var(--color-success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 20%, transparent);
+}
+.acct-pill {
   align-self: flex-start;
+  margin: 0 0 4px;
   padding: 4px 12px;
   border-radius: var(--radius-pill);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--color-cyan);
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  color: var(--color-accent-text);
+  background: var(--color-accent-soft);
 }
-.account-form {
+.acct-signin {
+  flex: none;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  white-space: nowrap;
+}
+a.acct-signin:hover {
+  text-decoration: none;
+  box-shadow: var(--glow-accent);
+}
+
+/* ---------- tabs ---------- */
+.acct-tabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Room for the focus ring glow, which the overflow would otherwise clip. */
+  margin: -8px -4px;
+  padding: 8px 4px;
+}
+.acct-tabs::-webkit-scrollbar {
+  display: none;
+}
+.acct-tablist {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+}
+.acct-tab {
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-soft);
+  font-weight: 600;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.acct-tab:hover {
+  color: var(--color-text);
+  text-decoration: none;
+}
+.acct-tab.is-on {
+  background: var(--color-control-selected);
+  color: var(--color-text);
+  box-shadow: var(--shadow-1);
+}
+.acct-tab:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 var(--focus-ring-width) var(--focus-ring-color),
+    0 0 18px var(--focus-ring-glow);
+}
+.acct-panel {
+  display: grid;
+  gap: 18px;
+  animation: acct-rise var(--dur-base) var(--ease-enter);
+}
+
+/* ---------- sections ---------- */
+.acct-sec {
+  padding: 24px 28px;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+.acct-sec h2 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  margin: 0 0 4px;
+}
+.acct-lead {
+  margin: 0 0 14px;
+  color: var(--color-text-soft);
+  line-height: 1.5;
+}
+.acct-hint {
+  margin: 10px 0 0;
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.acct-hint a {
+  color: inherit;
+}
+.acct-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.acct-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--glass-border);
+}
+.acct-row:first-child,
+.acct-list > .acct-row:first-child {
+  border-top: 0;
+}
+.acct-sec > .acct-row:first-of-type {
+  border-top: 0;
+}
+/* A fallback "this browser" row followed by the list still gets a divider. */
+.acct-row + .acct-list > .acct-row:first-child {
+  border-top: 1px solid var(--glass-border);
+}
+.acct-ic {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--color-surface-2);
+  color: var(--color-text-soft);
+  font-weight: 800;
+}
+.acct-row-text {
+  flex: 1;
+  min-width: 0;
+}
+.acct-row-text b {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.acct-row-text span {
+  display: block;
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+.acct-row .btn {
+  white-space: nowrap;
+}
+.acct-tag {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+.acct-tag.ok {
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  color: var(--color-success);
+}
+.acct-tag.now {
+  background: color-mix(in srgb, var(--color-sky) 20%, transparent);
+  color: var(--color-accent-text);
+}
+
+/* ---------- actions and confirms ---------- */
+.acct-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-border);
+  margin-top: 4px;
+}
+.acct-actions:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.acct-link-btn {
+  text-decoration: none;
+}
+.acct-confirm {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid var(--glass-border);
+  animation: acct-rise var(--dur-base) var(--ease);
 }
-.account-label {
+.acct-confirm p {
+  margin: 0;
+  line-height: 1.5;
+}
+.acct-confirm-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* ---------- inline email form ---------- */
+.acct-inline-form {
+  padding: 4px 0 14px;
+  border-top: 1px solid var(--glass-border);
+  margin-top: -1px;
+}
+.acct-label {
+  display: block;
   font-size: 0.85rem;
-  color: var(--color-muted);
+  color: var(--color-text-soft);
+  margin: 12px 0 6px;
+  font-weight: 600;
 }
-.account-row {
+.acct-inline-row {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
+}
+.acct-field-error {
+  margin: 8px 0 0;
+  color: var(--color-danger);
+  font-size: 0.86rem;
 }
 .account-input {
   flex: 1 1 220px;
@@ -118,30 +346,6 @@
   border-color: var(--color-danger);
 }
 
-.account-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--color-muted);
-  font-size: 0.8rem;
-}
-.account-divider::before,
-.account-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--glass-border);
-}
-.account-signin {
-  align-self: flex-start;
-  border-radius: var(--radius-pill);
-  text-decoration: none;
-}
-a.account-signin:hover {
-  text-decoration: none;
-  box-shadow: var(--glow-accent);
-}
-
 /* ---------- notices ---------- */
 .account-notice {
   margin: 0;
@@ -149,7 +353,8 @@ a.account-signin:hover {
   border-radius: var(--radius-sm);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  animation: account-rise var(--dur-base) var(--ease);
+  line-height: 1.5;
+  animation: acct-rise var(--dur-base) var(--ease);
 }
 .account-notice.success {
   border-color: var(--color-success);
@@ -159,15 +364,41 @@ a.account-signin:hover {
 }
 
 /* ---------- danger zone ---------- */
-.account-danger {
-  padding-top: 20px;
-  border-top: 1px solid var(--glass-border);
+.acct-danger {
+  border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
 }
-.account-danger > .btn {
-  align-self: flex-start;
+.acct-danger h2 {
+  color: var(--color-danger);
+}
+.btn.acct-btn-danger {
+  border: 1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
+  color: var(--color-danger);
+  border-radius: var(--radius-pill);
+}
+.btn.acct-btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  border-color: var(--color-danger);
+}
+.btn.acct-btn-danger-solid {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-on-accent);
+}
+.btn.acct-btn-danger-solid:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 85%, var(--color-text));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-danger) 20%, transparent);
+}
+.acct-danger .acct-confirm {
+  border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
 }
 
-@keyframes account-rise {
+/* The history panel and install card sit flush inside the tab panel. */
+.acct-panel .history-panel,
+.acct-panel .install-card {
+  margin-top: 0;
+}
+
+@keyframes acct-rise {
   from {
     opacity: 0;
     transform: translateY(8px);
@@ -178,26 +409,69 @@ a.account-signin:hover {
   }
 }
 
-@media (max-width: 480px) {
-  .account-profile {
+@media (max-width: 760px) {
+  .acct-head,
+  .acct-sec {
+    padding: 20px 18px;
+  }
+  .acct-head {
     flex-wrap: wrap;
   }
-  .account-profile > .btn {
+  .acct-head-text {
+    flex: 1 1 calc(100% - 82px);
+  }
+  .acct-sync,
+  .acct-signin {
+    flex-basis: 100%;
+    justify-content: center;
+    text-align: center;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  /* All four tabs stay visible: the pill strip wraps into two rows. */
+  .acct-tabs {
+    overflow: visible;
+  }
+  .acct-tablist {
+    display: flex;
+    flex-wrap: wrap;
+    border-radius: var(--radius-lg);
+  }
+  .acct-tab {
+    flex: 1 1 45%;
+    text-align: center;
+    min-height: var(--tap, 44px);
+    display: grid;
+    place-items: center;
+  }
+  .acct-row {
+    flex-wrap: wrap;
+  }
+  .acct-row > .acct-tag {
+    margin-left: 56px;
+  }
+  .acct-row .btn,
+  .acct-signin,
+  .acct-actions .btn,
+  .acct-confirm-buttons .btn,
+  .acct-btn-danger {
     width: 100%;
   }
-  .account-row > .btn,
-  .account-signin,
-  .account-danger > .btn {
-    width: 100%;
-    align-self: stretch;
+  .acct-row-text {
+    flex-basis: calc(100% - 56px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .account-profile,
+  .acct-head,
+  .acct-panel,
+  .acct-confirm,
   .account-notice {
     animation: none;
   }
+  .acct-tab,
   .account-input {
     transition: none;
   }
