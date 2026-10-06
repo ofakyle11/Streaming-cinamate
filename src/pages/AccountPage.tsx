@@ -1,43 +1,73 @@
-import { useId, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useId, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import AccountHeader from '../components/account/AccountHeader';
+import AccountTabs from '../components/account/AccountTabs';
+import { isAccountTab, type AccountTabId } from '../components/account/tabs';
+import SignInSection from '../components/account/SignInSection';
+import DevicesSection from '../components/account/DevicesSection';
+import DataSection from '../components/account/DataSection';
+import ProfilesSection from '../components/account/ProfilesSection';
 import ViewingHistoryPanel from '../components/account/ViewingHistoryPanel';
-import Page from './Page';
-import { Button, Skeleton } from '../components/ui';
+import { accountAuth } from '../components/account/contract';
 import InstallAppCard from '../components/InstallAppCard';
 import { useAuth } from '../auth';
-import { signInHref } from '../auth/returnTo';
-import type { User } from '../services/types';
-import '../styles/account.css';
+import { readSyncOwner, services } from '../services';
+import type { DbService } from '../services/types';
+import { useLastFrameStore } from '../state/store';
+import { buildDataExport, countExportItems, downloadJson, exportFileName } from '../lib/exportData';
 import { useMeta } from '../hooks/useMeta';
+import '../styles/account.css';
 
 type Notice = { kind: 'success' | 'error' | 'info'; text: string } | null;
 
 function errorText(err: unknown): string {
-  return err instanceof Error && err.message ? err.message : 'Something went wrong. Please try again.';
+  return err instanceof Error && err.message
+    ? err.message
+    : 'Something went wrong. Please try again.';
 }
 
-function initials(user: User): string {
-  const source = user.displayName || user.email;
-  const parts = source.split(/[\s._@-]+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+export interface AccountPageProps {
+  /** Override the DB adapter the export reads from (tests). */
+  db?: DbService;
 }
 
-function memberSince(iso: string): string | null {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
-}
-
-export default function AccountPage() {
-  useMeta({ title: 'Account', description: 'Manage your Lastframe.tv account settings.' });
-  const { status, user, signOut, deleteData } = useAuth();
-  const [busy, setBusy] = useState<null | 'signout' | 'delete'>(null);
+/**
+ * /account: a tabbed settings area. Sign-in & security (how you sign in,
+ * where you are signed in), Profiles, Viewing history, Your data (download,
+ * delete). Works for guests and with no backend configured; the devices list
+ * and change-email light up when the auth adapter offers them.
+ */
+export default function AccountPage({ db = services.db }: AccountPageProps) {
+  useMeta({
+    title: 'Account',
+    description: 'Sign-in, devices, profiles and your data on Lastframe.tv.',
+  });
+  const auth = useAuth();
+  const { status, user, deleteData } = auth;
+  const ext = useMemo(() => accountAuth(auth), [auth]);
+  const [params, setParams] = useSearchParams();
+  const tabParam = params.get('tab');
+  const tab: AccountTabId = isAccountTab(tabParam) ? tabParam : 'security';
+  const [busy, setBusy] = useState<null | 'signout' | 'signout-all' | 'delete' | 'export'>(null);
   const [notice, setNotice] = useState<Notice>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const headingId = useId();
   const noticeId = useId();
+  const signedIn = status === 'authenticated' && !!user;
+  const synced = signedIn && services.mode.db === 'live' && readSyncOwner() === user.id;
 
-  const run = async (kind: NonNullable<typeof busy>, action: () => Promise<void>, success?: string) => {
+  const selectTab = useCallback(
+    (next: AccountTabId) => {
+      setNotice(null); // a notice belongs to the tab it was raised on
+      // Matches accountTabHref: the tab is the only query the page carries.
+      setParams(next === 'security' ? {} : { tab: next }, { replace: true });
+    },
+    [setParams],
+  );
+
+  const run = async (
+    kind: NonNullable<typeof busy>,
+    action: () => Promise<void>,
+    success?: string,
+  ) => {
     setBusy(kind);
     setNotice(null);
     try {
@@ -50,110 +80,121 @@ export default function AccountPage() {
     }
   };
 
+  const signOutHere = () =>
+    run(
+      'signout',
+      () => ext.signOut(),
+      ext.canSignOutEverywhere
+        ? 'You are signed out of this device. Guest mode is on.'
+        : 'You are signed out. Guest mode is on.',
+    );
+
+  const signOutEverywhere = () =>
+    run(
+      'signout-all',
+      () => ext.signOut({ scope: 'global' }),
+      'You are signed out everywhere. Each device needs a new sign-in link.',
+    );
+
+  const onExport = () =>
+    run('export', async () => {
+      // Signed in with a cloud copy: the export must come from it, so a failed pull is an error, not a device fallback.
+      const snapshot =
+        synced && user
+          ? await db.pullSnapshot(user.id).catch(() => {
+              throw new Error(
+                'Could not reach your cloud data. Check your connection and try again.',
+              );
+            })
+          : null;
+      const data = buildDataExport(useLastFrameStore.getState(), user, snapshot);
+      if (!downloadJson(data, exportFileName()))
+        throw new Error('Your browser blocked the download.');
+      const n = countExportItems(data);
+      setNotice({
+        kind: 'success',
+        text: `Your export is downloading: ${n} saved ${n === 1 ? 'item' : 'items'} as JSON.`,
+      });
+    });
+
   const onDelete = () =>
-    void run(
+    run(
       'delete',
-      async () => {
-        await deleteData();
-        setConfirmDelete(false);
-      },
-      user
-        ? 'Your data was deleted from this device and account deletion was requested.'
+      () => deleteData(),
+      signedIn
+        ? 'Your account is being deleted. Everything is gone from this device now and from our servers within 24 hours.'
         : 'Your data was deleted from this device.',
     );
 
+  const noticeEl = notice && (
+    <p
+      id={noticeId}
+      className={`account-notice ${notice.kind}`}
+      role={notice.kind === 'error' ? 'alert' : 'status'}
+    >
+      {notice.text}
+    </p>
+  );
+
   return (
-    <Page title="Account">
-      <div className="account">
-        {status === 'loading' && (
-          <div className="account-loading" aria-busy="true" aria-label="Loading account">
-            <Skeleton variant="circle" width={56} height={56} />
-            <Skeleton variant="text" width="60%" height={18} />
-          </div>
-        )}
+    <main className="page acct-page">
+      <div className="acct">
+        <AccountHeader status={status} user={user} synced={synced} />
+        <AccountTabs active={tab} onChange={selectTab} />
 
-        {status === 'authenticated' && user && (
-          <section className="account-section account-profile glass" aria-label="Signed-in account">
-            {user.avatarUrl ? (
-              <img className="account-avatar" src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
-            ) : (
-              <span className="account-avatar" aria-hidden>
-                {initials(user)}
-              </span>
-            )}
-            <div className="account-identity">
-              <strong className="account-name">{user.displayName}</strong>
-              <span className="account-email">{user.email}</span>
-              {memberSince(user.createdAt) && (
-                <span className="account-meta">Member since {memberSince(user.createdAt)}</span>
+        <div
+          role="tabpanel"
+          id="acct-panel"
+          aria-labelledby={`acct-tab-${tab}`}
+          className="acct-panel"
+          key={tab}
+        >
+          {noticeEl}
+
+          {tab === 'security' && (
+            <>
+              {signedIn && user && (
+                <SignInSection user={user} changeEmail={ext.changeEmail} onNotice={setNotice} />
               )}
-            </div>
-            <Button
-              variant="glass"
-              size="sm"
-              loading={busy === 'signout'}
-              disabled={busy !== null}
-              onClick={() => void run('signout', signOut, 'You are signed out. Guest mode is on.')}
-            >
-              Sign out
-            </Button>
-          </section>
-        )}
+              {signedIn && (
+                <DevicesSection
+                  listDevices={ext.listDevices}
+                  forgetDevice={ext.forgetDevice}
+                  signOutEverywhere={ext.canSignOutEverywhere ? signOutEverywhere : undefined}
+                  signOutHere={signOutHere}
+                  busy={busy !== null}
+                  onNotice={setNotice}
+                />
+              )}
+              {status === 'guest' && (
+                <section className="acct-sec" aria-label="Signed-in devices">
+                  <h2>Where you are signed in</h2>
+                  <p className="acct-lead">
+                    {ext.canSignOutEverywhere
+                      ? 'Sign in to see every device on your account and sign any of them out from here.'
+                      : 'Sign in to manage where you are signed in.'}
+                  </p>
+                </section>
+              )}
+              <InstallAppCard />
+            </>
+          )}
 
-        {status === 'guest' && (
-          <section className="account-section" aria-labelledby={`${headingId}-heading`}>
-            <p className="account-pill">Guest mode</p>
-            <h2 id={`${headingId}-heading`} className="account-heading">
-              Sign in to sync across devices
-            </h2>
-            <p className="muted">
-              You can keep browsing as a guest. Your list, history and ratings stay on this device until you sign
-              in, then they come with you.
-            </p>
-            <Link to={signInHref('/account')} className="btn accent account-signin">
-              Sign in with an email link
-            </Link>
-          </section>
-        )}
+          {tab === 'profiles' && <ProfilesSection />}
 
-        {notice && (
-          <p
-            id={noticeId}
-            className={`account-notice ${notice.kind}`}
-            role={notice.kind === 'error' ? 'alert' : 'status'}
-          >
-            {notice.text}
-          </p>
-        )}
+          {tab === 'history' && <ViewingHistoryPanel />}
 
-        {status !== 'loading' && (
-          <section className="account-section account-danger" aria-labelledby={`${headingId}-danger`}>
-            <h2 id={`${headingId}-danger`} className="account-heading">
-              Delete my data
-            </h2>
-            <p className="muted">
-              Removes profiles, My List, watch history and ratings from this device
-              {user ? ', requests deletion of your cloud data, and signs you out' : ''}. This cannot be undone.
-            </p>
-            {confirmDelete ? (
-              <div className="account-row account-confirm" role="group" aria-label="Confirm data deletion">
-                <Button variant="accent" loading={busy === 'delete'} disabled={busy !== null} onClick={onDelete}>
-                  Yes, delete everything
-                </Button>
-                <Button variant="ghost" disabled={busy !== null} onClick={() => setConfirmDelete(false)}>
-                  Cancel
-                </Button>
-              </div>
-            ) : (
-              <Button variant="glass" disabled={busy !== null} onClick={() => setConfirmDelete(true)}>
-                Delete my data…
-              </Button>
-            )}
-          </section>
-        )}
-        <ViewingHistoryPanel />
-        <InstallAppCard />
+          {tab === 'data' && status !== 'loading' && (
+            <DataSection
+              signedIn={signedIn}
+              busy={busy !== null}
+              exporting={busy === 'export'}
+              onExport={onExport}
+              onDelete={onDelete}
+            />
+          )}
+        </div>
       </div>
-    </Page>
+    </main>
   );
 }

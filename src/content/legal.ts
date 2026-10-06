@@ -123,7 +123,7 @@ export const privacy: LegalDocument = {
         [
           '**Stay a guest.** Everything works without an account; your data just stays on this device.',
           '**Delete everything.** Open your [Account page](/account) and choose Delete my data. Deletion completes within 24 hours and cannot be undone.',
-          '**Take a copy.** Ask us at the address below and we will send your profiles, list, history and ratings as a file. An export button on the Account page is coming.',
+          '**Take a copy.** Download your profiles, list, history and ratings as a file from the [Account page](/account?tab=data), or ask us at the address below.',
           '**Sign out.** From the Account page. Signing out of every device at once is coming.',
           '**Clear this device.** Signing out of an account removes its local copy from this browser. Deleting your data also clears cached artwork.',
         ],
