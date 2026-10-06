@@ -159,6 +159,13 @@ export function createMockAuth(opts: MockAuthOptions = {}): AuthService {
       // Mock: "click" the link immediately.
       set(makeMockUser(requireEmail(email), undefined, now()));
     },
+    async completeSignIn(params) {
+      // Mock sign-in completes immediately, so a callback only confirms it.
+      if (params.error || params.error_code) throw new Error('This sign-in link has expired or was already used. Request a new one.');
+      const user = activeUser();
+      if (!user) throw new Error('This sign-in link has expired or was already used. Request a new one.');
+      return user;
+    },
     async signInWithOAuth(provider) {
       const demo = MOCK_OAUTH_USERS[provider];
       if (!demo) throw new Error(`Unsupported sign-in provider: ${String(provider)}`);

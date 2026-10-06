@@ -1,4 +1,4 @@
-import type { SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
+import type { EmailOtpType, SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
 import { NotConfiguredError, type AuthService, type User } from '../types';
 import { SYNC_TABLES } from '../db/live';
 import { authRedirectUrl, requireEmail, requirePassword } from './validate';
@@ -15,6 +15,17 @@ export interface LiveAuthOptions {
    * @supabase/supabase-js so the SDK is code-split out of the main bundle.
    */
   loadClient?: () => Promise<SupabaseLike>;
+}
+
+/** Shown for expired, reused or malformed sign-in links. Never echoes provider text. */
+export const LINK_INVALID_MESSAGE = 'This sign-in link has expired or was already used. Request a new one.';
+
+const OTP_TYPES = new Set(['magiclink', 'signup', 'invite', 'recovery', 'email_change', 'email']);
+
+/** Maps a callback error code to fixed copy; the provider's description is never shown. */
+export function callbackErrorMessage(code?: string): string {
+  if (code === 'access_denied') return 'Sign-in was cancelled.';
+  return LINK_INVALID_MESSAGE;
 }
 
 function str(v: unknown): string | undefined {
@@ -110,14 +121,49 @@ export function createLiveAuth(supabaseUrl: string, anonKey: string, opts: LiveA
       return toUser(data.user);
     },
 
-    async signInWithMagicLink(email) {
+    async signInWithMagicLink(email, options) {
       const normalized = requireEmail(email);
       const sb = await client();
       const { error } = await sb.auth.signInWithOtp({
         email: normalized,
-        options: { emailRedirectTo: authRedirectUrl(), shouldCreateUser: true },
+        options: {
+          emailRedirectTo: authRedirectUrl(),
+          shouldCreateUser: true,
+          ...(options?.captchaToken ? { captchaToken: options.captchaToken } : {}),
+        },
       });
       if (error) throw asError(error, 'Could not send the magic link.');
+    },
+
+    async completeSignIn(params) {
+      if (params.error || params.error_code) {
+        throw new Error(callbackErrorMessage(params.error_code ?? params.error));
+      }
+      const sb = await client();
+      let result: { data: { user: SupabaseUser | null }; error: unknown };
+      if (params.code) {
+        result = await sb.auth.exchangeCodeForSession(params.code);
+      } else if (params.access_token && params.refresh_token) {
+        result = await sb.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        });
+      } else if (params.token_hash && params.type && OTP_TYPES.has(params.type)) {
+        result = await sb.auth.verifyOtp({ token_hash: params.token_hash, type: params.type as EmailOtpType });
+      } else {
+        // Nothing usable in the URL: maybe the session already exists (link opened twice).
+        const { data } = await sb.auth.getSession();
+        if (data.session?.user) return toUser(data.session.user);
+        throw new Error(LINK_INVALID_MESSAGE);
+      }
+      if (result.error || !result.data.user) {
+        // A second exchange of the same link (double render, two tabs) fails,
+        // but the first one may already have signed the user in.
+        const { data } = await sb.auth.getSession();
+        if (data.session?.user) return toUser(data.session.user);
+        throw new Error(LINK_INVALID_MESSAGE);
+      }
+      return toUser(result.data.user);
     },
 
     async signInWithOAuth(provider) {

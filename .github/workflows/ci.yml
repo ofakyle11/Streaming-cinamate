@@ -51,3 +51,47 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Fails on a high or critical advisory in anything that ships to users
+  # (production dependencies). Dev tooling advisories are reported, not gating:
+  # they never reach the browser bundle and need major tool upgrades to clear.
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Audit production dependencies (high and above fail)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Audit all dependencies (report only)
+        run: npm audit --audit-level=high || echo "::warning title=npm audit::Dev dependencies have high or critical advisories (see log)."
+
+  # Scans the full git history and the working tree for committed secrets
+  # (API keys, tokens, private keys). Findings are redacted in the log.
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      GITLEAKS_VERSION: 8.28.0
+      GITLEAKS_SHA256: a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks (pinned, checksum verified)
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -sSfL -o gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          tar xzf gitleaks.tgz gitleaks
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Scan git history
+        run: gitleaks git --redact --no-banner --exit-code 1 .
+      - name: Scan working tree
+        run: gitleaks dir --redact --no-banner --exit-code 1 --log-level warn .
