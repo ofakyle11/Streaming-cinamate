@@ -12,6 +12,7 @@ function fakeAuth(user: User | null): AuthService {
     signUpWithEmail: vi.fn(),
     signInWithMagicLink: vi.fn(),
     signInWithOAuth: vi.fn(),
+    completeSignIn: vi.fn(),
     requestDataDeletion: vi.fn(),
     signOut: vi.fn(),
     onAuthStateChange: () => () => {},

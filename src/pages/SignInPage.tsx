@@ -7,6 +7,8 @@ import { googleSignInEnabled } from '../auth/flags';
 import { rememberReturnTo, resolveReturnTo } from '../auth/returnTo';
 import { isValidEmail, normalizeEmail } from '../services/auth/validate';
 import { useMeta } from '../hooks/useMeta';
+import Turnstile from '../components/auth/Turnstile';
+import { useCaptcha } from '../auth/useCaptcha';
 
 /** `?error=` values the callback page sends us back with. */
 export type SignInError = 'expired' | 'link';
@@ -48,6 +50,7 @@ export default function SignInPage({ googleEnabled = googleSignInEnabled() }: Si
   const [error, setError] = useState<string | null>(null);
   // Only a rejected address marks the field invalid; a failed send is not the field's fault.
   const [fieldError, setFieldError] = useState(false);
+  const captcha = useCaptcha();
   const emailId = useId();
   const errorId = useId();
 
@@ -81,7 +84,11 @@ export default function SignInPage({ googleEnabled = googleSignInEnabled() }: Si
     void run('magic', async () => {
       // The live link comes back through /auth/callback, which reads this.
       if (mode === 'live') rememberReturnTo(returnTo);
-      await signInWithMagicLink(target);
+      try {
+        await signInWithMagicLink(target, captcha.options());
+      } finally {
+        captcha.spend();
+      }
       if (mode === 'live') {
         try {
           window.sessionStorage.setItem(SENT_EMAIL_KEY, target);
@@ -164,11 +171,12 @@ export default function SignInPage({ googleEnabled = googleSignInEnabled() }: Si
         autoFocus={!!linkError}
         required
       />
+      {captcha.required && <Turnstile {...captcha.widget} />}
       <Button
         type="submit"
         variant="accent"
         loading={busy === 'magic'}
-        disabled={busy !== null || loading}
+        disabled={busy !== null || loading || !captcha.ready}
       >
         {linkError ? 'Send a new link' : 'Email me a sign-in link'}
       </Button>

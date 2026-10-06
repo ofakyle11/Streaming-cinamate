@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { TurnstileRenderOptions } from '../services/auth/turnstile';
 import { AuthProvider } from '../auth';
 import { RETURN_TO_KEY } from '../auth/returnTo';
 import { createMockAuth } from '../services/auth/mock';
@@ -156,5 +158,57 @@ describe('SignInPage', () => {
     await service.signInWithMagicLink('ada@example.com');
     renderAt('/sign-in?returnTo=%2Fplans', { service });
     await waitFor(() => expect(location()).toBe('/plans'));
+  });
+
+  describe('with Turnstile on (VITE_TURNSTILE_SITE_KEY set)', () => {
+    let opts: TurnstileRenderOptions | undefined;
+    beforeEach(() => {
+      vi.stubEnv('VITE_TURNSTILE_SITE_KEY', '0xTEST');
+      window.turnstile = {
+        render: vi.fn((_el: HTMLElement, o: TurnstileRenderOptions) => {
+          opts = o;
+          return 'w';
+        }),
+        reset: vi.fn(),
+        remove: vi.fn(),
+      };
+    });
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      delete window.turnstile;
+      opts = undefined;
+    });
+
+    it('waits for the bot check, then sends its token with the link', async () => {
+      const service = liveLikeAuth();
+      renderAt('/sign-in', { service, mode: 'live' });
+      fireEvent.change(await emailField(), { target: { value: 'ada@example.com' } });
+      await waitFor(() => expect(opts).toBeDefined());
+      expect(submit()).toBeDisabled();
+      act(() => opts?.callback?.('tok-1'));
+      expect(submit()).toBeEnabled();
+      fireEvent.click(submit());
+      await waitFor(() => expect(location()).toContain('/sign-in/sent'));
+      expect(service.signInWithMagicLink).toHaveBeenCalledWith('ada@example.com', {
+        captchaToken: 'tok-1',
+      });
+    });
+
+    it('needs a fresh token after a failed send (tokens are single use)', async () => {
+      const service = {
+        ...createMockAuth(),
+        signInWithMagicLink: vi.fn().mockRejectedValue(new Error('Mail is down')),
+      };
+      renderAt('/sign-in', { service, mode: 'live' });
+      fireEvent.change(await emailField(), { target: { value: 'ada@example.com' } });
+      await waitFor(() => expect(opts).toBeDefined());
+      act(() => opts?.callback?.('tok-1'));
+      fireEvent.click(submit());
+      expect(await screen.findByRole('alert')).toHaveTextContent('Mail is down');
+      expect(submit()).toBeDisabled();
+      await waitFor(() => expect(window.turnstile?.render).toHaveBeenCalledTimes(2));
+      act(() => opts?.callback?.('tok-2'));
+      expect(submit()).toBeEnabled();
+    });
   });
 });

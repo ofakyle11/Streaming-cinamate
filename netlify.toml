@@ -6,10 +6,16 @@
 [functions]
   node_bundler = "esbuild"
 
+# Functions sit behind /api/*. The rate limit stops the TMDB proxy from being
+# used as a free key: more than 60 requests a minute from one IP get a 429.
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+  [redirects.rate_limit]
+    window_limit = 60
+    window_size = 60
+    aggregate_by = ["ip", "domain"]
 
 [[redirects]]
   from = "/*"
@@ -24,7 +30,9 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://plausible.io; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://image.tmdb.org https://picsum.photos https://fastly.picsum.photos https://i.ytimg.com; media-src 'self' blob:; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com; connect-src 'self' https://api.themoviedb.org https://image.tmdb.org https://plausible.io https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    # Content-Security-Policy is generated into dist/_headers by
+    # scripts/security-headers.mjs at build time (it depends on whether a
+    # Turnstile site key is set). Edit the CSP there, never here.
 
 [[headers]]
   for = "/assets/*"

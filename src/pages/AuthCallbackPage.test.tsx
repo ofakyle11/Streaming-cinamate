@@ -7,6 +7,13 @@ import { RETURN_TO_KEY, rememberReturnTo } from '../auth/returnTo';
 import { createMockAuth } from '../services/auth/mock';
 import type { AdapterMode, AuthService } from '../services/types';
 import AuthCallbackPage from './AuthCallbackPage';
+import { bootAuthCallback, clearAuthCallback, readAuthCallback } from '../auth/callbackBoot';
+
+/** Simulate main.tsx's boot capture for a real browser URL. */
+function captureAt(url: string) {
+  window.history.replaceState(null, '', url);
+  bootAuthCallback();
+}
 
 function LocationProbe() {
   const loc = useLocation();
@@ -96,5 +103,69 @@ describe('AuthCallbackPage', () => {
       await vi.advanceTimersByTimeAsync(60);
     });
     expect(location()).toBe('/sign-in?error=link');
+  });
+
+  describe('with the tokens captured at boot (main.tsx)', () => {
+    afterEach(() => {
+      clearAuthCallback();
+      window.history.replaceState(null, '', '/');
+    });
+
+    it('exchanges them through completeSignIn, then continues and forgets them', async () => {
+      captureAt('/auth/callback?code=pkce-1');
+      expect(window.location.search).toBe('');
+      const service = createMockAuth();
+      const user = {
+        id: 'u1',
+        email: 'ada@example.com',
+        displayName: 'Ada',
+        createdAt: '2026-01-01',
+      };
+      // Like the live SDK: the exchange creates the session the provider then sees.
+      const completeSignIn = vi.fn(async () => {
+        await service.signInWithMagicLink(user.email);
+        return user;
+      });
+      rememberReturnTo('/my-list');
+      renderAt('/auth/callback', { ...service, completeSignIn }, 'live', true);
+      await waitFor(() => expect(location()).toBe('/my-list'));
+      expect(completeSignIn).toHaveBeenCalledTimes(1);
+      expect(completeSignIn).toHaveBeenCalledWith({ code: 'pkce-1' });
+      expect(readAuthCallback()).toBeNull();
+    });
+
+    it('does not give up while the exchange is still running', async () => {
+      captureAt('/auth/callback?code=slow');
+      const service = createMockAuth();
+      let finish: () => void = () => {};
+      const completeSignIn = vi.fn(
+        () =>
+          new Promise<never>((_, reject) => {
+            finish = () => reject(new Error('used'));
+          }),
+      );
+      renderAt('/auth/callback', { ...service, completeSignIn }, 'live');
+      await new Promise((r) => setTimeout(r, 150)); // three times the 50ms test timeout
+      expect(location()).toBe('/auth/callback');
+      finish();
+      await waitFor(() => expect(location()).toBe('/sign-in?error=link'));
+    });
+
+    it('sends a link the adapter rejects back to sign-in', async () => {
+      captureAt('/auth/callback#access_token=a&refresh_token=r');
+      const completeSignIn = vi.fn().mockRejectedValue(new Error('used'));
+      renderAt('/auth/callback', { ...createMockAuth(), completeSignIn }, 'live');
+      await waitFor(() => expect(location()).toBe('/sign-in?error=link'));
+      expect(readAuthCallback()).toBeNull();
+    });
+
+    it('reads a provider error from the captured params', async () => {
+      captureAt('/auth/callback#error=access_denied&error_code=otp_expired');
+      expect(window.location.hash).toBe('');
+      const completeSignIn = vi.fn();
+      renderAt('/auth/callback', { ...createMockAuth(), completeSignIn }, 'live');
+      await waitFor(() => expect(location()).toBe('/sign-in?error=expired'));
+      expect(completeSignIn).not.toHaveBeenCalled();
+    });
   });
 });
