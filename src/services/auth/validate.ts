@@ -18,10 +18,6 @@ export function requireEmail(raw: string): string {
   return normalizeEmail(raw);
 }
 
-export function requirePassword(password: string): void {
-  if (password.length < 6) throw new Error('Password must be at least 6 characters.');
-}
-
 /** The route that finishes a magic-link / OAuth sign-in (see pages/AuthCallbackPage). */
 export const AUTH_CALLBACK_PATH = '/auth/callback';
 

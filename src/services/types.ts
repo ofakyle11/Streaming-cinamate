@@ -319,8 +319,6 @@ export interface AuthCallbackParams {
 
 export interface AuthService {
   currentUser(): Promise<User | null>;
-  signInWithEmail(email: string, password: string): Promise<User>;
-  signUpWithEmail(email: string, password: string, displayName?: string): Promise<User>;
   /**
    * Emails a magic link. `captchaToken` is the Cloudflare Turnstile token when
    * the bot check is enabled (VITE_TURNSTILE_SITE_KEY); Supabase verifies it.

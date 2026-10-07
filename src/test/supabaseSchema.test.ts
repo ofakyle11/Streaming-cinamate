@@ -4,6 +4,7 @@ import migration from '../../supabase/migrations/20260929010000_sync_tables.sql?
 import processDeletions from '../../supabase/migrations/20260929020000_process_account_deletions.sql?raw';
 import devices from '../../supabase/migrations/20261006000000_devices.sql?raw';
 import stripPassword from '../../supabase/migrations/20261006010000_disable_password_sign_in.sql?raw';
+import adminUsers from '../../supabase/migrations/20261007000000_admin_users.sql?raw';
 import rlsCheck from '../../supabase/tests/rls_check.sql?raw';
 import config from '../../supabase/config.toml?raw';
 import ci from '../../.github/workflows/ci.yml?raw';
@@ -187,6 +188,24 @@ describe('RLS check (supabase/tests/rls_check.sql) and CI', () => {
     expect(rlsCheck).toContain('a password survived insert into auth.users');
     expect(rlsCheck).toContain('lf_process_account_deletions()');
     expect(rlsCheck.trim().endsWith('rollback;')).toBe(true);
+  });
+
+  it('admin allow-list: RLS on, read-own only, no client write path, anon gets nothing', () => {
+    expect(adminUsers).toMatch(/alter table public\.admin_users enable row level security;/);
+    expect(adminUsers).toMatch(
+      /create policy "admin_users_select_self" on public\.admin_users\s+for select to authenticated using \(email = public\.lf_jwt_email\(\)\)/,
+    );
+    expect(adminUsers).not.toMatch(/create policy[^;]*for (insert|update|delete)/);
+    expect(adminUsers).not.toMatch(/grant[^;]*to anon/i);
+    expect(adminUsers).toMatch(
+      /revoke all on public\.admin_users from public, anon, authenticated;/,
+    );
+    expect(adminUsers).toMatch(/create or replace function public\.lf_is_admin\(\)/);
+    expect(adminUsers).toMatch(/revoke all on function public\.lf_is_admin\(\) from public, anon;/);
+    // Covered by the RLS check: listed user true, other user false, anon no execute, no client writes.
+    expect(rlsCheck).toContain('lf_is_admin()');
+    expect(rlsCheck).toContain("'A added an admin'");
+    expect(rlsCheck).toContain("'B can see admin rows'");
   });
 
   it('runs in CI against a plain PostgreSQL through npm run db:check', () => {

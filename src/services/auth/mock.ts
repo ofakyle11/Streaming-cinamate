@@ -1,5 +1,5 @@
 import type { AuthService, OAuthProvider, User } from '../types';
-import { requireEmail, requirePassword } from './validate';
+import { requireEmail } from './validate';
 import { currentDeviceId, currentDeviceLabel, currentUserAgent, forgetDeviceId } from './devices';
 import {
   callbackErrorMessage,
@@ -157,20 +157,6 @@ export function createMockAuth(opts: MockAuthOptions = {}): AuthService {
   return {
     async currentUser() {
       return activeUser();
-    },
-    async signInWithEmail(email, password) {
-      const normalized = requireEmail(email);
-      requirePassword(password);
-      const u = makeMockUser(normalized, undefined, now());
-      set(u);
-      return u;
-    },
-    async signUpWithEmail(email, password, displayName) {
-      const normalized = requireEmail(email);
-      requirePassword(password);
-      const u = makeMockUser(normalized, displayName, now());
-      set(u);
-      return u;
     },
     async signInWithMagicLink(email) {
       // Mock: "click" the link immediately.

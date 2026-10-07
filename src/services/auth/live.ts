@@ -1,7 +1,7 @@
 import type { EmailOtpType, SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
 import { NotConfiguredError, type AuthService, type Device, type User } from '../types';
 import { SYNC_TABLES } from '../db/live';
-import { authRedirectUrl, requireEmail, requirePassword } from './validate';
+import { authRedirectUrl, requireEmail } from './validate';
 import { callbackErrorMessage, LINK_INVALID_MESSAGE } from './messages';
 import {
   currentDeviceId,
@@ -91,8 +91,9 @@ function asError(err: unknown, fallback: string): Error {
 }
 
 /**
- * Live auth adapter backed by Supabase Auth (magic link + Google OAuth, plus
- * email/password). Only the public URL + anon key are used; both come from
+ * Live auth adapter backed by Supabase Auth (magic link + Google OAuth; there
+ * is no password path, see supabase/migrations/20261006010000_disable_password_sign_in.sql).
+ * Only the public URL + anon key are used; both come from
  * VITE_* env vars. If the client cannot be created the adapter degrades: the
  * user is reported as signed out and sign-in calls reject with a readable error.
  */
@@ -251,31 +252,6 @@ export function createLiveAuth(
       } catch {
         return null; // never crash the app because auth is unavailable
       }
-    },
-
-    async signInWithEmail(email, password) {
-      const normalized = requireEmail(email);
-      requirePassword(password);
-      const sb = await client();
-      const { data, error } = await sb.auth.signInWithPassword({ email: normalized, password });
-      if (error || !data.user) throw asError(error, 'Sign-in failed.');
-      return toUser(data.user);
-    },
-
-    async signUpWithEmail(email, password, displayName) {
-      const normalized = requireEmail(email);
-      requirePassword(password);
-      const sb = await client();
-      const { data, error } = await sb.auth.signUp({
-        email: normalized,
-        password,
-        options: {
-          emailRedirectTo: authRedirectUrl(),
-          data: displayName?.trim() ? { display_name: displayName.trim() } : undefined,
-        },
-      });
-      if (error || !data.user) throw asError(error, 'Sign-up failed.');
-      return toUser(data.user);
     },
 
     async signInWithMagicLink(email, options) {

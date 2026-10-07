@@ -3,6 +3,10 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[build.environment]
+  # Vite 7 needs Node 20.19+ or 22.12+; CI (.github/workflows/ci.yml) uses the same major.
+  NODE_VERSION = "22"
+
 [functions]
   node_bundler = "esbuild"
 
@@ -28,8 +32,14 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # The app uses none of these; denying them means a compromised third-party
+    # script or an injected iframe cannot ask for them either.
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=(), midi=(), magnetometer=(), gyroscope=(), accelerometer=(), display-capture=(), browsing-topics=(), interest-cohort=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    # A window opened from another site gets a fresh browsing context group, so
+    # a cross-origin page can never hold a reference to ours. Sign-in is a
+    # redirect (never a popup), so nothing on the site needs the opener.
+    Cross-Origin-Opener-Policy = "same-origin"
     # Content-Security-Policy is generated into dist/_headers by
     # scripts/security-headers.mjs at build time (it depends on whether a
     # Turnstile site key is set). Edit the CSP there, never here.

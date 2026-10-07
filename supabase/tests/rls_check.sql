@@ -4,7 +4,9 @@
 -- rows as A, then proves that B cannot read, change or delete them, that anon
 -- sees nothing, that nobody can forge a row for someone else, that a revoked
 -- device stays revoked through the client's own upsert, that passwords are
--- stripped from auth.users, and that deleting the auth user cascades. Each
+-- stripped from auth.users, that the admin allow-list answers only for the
+-- listed address and cannot be edited by a client, and that deleting the auth
+-- user cascades. Each
 -- block raises on failure, so `psql -v ON_ERROR_STOP=1 -f` exits non-zero.
 --
 -- Runs after the migrations (and supabase/tests/auth_shim.sql on plain
@@ -16,6 +18,10 @@ insert into auth.users (id, email, encrypted_password) values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a@lastframe.test', '$2a$10$attacker-chosen-password-hash'),
   ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'b@lastframe.test', null)
 on conflict (id) do nothing;
+
+-- Only the owner (here: the superuser running the check) adds admins.
+insert into public.admin_users (email, note) values ('a@lastframe.test', 'test admin')
+on conflict (email) do nothing;
 
 -- ------------------------------------------------------------ passwords never persist
 do $$
@@ -32,7 +38,30 @@ $$;
 
 -- ------------------------------------------------------------ as user A: write
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated","email":"A@Lastframe.test"}';
+
+-- ------------------------------------------------------------ admin allow-list, as A (listed)
+do $$
+begin
+  if not public.lf_is_admin() then raise exception 'A is on the allow-list but lf_is_admin() is false'; end if;
+  if (select count(*) from public.admin_users) <> 1 then raise exception 'A should see exactly their own admin row'; end if;
+  begin
+    insert into public.admin_users (email) values ('b@lastframe.test');
+    raise exception 'A added an admin';
+  exception when insufficient_privilege then null; -- expected: no grant
+  end;
+  begin
+    update public.admin_users set note = 'hijacked';
+    raise exception 'A edited the admin list';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    delete from public.admin_users;
+    raise exception 'A deleted from the admin list';
+  exception when insufficient_privilege then null;
+  end;
+end;
+$$;
 
 insert into public.profiles (id, name, avatar, kid, created_at, updated_at)
   values ('p1', 'Ada', 'astro', false, now(), now());
@@ -117,7 +146,14 @@ end;
 $$;
 
 -- ------------------------------------------------------------ as user B: read nothing
-set local request.jwt.claims = '{"sub":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","role":"authenticated","email":"b@lastframe.test"}';
+
+do $$
+begin
+  if public.lf_is_admin() then raise exception 'B is not on the allow-list but lf_is_admin() is true'; end if;
+  if (select count(*) from public.admin_users) <> 0 then raise exception 'B can see admin rows'; end if;
+end;
+$$;
 
 do $$
 declare t text; n bigint;
@@ -141,7 +177,7 @@ reset request.jwt.claims;
 do $$
 declare t text; n bigint;
 begin
-  foreach t in array array['profiles', 'watchlist', 'history', 'ratings', 'devices', 'account_deletion_requests'] loop
+  foreach t in array array['profiles', 'watchlist', 'history', 'ratings', 'devices', 'account_deletion_requests', 'admin_users'] loop
     begin
       -- Either no grant at all (revoked) or RLS with no anon policy: zero rows.
       execute format('select count(*) from public.%I', t) into n;
@@ -149,12 +185,16 @@ begin
     exception when insufficient_privilege then null; -- expected: no grant
     end;
   end loop;
+  begin
+    if public.lf_is_admin() then raise exception 'anon is an admin'; end if;
+  exception when insufficient_privilege then null; -- expected: no execute grant
+  end;
 end;
 $$;
 
 -- ------------------------------------------------------------ back as A: rows intact, own deletes work
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","role":"authenticated","email":"a@lastframe.test"}';
 do $$
 begin
   if (select name from public.profiles where id = 'p1') <> 'Ada' then raise exception 'B changed A''s profile'; end if;

@@ -98,6 +98,22 @@ the **SQL Editor** in file-name order, then set the values above in **Authentica
 Configuration**, **Email Templates → Magic Link** (body from `supabase/templates/magic-link.html`)
 and **SMTP Settings**.
 
+### Admins
+
+Admin accounts are email-link accounts whose address is on the allow-list in
+`public.admin_users` (migration `20261007000000_admin_users.sql`). Nothing in the app is gated
+on it yet; it is the hook every admin feature will use (`public.lf_is_admin()`). To make
+someone an admin, run once in the **SQL Editor** (lower-case address):
+
+```sql
+insert into public.admin_users (email, note) values ('person@example.com', 'Mark')
+on conflict (email) do nothing;
+```
+
+Remove with `delete from public.admin_users where email = '...'`. No client can add, edit or
+remove a row, and a signed-in user sees only their own. The person then signs in like anyone
+else, with a link to that address; there is no admin password to keep anywhere.
+
 ## 4. Add the two variables in Netlify (hands)
 
 Site `lastframe-tv` → **Site configuration → Environment variables → Add a variable**:
