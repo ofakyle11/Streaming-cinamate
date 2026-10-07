@@ -103,7 +103,8 @@ and **SMTP Settings**.
 Admin accounts are email-link accounts whose address is on the allow-list in
 `public.admin_users` (migration `20261007000000_admin_users.sql`). Nothing in the app is gated
 on it yet; it is the hook every admin feature will use (`public.lf_is_admin()`). To make
-someone an admin, run once in the **SQL Editor** (lower-case address):
+someone an admin, run once in the **SQL Editor** (type the address in lower case; the table
+rejects anything else):
 
 ```sql
 insert into public.admin_users (email, note) values ('person@example.com', 'Mark')

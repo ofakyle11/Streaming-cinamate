@@ -34,7 +34,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     # The app uses none of these; denying them means a compromised third-party
     # script or an injected iframe cannot ask for them either.
-    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=(), midi=(), magnetometer=(), gyroscope=(), accelerometer=(), display-capture=(), browsing-topics=(), interest-cohort=()"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=(), midi=(), magnetometer=(), gyroscope=(), accelerometer=(), display-capture=(), browsing-topics=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     # A window opened from another site gets a fresh browsing context group, so
     # a cross-origin page can never hold a reference to ours. Sign-in is a

@@ -6,6 +6,11 @@
 -- RPCs, an admin page) have one answer to "is this person an admin":
 -- public.lf_is_admin(), which checks the email claim of the current JWT.
 --
+-- The list trusts the `email` claim of the JWT. That holds because every
+-- address is confirmed at sign-in (enable_confirmations) and an email change
+-- is confirmed from both mailboxes (double_confirm_changes, config.toml): keep
+-- both, and only enable sign-in providers that verify emails.
+--
 -- Rows are added by the owner only (SQL editor or service role): there is no
 -- insert, update or delete policy, so no client can promote anyone. A signed-in
 -- user can read their own row (and nothing else) to learn whether they are an

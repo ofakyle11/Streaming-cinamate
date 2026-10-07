@@ -53,8 +53,7 @@ as $$
   select coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb)
 $$;
 
--- The deletion processor runs as service_role; nothing else is needed from auth.
-grant usage on schema auth to service_role;
+-- The deletion processor runs as service_role; it also needs to read and delete users.
 grant select, delete on auth.users to service_role;
 -- Here the migration runner owns auth.users; on Supabase supabase_auth_admin
 -- owns it and postgres holds TRIGGER and UPDATE on it, which the strip-password

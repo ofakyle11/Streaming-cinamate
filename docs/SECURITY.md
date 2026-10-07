@@ -89,8 +89,8 @@ tokens.
 ## Sign-in has no password
 
 Email link is the only way in. The `lf_strip_password` trigger on `auth.users` empties
-`encrypted_password` on every write, so the password endpoints GoTrue exposes to the public
-anon key can never produce a usable account, and the client adapters (`src/services/auth/`)
+`encrypted_password` on every write, so the sign-in-with-password endpoints Supabase still
+exposes can never produce a usable account, and the client adapters (`src/services/auth/`)
 have no password method at all, so no UI change can reintroduce one by accident. New
 addresses must confirm by email and a change of address is confirmed from both mailboxes
 (`supabase/config.toml`).
@@ -103,13 +103,16 @@ is the one answer future admin features (RLS policies, RPCs, an admin page) must
 owner adds rows, from the Supabase SQL editor; there is no client write path, and a signed-in
 user can read only their own row. The RLS check proves a listed user is an admin, an unlisted
 user is not, `anon` cannot even call the function, and no client can add, edit or remove an
-admin. Steps are in [SUPABASE.md](SUPABASE.md#admins).
+admin. The list trusts the email on the sign-in token, which is safe because every address is
+confirmed by email at sign-in and a change of address is confirmed from both mailboxes; a new
+sign-in provider must verify emails before it is switched on, or someone could claim an
+admin's address. Steps are in [SUPABASE.md](SUPABASE.md#admins).
 
 ## Dependency audit
 
 CI fails when a production dependency has a high or critical advisory
 (`npm audit --omit=dev --audit-level=high`). The full tree is audited too and reported as a
-warning. As of 2026-10-07 the whole tree is clean (Vite 7, Vitest 4). Dependabot
+warning. The whole tree is clean after the Vite 7 / Vitest 4 upgrade; Dependabot
 (`.github/dependabot.yml`) opens weekly grouped PRs for npm packages and for the GitHub
 Actions, which are pinned to commit SHAs in `ci.yml` so a moved tag cannot change what runs
 in CI.
