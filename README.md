@@ -58,7 +58,7 @@ Other scripts:
 | `npm run format:check` | Check formatting without writing             |
 
 To try live services locally, put the `VITE_*` variables you need in a `.env.local` file,
-which Vite loads automatically. `.gitignore` doesn't list it yet, so never `git add` it. See [docs/KEYS.md](docs/KEYS.md).
+which Vite loads automatically. `.env*` files are git-ignored. See [docs/KEYS.md](docs/KEYS.md).
 
 ## Checks
 

@@ -31,8 +31,12 @@ grant usage on schema auth to anon, authenticated, service_role;
 create table if not exists auth.users (
   id                 uuid primary key,
   email              text,
-  encrypted_password text
+  encrypted_password text,
+  raw_app_meta_data  jsonb,
+  raw_user_meta_data jsonb
 );
+alter table auth.users add column if not exists raw_app_meta_data jsonb;
+alter table auth.users add column if not exists raw_user_meta_data jsonb;
 
 -- Supabase's auth.uid() reads the JWT claims PostgREST sets per request; tests
 -- set the same GUC with `set local request.jwt.claims`.

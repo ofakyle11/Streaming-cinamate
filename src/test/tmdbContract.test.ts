@@ -10,7 +10,7 @@ import type { MediaType, TmdbService } from '../services/types';
  * allowlisted path, valid forwarded query, and a server-side key only.
  */
 
-const PROXY = '/.netlify/functions/tmdb';
+const PROXY = '/api/tmdb';
 const DUMMY_KEY = 'contract-test-dummy-key';
 
 interface ProxyCall {
@@ -116,7 +116,14 @@ async function proxyFetch(input: string): Promise<Response> {
   url.searchParams.forEach((v, k) => {
     params[k] = v;
   });
-  const res = await handleTmdbRequest({ httpMethod: 'GET', queryStringParameters: params });
+  const res = await handleTmdbRequest({
+    httpMethod: 'GET',
+    queryStringParameters: params,
+    // A fresh IP per call: the contract, not the per-IP backstop, is under test here.
+    headers: {
+      'x-nf-client-connection-ip': `10.1.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`,
+    },
+  });
   const body = res.body ?? '';
   proxyCalls.push({ url: input, params, status: res.statusCode, body });
   return new Response(body, {

@@ -4,9 +4,11 @@ import pkg from '../../package.json';
 import viteConfig from '../../vite.config.ts?raw';
 import { DEFAULT_PLAUSIBLE_HOST } from '../services/analytics/plausible';
 import { TURNSTILE_ORIGIN as CLIENT_TURNSTILE_ORIGIN } from '../services/auth/turnstile';
+import { AVATAR_HOSTS } from '../services/auth/live';
 import {
   buildCsp,
   cspOptions,
+  GOOGLE_AVATAR_ORIGIN,
   headersFile,
   supabaseOrigins,
   TURNSTILE_ORIGIN,
@@ -115,14 +117,35 @@ describe('Supabase pin', () => {
     expect(supabaseOrigins('https://')).toEqual([]);
   });
 
-  it('reads both switches from the same env Vite inlines', () => {
-    expect(cspOptions({})).toEqual({ turnstile: false, supabaseUrl: '' });
+  it('reads every switch from the same env Vite inlines', () => {
+    expect(cspOptions({})).toEqual({ turnstile: false, supabaseUrl: '', google: false });
     expect(
-      cspOptions({ VITE_SUPABASE_URL: 'https://x.supabase.co', VITE_TURNSTILE_SITE_KEY: 'k' }),
+      cspOptions({
+        VITE_SUPABASE_URL: 'https://x.supabase.co',
+        VITE_TURNSTILE_SITE_KEY: 'k',
+        VITE_AUTH_GOOGLE: '1',
+      }),
     ).toEqual({
       turnstile: true,
       supabaseUrl: 'https://x.supabase.co',
+      google: true,
     });
+  });
+});
+
+describe('Google avatars', () => {
+  it('allows the Google image host in img-src only when Google sign-in is on', () => {
+    for (const google of [false, true]) {
+      const csp = parseCsp(buildCsp({ google }));
+      expect((csp.get('img-src') ?? []).includes(GOOGLE_AVATAR_ORIGIN)).toBe(google);
+      for (const directive of ['script-src', 'connect-src', 'frame-src', 'default-src']) {
+        expect(csp.get(directive) ?? []).not.toContain(GOOGLE_AVATAR_ORIGIN);
+      }
+    }
+  });
+
+  it('is the host the auth adapter accepts avatar URLs from', () => {
+    expect(AVATAR_HOSTS.has(new URL(GOOGLE_AVATAR_ORIGIN).hostname)).toBe(true);
   });
 });
 

@@ -1,0 +1,105 @@
+# Privacy, records of processing and data subject requests (A.5.31, 5.34, 8.10)
+
+| Owner | Version | Date       | Review   | Status                   |
+| ----- | ------- | ---------- | -------- | ------------------------ |
+| Mark  | 0.1     | 2026-10-09 | Annually | Draft for owner approval |
+
+## Legal register (A.5.31)
+
+| Requirement                                                              | Applies because                                                                 | Key obligations                                                                                                                                                                 | Where met                                           |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| PIPEDA (Canada)                                                          | Organisation in Canada collecting personal information in commercial activity   | Consent, limited collection, safeguards, openness, access and correction, breach of safeguards record and notification (real risk of significant harm), 24-month breach records | `/privacy`, this document, `incident-response.md`   |
+| GDPR (EU) and UK GDPR                                                    | Users in the EEA/UK can sign up; service offered without geographic restriction | Lawful basis, transparency, DSAR within one month, 72 h breach notification, international transfer safeguards (data in US), processor DPAs, records of processing              | This document, `supplier-register.md`               |
+| CASL (Canada)                                                            | Email sent to users                                                             | Transactional sign-in and account notices only; no marketing email                                                                                                              | Templates limited to magic link and account notices |
+| TMDB API terms                                                           | Catalogue source                                                                | Attribution, no bulk caching beyond allowed, key protection                                                                                                                     | `/terms` attribution; proxy cache 10 min            |
+| YouTube API/embed terms                                                  | Trailer embeds                                                                  | Privacy-enhanced embed; no circumvention                                                                                                                                        | `youtube-nocookie.com`                              |
+| Provider terms (Supabase, Netlify, Resend, Plausible, GitHub, Spaceship) | Contracts                                                                       | Acceptable use, security of credentials                                                                                                                                         | `supplier-register.md`                              |
+| Published promises (`/privacy`, `/terms`, `/security`)                   | Self-imposed, enforceable as representations                                    | Every promise needs a procedure                                                                                                                                                 | Fix list below                                      |
+
+Data controller: Mark, operating Lastframe.tv, Canada. Contact: `privacy@lastframe.tv`. No DPO appointment is legally required; the owner performs the function. No EU representative is appointed (Article 27 exemption assessed as applicable: occasional processing, no special categories, low risk — record this assessment at management review).
+
+## Records of processing (GDPR Art. 30 / PIPEDA openness)
+
+| #      | Processing activity                        | Data subjects                            | Data categories                                                | Purpose                                                | Lawful basis (GDPR) / consent (PIPEDA)                        | Recipients / processors                 | Transfer                            | Retention                                                             |
+| ------ | ------------------------------------------ | ---------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------- | --------------------------------------- | ----------------------------------- | --------------------------------------------------------------------- |
+| RoP-1  | Account creation and sign-in by email link | Account holders                          | Email address, sign-in timestamps, IP/UA in auth log           | Authenticate the user                                  | Contract (providing the service) / implied consent on sign-up | Supabase (US East), Resend (us-east-1)  | Canada → US; DPA + SCCs (to obtain) | Life of account; auth log per provider retention                      |
+| RoP-2  | Sync of profiles, list, history, ratings   | Account holders                          | Profile names/avatars, TMDB ids, positions, ratings, kids flag | Make data follow the user between devices              | Contract                                                      | Supabase                                | US                                  | Life of account; tombstones until purge (A6)                          |
+| RoP-3  | Device records                             | Account holders                          | Device id, label, user agent, last seen, revoked               | Let the user see and sign out devices; abuse detection | Contract / legitimate interest (security)                     | Supabase                                | US                                  | Life of account; purge revoked > 30 d, inactive > 180 d (D6, planned) |
+| RoP-4  | Account deletion                           | Account holders who request it           | user id, timestamps                                            | Honour deletion                                        | Legal obligation / contract                                   | Supabase                                | US                                  | Until processed (≤ 24 h), then row deleted                            |
+| RoP-5  | Website serving                            | All visitors                             | IP, UA, path (server logs)                                     | Deliver the site; security                             | Legitimate interest                                           | Netlify                                 | Global CDN                          | Provider retention (to confirm)                                       |
+| RoP-6  | Catalogue lookups                          | All visitors                             | Query terms, title ids (no identity)                           | Show titles                                            | Legitimate interest                                           | TMDB via proxy; images direct from TMDB | US                                  | 10-min cache                                                          |
+| RoP-7  | Analytics                                  | All visitors                             | Pageview URL, event names; search terms until A1 fixed         | Understand usage                                       | Legitimate interest (cookieless, no identifiers)              | Plausible                               | EU                                  | Aggregate, indefinite                                                 |
+| RoP-8  | Trailers                                   | Visitors who open a title / home preview | Viewer IP to Google                                            | Show trailer                                           | Legitimate interest; disclosed                                | Google/YouTube (privacy-enhanced)       | Global                              | Google's                                                              |
+| RoP-9  | Bot check (off)                            | Sign-in visitors when enabled            | Challenge data                                                 | Prevent abuse                                          | Legitimate interest                                           | Cloudflare                              | Global                              | Cloudflare's                                                          |
+| RoP-10 | Security and privacy correspondence        | Reporters, requesters                    | Email content                                                  | Handle reports and DSARs                               | Legal obligation / legitimate interest                        | Google Workspace                        | Global                              | 24 months (breach records), 3 years (DSARs)                           |
+| RoP-11 | Google sign-in (disabled)                  | —                                        | Name, avatar, email from Google                                | —                                                      | —                                                             | —                                       | —                                   | Not active                                                            |
+
+## Retention table
+
+| Data                                     | Retention                                                                                                | Mechanism                                              | Verified                 |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------ |
+| Account data (all tables + `auth.users`) | Until deletion request; processed within 24 h by `lf_process_account_deletions` via pg_cron every 15 min | Cascade on user delete                                 | Pending evidence (A2/D5) |
+| Soft-deleted rows (`deleted` flag)       | Currently indefinite                                                                                     | Purge job to add or disclose (A6)                      | No                       |
+| Device rows                              | Currently indefinite                                                                                     | Purge planned (D6)                                     | No                       |
+| Backups                                  | Option A: 7 days; option B: 8 weekly + 12 monthly                                                        | `backup-and-continuity.md`; privacy wording must match | No                       |
+| Supabase auth/API logs                   | Provider default (1–7 days)                                                                              | Provider                                               | To record                |
+| Netlify logs                             | Provider default                                                                                         | Provider                                               | To record                |
+| Resend email logs                        | Provider default                                                                                         | Provider                                               | To record                |
+| Browser local copy                       | Until sign-out or "delete this device's data"                                                            | Client code                                            | Yes                      |
+| DSAR correspondence                      | 3 years                                                                                                  | Mailbox label                                          | Policy                   |
+| Breach records                           | 24 months minimum (PIPEDA)                                                                               | Incident log                                           | Policy                   |
+
+## DSAR procedure (access, portability, correction, deletion, objection)
+
+Clock: 30 days from receipt (GDPR one month, extendable by two with notice; `/privacy` promises 30 days). Log every request in the table below.
+
+1. **Receive** at `privacy@lastframe.tv` (or any channel; move it there). Acknowledge within 3 business days with the expected date.
+2. **Verify identity**: the account identity is the email address. Send a reply to the registered address asking the person to confirm from that mailbox, or ask them to sign in (magic link to that address) and perform the action from the Account page. Do not accept requests for an account from a different address without strong evidence.
+3. **Self-service first** (most requests):
+   - Export: Account → Your data → download JSON (`lib/exportData.ts`). Note A7: devices rows, avatar URL and last sign-in are missing from the export until fixed; for a formal DSAR, supply them manually from Supabase (Authentication → Users; `select * from devices where user_id = ...`).
+   - Deletion: Account → Delete my data; queued, processed within 24 h; confirm by checking `account_deletion_requests.processed_at` and that `auth.users` no longer has the row.
+   - Correction: profiles editable in app; email change via Account (double confirmation).
+4. **Manual fulfilment** when the person cannot sign in: owner runs the export queries in Supabase SQL editor, assembles JSON, sends it encrypted or via a one-time link; for deletion, `delete from auth.users where email = ...` after identity verification (cascade handles the rest), then record.
+5. **Also cover provider data**: state in the response what remains in provider logs and for how long (A3); Resend logs can be requested for deletion from Resend support if the person asks.
+6. **Respond** in plain language, list what was held, what was done, and the right to complain (OPC Canada; ICO/DPC for UK/EU).
+7. **Record** below and close.
+
+Refusals (manifestly unfounded, identity not verified, legal hold) are documented with reasons.
+
+## DSAR log
+
+| ID  | Received | Channel | Type (access / export / delete / correct / other) | Identity verified (date, method) | Completed | Days taken | Notes |
+| --- | -------- | ------- | ------------------------------------------------- | -------------------------------- | --------- | ---------- | ----- |
+|     |          |         |                                                   |                                  |           |            |       |
+
+## Breach notification
+
+See `incident-response.md`: PIPEDA real-risk-of-significant-harm test; GDPR/UK GDPR 72 h to authority; `/security` promise of 72 h to users after confirmation; keep records 24 months.
+
+## Privacy-page wording fixes required (from governance findings A1–A13)
+
+Edit `src/content/legal.ts`; each is a separate line item in the PR so Spencer can verify.
+
+| Finding | Fix                                                                                                                                                                                                                                                         |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1      | Code: stop sending search query text to Plausible (drop the `query` prop on the `search` event; strip `?q=` from the pageview URL). Page: keep "page views" wording once fixed; until then add "and anonymous event counts".                                |
+| A2      | Operational: prove pg_cron runs (monthly review query); ship schedule as migration (D5). Page: no change if proven; otherwise say "within 24 hours once the request is processed".                                                                          |
+| A3      | Page line "removed within 24 hours": change to "removed from the account database within 24 hours; copies in provider logs (email delivery, sign-in audit, web server) expire within [N] days" with N from the retention table.                             |
+| A4      | Add Resend to "Who we share it with": "**Resend** delivers our sign-in emails and sees your email address and delivery status." Add to `/security` providers list. Obtain DPA.                                                                              |
+| A5      | Add conditional sentence: "If we enable a bot check on the sign-in form, **Cloudflare Turnstile** sees your browser and IP address to decide whether you are human." Keep until Turnstile is on; then make it unconditional.                                |
+| A6      | Either implement a purge of soft-deleted rows (e.g. 30 days) or change "stay until you remove them" to "removed from your view immediately and purged from the database within 30 days".                                                                    |
+| A7      | Code: add devices, avatar URL and last sign-in to the export. Page: "Take a copy" lists devices too.                                                                                                                                                        |
+| A8      | Replace "Backups age out within 30 days" and "Server logs are kept for up to 30 days" with the verified figures from `logging-and-monitoring.md` and the backup decision.                                                                                   |
+| A9      | Procedures now exist (this document, `incident-response.md`); add "policy change notice" step: before any material change, email account holders ≥ 14 days ahead via Resend broadcast or Supabase admin list; record date in the change log.                |
+| A10     | `EFFECTIVE_DATE` is 1 November 2026, in the future at drafting. Set to the actual publication date on release.                                                                                                                                              |
+| A11     | CSP: remove unused `player.vimeo.com` and `picsum.photos`; add `lh3.googleusercontent.com` to `img-src` only when `VITE_AUTH_GOOGLE` is on (S3). No page change.                                                                                            |
+| A12     | Verify Supabase region in console; store screenshot in evidence; if not US East, change `DATA_REGION`. Add a transfer sentence: "Your data is stored in the United States; for users in the UK/EEA we rely on our providers' standard contractual clauses." |
+| A13     | Children section: add "Kids profiles are a label on your own account; they do not hold a child's name, age or email."                                                                                                                                       |
+| A14     | `security.txt`: optionally add `Encryption:` (PGP key) and `Acknowledgments:`; renew `Expires` before 2027-10-01.                                                                                                                                           |
+
+## Consent and transparency points to keep
+
+- Guests: nothing leaves the device except catalogue lookups, analytics and trailers — keep this true (A1 is the current exception).
+- Sign-up: the first magic link is the confirmation; the sign-in page must link `/privacy` and `/terms` next to the button.
+- Children: service not directed at under-13s; removal on request.
+- No marketing email; CASL not engaged.

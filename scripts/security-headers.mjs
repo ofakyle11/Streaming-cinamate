@@ -17,6 +17,8 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
+/** Google profile images, allowed in img-src only when Google sign-in is switched on. */
+export const GOOGLE_AVATAR_ORIGIN = 'https://lh3.googleusercontent.com';
 
 /**
  * The exact Supabase origin for connect-src from the project URL
@@ -39,8 +41,9 @@ export function supabaseOrigins(url) {
 }
 
 /** Directives in the order they are emitted; values are source lists. */
-export function cspDirectives({ turnstile = false, supabaseUrl = '' } = {}) {
+export function cspDirectives({ turnstile = false, supabaseUrl = '', google = false } = {}) {
   const t = turnstile ? [TURNSTILE_ORIGIN] : [];
+  const g = google ? [GOOGLE_AVATAR_ORIGIN] : [];
   return {
     'default-src': ["'self'"],
     'script-src': [
@@ -60,6 +63,7 @@ export function cspDirectives({ turnstile = false, supabaseUrl = '' } = {}) {
       'https://picsum.photos',
       'https://fastly.picsum.photos',
       'https://i.ytimg.com',
+      ...g,
     ],
     'media-src': ["'self'", 'blob:'],
     'frame-src': [
@@ -95,9 +99,19 @@ export function turnstileEnabled(env = process.env) {
   return Boolean(env.VITE_TURNSTILE_SITE_KEY?.trim());
 }
 
+/** True when the Google sign-in button is switched on (same rule as src/auth/flags.ts). */
+export function googleEnabled(env = process.env) {
+  const v = env.VITE_AUTH_GOOGLE;
+  return typeof v === 'string' && ['1', 'true', 'on', 'yes'].includes(v.trim().toLowerCase());
+}
+
 /** Build options read from the same env Vite inlines into the bundle. */
 export function cspOptions(env = process.env) {
-  return { turnstile: turnstileEnabled(env), supabaseUrl: env.VITE_SUPABASE_URL ?? '' };
+  return {
+    turnstile: turnstileEnabled(env),
+    supabaseUrl: env.VITE_SUPABASE_URL ?? '',
+    google: googleEnabled(env),
+  };
 }
 
 /** Contents of the Netlify `_headers` file for this build. */
@@ -131,7 +145,7 @@ async function writeHeaders(outDir, options) {
   await writeFile(resolve(outDir, '_headers'), headersFile(options), 'utf8');
   const supabase = supabaseOrigins(options.supabaseUrl)[0] ?? 'off';
   console.log(
-    `security-headers: wrote ${outDir}/_headers (turnstile ${options.turnstile ? 'on' : 'off'}, supabase ${supabase})`,
+    `security-headers: wrote ${outDir}/_headers (turnstile ${options.turnstile ? 'on' : 'off'}, supabase ${supabase}, google ${options.google ? 'on' : 'off'})`,
   );
 }
 

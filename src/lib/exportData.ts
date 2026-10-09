@@ -19,6 +19,8 @@ export interface DataExport {
   watchlist: unknown[];
   history: unknown[];
   ratings: unknown[];
+  /** Signed-in browsers the account knows about (the security records the privacy page lists). */
+  devices: unknown[];
   /** Device-only data (not synced). */
   device: {
     activeProfileId: string | null;
@@ -35,6 +37,7 @@ export function buildDataExport(
   user: User | null,
   snapshot: SyncSnapshot | null,
   now: Date = new Date(),
+  devices: unknown[] = [],
 ): DataExport {
   const live = (rows: Array<{ deleted: boolean }>) => rows.filter((r) => !r.deleted);
   return {
@@ -49,6 +52,7 @@ export function buildDataExport(
     watchlist: snapshot ? live(snapshot.watchlist) : flatten(state.watchlist),
     history: snapshot ? live(snapshot.history) : flatten(state.history),
     ratings: snapshot ? live(snapshot.ratings) : flatten(state.ratings),
+    devices: user ? devices : [],
     device: { activeProfileId: state.activeProfileId, thumbs: state.thumbs, views: state.views },
   };
 }

@@ -117,10 +117,26 @@ describe('live auth adapter (Supabase)', () => {
       id: 'uuid-1',
       email: 'ada@example.com',
       displayName: 'Ada Lovelace',
-      avatarUrl: 'https://example.com/a.png',
+      avatarUrl: undefined, // example.com is not an avatar host
       createdAt: '2026-01-02T00:00:00Z',
     });
     expect(toUser(sbUser({ user_metadata: {} })).displayName).toBe('ada');
+  });
+
+  it('renders an avatar only from a known https host (user_metadata is user-writable)', () => {
+    const google = 'https://lh3.googleusercontent.com/a/ACg8ocK=s96-c';
+    expect(toUser(sbUser({ user_metadata: { avatar_url: google } })).avatarUrl).toBe(google);
+    expect(toUser(sbUser({ user_metadata: { picture: google } })).avatarUrl).toBe(google);
+    for (const bad of [
+      'http://lh3.googleusercontent.com/a',
+      'https://evil.example/lh3.googleusercontent.com',
+      'javascript:alert(1)',
+      'data:image/png;base64,AAAA',
+      '//lh3.googleusercontent.com/a',
+      'not a url',
+    ]) {
+      expect(toUser(sbUser({ user_metadata: { avatar_url: bad } })).avatarUrl).toBeUndefined();
+    }
   });
 
   it('reads the current session', async () => {
@@ -176,12 +192,22 @@ describe('live auth adapter (Supabase)', () => {
     expect(fake.unsubscribe).toHaveBeenCalled();
   });
 
-  it('queues a deletion request for the signed-in user and signs out', async () => {
+  it('queues a deletion request for the signed-in user and signs out everywhere', async () => {
     const fake = fakeClient({ user: sbUser() });
     await make(fake).requestDataDeletion();
     expect(fake.from).toHaveBeenCalledWith(DELETION_REQUESTS_TABLE);
     expect(fake.insert).toHaveBeenCalledWith({ user_id: 'uuid-1' });
-    expect(fake.auth.signOut).toHaveBeenCalled();
+    // Global: another signed-in browser must not keep a session (and push its
+    // local copy back) while the processor has not run yet.
+    expect(fake.auth.signOut).toHaveBeenLastCalledWith({ scope: 'global' });
+    expect(fake.update).toHaveBeenCalledWith(
+      DEVICES_TABLE,
+      { revoked_at: expect.stringMatching(/^\d{4}-/) },
+      'user_id',
+      'uuid-1',
+      'id',
+      'this-device-1',
+    );
   });
 
   it('hard-deletes every cloud sync table for the user before queuing the request', async () => {
@@ -193,9 +219,12 @@ describe('live auth adapter (Supabase)', () => {
       expect(fake.del).toHaveBeenCalledWith(table);
       expect(fake.eq).toHaveBeenCalledWith(table, 'user_id', 'uuid-1');
     }
-    expect(fake.eq).toHaveBeenCalledTimes(SYNC_TABLES.length);
-    expect(fake.calls.at(-1)).toBe('insert');
-    expect(fake.calls.slice(0, -1).sort()).toEqual(SYNC_TABLES.map((t) => `delete:${t}`).sort());
+    // The sync tables, then the request, then (as part of the sign-out) this browser's device row.
+    const insertAt = fake.calls.indexOf('insert');
+    expect(fake.calls.slice(0, insertAt).sort()).toEqual(
+      SYNC_TABLES.map((t) => `delete:${t}`).sort(),
+    );
+    expect(fake.calls.slice(insertAt + 1)).toEqual([`delete:${DEVICES_TABLE}`]);
     expect(fake.auth.signOut.mock.invocationCallOrder[0]).toBeGreaterThan(
       fake.insert.mock.invocationCallOrder[0],
     );

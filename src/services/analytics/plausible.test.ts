@@ -41,7 +41,10 @@ describe('plausible adapter', () => {
   });
 
   it('uses a custom host for script + api when configured', () => {
-    const a = createPlausibleAnalytics({ domain: 'lastframe.tv', apiHost: 'https://stats.example.com/' });
+    const a = createPlausibleAnalytics({
+      domain: 'lastframe.tv',
+      apiHost: 'https://stats.example.com/',
+    });
     a.track('play-trailer');
     const s = document.getElementById(PLAUSIBLE_SCRIPT_ID) as HTMLScriptElement;
     expect(s.src).toBe('https://stats.example.com/js/script.manual.js');
@@ -65,18 +68,32 @@ describe('plausible adapter', () => {
     expect(fn).toHaveBeenCalledWith('search', { props: { query: 'x' } });
   });
 
-  it('sends manual pageviews with an explicit url and dedupes repeats', () => {
+  it('sends manual pageviews with an explicit url, without the query string, and dedupes repeats', () => {
     const a = createPlausibleAnalytics({ domain: 'lastframe.tv' });
-    a.page('/search', { path: '/search?q=dune' });
+    a.page('/search', { path: '/search?q=dune' }); // the search term never leaves the browser
     a.page('search'); // same URL? no: falls back to location ("/")
     a.page('/', { path: '/' }); // duplicate of previous URL -> skipped
     a.page('/title/movie/1', { path: '/title/movie/1' });
     const origin = window.location.origin;
     expect(queued()).toEqual([
-      ['pageview', { u: `${origin}/search?q=dune`, props: { page: '/search' } }],
+      ['pageview', { u: `${origin}/search`, props: { page: '/search' } }],
       ['pageview', { u: `${origin}/`, props: { page: 'search' } }],
       ['pageview', { u: `${origin}/title/movie/1`, props: { page: '/title/movie/1' } }],
     ]);
+  });
+
+  it('drops the query string of the current location too', () => {
+    window.history.replaceState(null, '', '/search?q=secret+film#x');
+    try {
+      const a = createPlausibleAnalytics({ domain: 'lastframe.tv' });
+      a.page('search');
+      expect(queued()).toEqual([
+        ['pageview', { u: `${window.location.origin}/search`, props: { page: 'search' } }],
+      ]);
+      expect(JSON.stringify(queued())).not.toContain('secret');
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
   });
 
   it('never forwards identify data', () => {

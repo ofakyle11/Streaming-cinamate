@@ -5,22 +5,30 @@ Every control here works in mock mode with no environment variables.
 
 ## Summary
 
-| Control                                                              | Where                                                           | On by default                                                  |
-| -------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------- |
-| Content-Security-Policy                                              | `scripts/security-headers.mjs` (Vite plugin) → `dist/_headers`  | Yes                                                            |
-| Static security headers (HSTS, frame, referrer, permissions, COOP)   | `netlify.toml`                                                  | Yes                                                            |
-| Rate limit on `/api/*` (60 a minute per IP, then 429)                | `netlify.toml`                                                  | Yes                                                            |
-| Bot check on sign-in (Cloudflare Turnstile)                          | `src/components/auth/Turnstile.tsx`                             | On `/sign-in` and resend when `VITE_TURNSTILE_SITE_KEY` is set |
-| Callback hardening (tokens out of the URL, same-origin return paths) | `src/auth/callback.ts`, `src/auth/callbackBoot.ts`              | Yes                                                            |
-| Client may only read `VITE_*` variables                              | `src/test/envNames.test.ts`                                     | Yes (test)                                                     |
-| Dependency audit (production deps, high and above fail)              | `.github/workflows/ci.yml` job `audit`                          | Yes                                                            |
-| Dependency and Actions updates (weekly PRs)                          | `.github/dependabot.yml`                                        | Yes                                                            |
-| GitHub Actions pinned to commit SHAs                                 | `.github/workflows/ci.yml`                                      | Yes                                                            |
-| Secret scan of history and tree (gitleaks)                           | `.github/workflows/ci.yml` job `secrets`                        | Yes                                                            |
-| Row Level Security on every table, checked in CI                     | `supabase/migrations/*.sql`, `supabase/tests/rls_check.sql`     | Yes                                                            |
-| No passwords: trigger strips them, adapters have no password path    | `supabase/migrations/20261006010000_*.sql`, `src/services/auth` | Yes                                                            |
-| Admin allow-list by email (`public.admin_users`, `lf_is_admin()`)    | `supabase/migrations/20261007000000_admin_users.sql`            | Yes (empty until the owner adds a row)                         |
-| Disclosure contact                                                   | `public/.well-known/security.txt`                               | Yes                                                            |
+| Control                                                              | Where                                                                               | On by default                                                  |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Content-Security-Policy                                              | `scripts/security-headers.mjs` (Vite plugin) → `dist/_headers`                      | Yes                                                            |
+| Static security headers (HSTS, frame, referrer, permissions, COOP)   | `netlify.toml`                                                                      | Yes                                                            |
+| Rate limit on the TMDB proxy (60 a minute per IP, then 429)          | `netlify.toml` (`/api/*` edge rule) + `netlify/functions/tmdb.ts` (per-IP backstop) | Yes                                                            |
+| TMDB proxy query allow-list, no redirect following                   | `netlify/functions/tmdb.ts`                                                         | Yes                                                            |
+| One origin: `*.netlify.app` redirects to lastframe.tv                | `netlify.toml`                                                                      | Yes                                                            |
+| Per-user row quotas, narrowed table grants, sign-up metadata scrub   | `supabase/migrations/20261009000000_hardening.sql`                                  | Yes                                                            |
+| Housekeeping jobs (deletion processor, device expiry) via pg_cron    | same migration; see [SUPABASE.md](SUPABASE.md)                                      | When pg_cron is enabled                                        |
+| Analytics never receives search text or query strings                | `src/services/analytics/plausible.ts`, `src/pages/SearchPage.tsx`                   | Yes                                                            |
+| Upstream URLs validated before use (images, provider links, avatars) | `src/services/tmdb/live.ts`, `src/services/auth/live.ts`                            | Yes                                                            |
+| Code owners for the security surface                                 | `.github/CODEOWNERS`                                                                | Enforced once the branch ruleset requires code-owner review    |
+| Governance (ISMS) documents                                          | `docs/isms/`                                                                        | Drafts for owner approval                                      |
+| Bot check on sign-in (Cloudflare Turnstile)                          | `src/components/auth/Turnstile.tsx`                                                 | On `/sign-in` and resend when `VITE_TURNSTILE_SITE_KEY` is set |
+| Callback hardening (tokens out of the URL, same-origin return paths) | `src/auth/callback.ts`, `src/auth/callbackBoot.ts`                                  | Yes                                                            |
+| Client may only read `VITE_*` variables                              | `src/test/envNames.test.ts`                                                         | Yes (test)                                                     |
+| Dependency audit (production deps, high and above fail)              | `.github/workflows/ci.yml` job `audit`                                              | Yes                                                            |
+| Dependency and Actions updates (weekly PRs)                          | `.github/dependabot.yml`                                                            | Yes                                                            |
+| GitHub Actions pinned to commit SHAs                                 | `.github/workflows/ci.yml`                                                          | Yes                                                            |
+| Secret scan of history and tree (gitleaks)                           | `.github/workflows/ci.yml` job `secrets`                                            | Yes                                                            |
+| Row Level Security on every table, checked in CI                     | `supabase/migrations/*.sql`, `supabase/tests/rls_check.sql`                         | Yes                                                            |
+| No passwords: trigger strips them, adapters have no password path    | `supabase/migrations/20261006010000_*.sql`, `src/services/auth`                     | Yes                                                            |
+| Admin allow-list by email (`public.admin_users`, `lf_is_admin()`)    | `supabase/migrations/20261007000000_admin_users.sql`                                | Yes (empty until the owner adds a row)                         |
+| Disclosure contact                                                   | `public/.well-known/security.txt`                                                   | Yes                                                            |
 
 ## Content-Security-Policy
 
@@ -53,6 +61,39 @@ The `/api/*` rewrite to Netlify Functions carries a `[redirects.rate_limit]` tab
 60 requests in 60 seconds from one IP to one domain get HTTP 429. This keeps the TMDB proxy
 from being used as a free API key. Netlify allows a few code-based rules per site (2 on Free,
 5 on Pro); this uses one. Enforcement can lag by up to about 10 seconds.
+
+The app calls `/api/tmdb` so that rule applies to its own traffic. Because Netlify also
+answers on the bare `/.netlify/functions/tmdb` path, which the rewrite rule does not cover,
+the function keeps a per-IP counter of its own (same 60 a minute, per warm instance) and
+answers 429 with `Retry-After`. It also forwards only allow-listed TMDB query parameters, so
+a made-up parameter cannot turn one cached answer into unlimited upstream calls.
+
+## Branch protection and deploys
+
+Netlify deploys every push to `claude/modest-johnson-ugzfhg`. The repository rules that keep
+that honest live in GitHub settings, not in this repo, and only the owner can set them
+(**Settings → Rules → Rulesets**, target that branch): require a pull request with one
+approval and code-owner review (`.github/CODEOWNERS`), require the `verify`, `e2e`, `db`,
+`audit` and `secrets` checks to pass, block force pushes and deletion. Until that ruleset
+exists the Council review in [AGENTS.md](AGENTS.md) is a convention, not a control.
+
+Deploy previews build the PR's code, so the Netlify variables that hold secrets
+(`TMDB_API_KEY`) are set for the Production context only, and previews from forks need
+approval before they build ([KEYS.md](KEYS.md)).
+
+## Third-party scripts
+
+Plausible and Turnstile are loaded from their vendors' origins without Subresource Integrity:
+both ship frequently changing scripts, so a pinned hash would break on their next release.
+The exposure is bounded by the CSP (`script-src` names those two origins and nothing else
+beyond `'self'` and YouTube) and by the Permissions-Policy that denies every powerful feature.
+
+## Credential rotation
+
+Rotate yearly and at once after any suspected exposure: `TMDB_API_KEY`, `RESEND_API_KEY`,
+`TURNSTILE_SECRET_KEY`, every Netlify personal access token (none should exist for agent
+sessions; git-based deploys need none) and the Supabase CLI access token. The log of
+rotations is in `docs/isms/asset-inventory-and-classification.md`.
 
 ## Turnstile
 

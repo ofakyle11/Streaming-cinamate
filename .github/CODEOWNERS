@@ -1,0 +1,10 @@
+# Changes to the security-relevant surface need the owner's review. With a
+# branch ruleset that requires code-owner review on the production branch,
+# GitHub enforces this; without one it is documentation of who must look.
+/.github/                      @ofakyle11
+/netlify.toml                  @ofakyle11
+/netlify/functions/            @ofakyle11
+/scripts/security-headers.mjs  @ofakyle11
+/supabase/                     @ofakyle11
+/docs/SECURITY.md              @ofakyle11
+/docs/isms/                    @ofakyle11
