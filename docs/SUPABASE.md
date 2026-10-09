@@ -46,6 +46,17 @@ Supabase's built-in mailer sends at most 2 emails an hour, enough to test, not t
    | TXT  | `resend._domainkey.mail` | `p=MIGf...` (the long key Resend shows)              | DKIM             |
    | TXT  | `_dmarc.mail`            | `v=DMARC1; p=none;`                                  | DMARC (optional) |
 
+   The apex domain needs its own records so that `security@`, `privacy@` and `legal@` are
+   deliverable and nobody can spoof `@lastframe.tv` (findings P-3, P-4). Add these too, with the
+   MX and the SPF `include:` taken from the mailbox provider (Google Workspace shown):
+
+   | Type | Host (at Spaceship) | Value                                                                        | Purpose                     |
+   | ---- | ------------------- | ---------------------------------------------------------------------------- | --------------------------- |
+   | MX   | `@`                 | `smtp.google.com`, priority 1 (or the provider's MX)                         | mailboxes                   |
+   | TXT  | `@`                 | `v=spf1 include:_spf.google.com ~all`                                        | SPF for the apex            |
+   | TXT  | `_dmarc`            | `v=DMARC1; p=quarantine; rua=mailto:security@lastframe.tv; adkim=s; aspf=s;` | DMARC (move to `p=reject`)  |
+   | CAA  | `@`                 | `0 issue "letsencrypt.org"`                                                  | only Netlify's CA may issue |
+
    Spaceship wants the host relative to `lastframe.tv`; if the editor expects the full name use
    `send.mail.lastframe.tv` and `resend._domainkey.mail.lastframe.tv`. Copy the exact values
    from Resend's page, the DKIM key is unique to the domain. Click **Verify** in Resend; it
