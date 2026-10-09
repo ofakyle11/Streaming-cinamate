@@ -29,7 +29,7 @@ Until P-3 is fixed (apex MX/SPF/DMARC), `security@` may not be deliverable. Fixi
 
 1. **Record**: open a row in the incident log; note time, source, what is known.
 2. **Classify** severity; S1/S2 trigger the containment playbook now.
-3. **Preserve evidence** (A.5.28) before rotating anything that would erase it: export Netlify function logs and deploy list, Supabase auth logs for the window, Resend send logs, GitHub audit log; save to `isms/evidence/incidents/<id>/` with timestamps. Never put secrets in the evidence folder.
+3. **Preserve evidence** (A.5.28) before rotating anything that would erase it: export Netlify function logs and deploy list, Supabase auth logs for the window, Resend send logs, GitHub audit log; save to `docs/isms/evidence/incidents/<id>/` with timestamps. Never put secrets in the evidence folder.
 4. **Contain** using the playbook below.
 5. **Eradicate and recover**: fix root cause via the normal PR gate (expedited review allowed for S1/S2 but still reviewed); verify with CI and a manual check on production.
 6. **Notify** per the decision section.

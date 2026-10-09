@@ -29,7 +29,7 @@ Two acceptable options; the owner must pick one and record the choice here.
 
 Rules for either option:
 
-- Dumps contain personal data: encrypt at rest, never commit, never leave on a laptop unencrypted, delete beyond the retention above (ties to privacy page "backups age out within 30 days" — if you keep 12 monthly copies, change the privacy wording, A8).
+- Dumps contain personal data: encrypt at rest, never commit, never leave on a laptop unencrypted, delete beyond the retention above (the privacy page now says "Copies in database backups are kept for a limited time" (A8 wording shipped in PR #25); once option A or B is chosen the owner fills in the real retention here and, if a specific figure is wanted on the page, adds it there).
 - The encryption key and the storage location are in the sealed envelope.
 - Record each backup in the log below (date, size, checksum, location).
 

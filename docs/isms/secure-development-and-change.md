@@ -34,7 +34,7 @@ Direct commits to the production branch are not permitted. All changes arrive by
 
 Workflow permissions are read-only; PR jobs use no secrets; third-party actions are pinned by SHA.
 
-## Branch protection requirements (F2 — to configure by the owner)
+## Branch protection requirements (F2 — Open: owner configures the ruleset)
 
 GitHub → Settings → Rules → Rulesets → new ruleset for `claude/modest-johnson-ugzfhg`:
 
@@ -42,14 +42,14 @@ GitHub → Settings → Rules → Rulesets → new ruleset for `claude/modest-jo
 - Require status checks: `verify`, `e2e`, `db`, `audit`, `secrets`; require branches up to date.
 - Block force pushes; block deletion; require linear history (optional).
 - Restrict who can push: owner only. Bypass list: empty.
-- Add `.github/CODEOWNERS` with `* @ofakyle11` (and Spencer's handle if human) so review requests are automatic.
-- Evidence: screenshot or `gh api repos/ofakyle11/Streaming-cinamate/rulesets` output stored in `isms/evidence/github/` and refreshed at each quarterly access review.
+- `.github/CODEOWNERS` (in the repo) names @ofakyle11 for the security surface; widen to `*` if every PR should request the owner's review.
+- Evidence: screenshot or `gh api repos/ofakyle11/Streaming-cinamate/rulesets` output stored in `docs/isms/evidence/github/` and refreshed at each quarterly access review.
 
 Until this is in place, the review rule is procedural only and R-06 stays at score 6.
 
 ## Dependency update policy (A.8.8, 5.21)
 
-- Dependabot opens PRs for npm and GitHub Actions; add `cooldown: default-days: 7` (F5) so freshly published versions are not pulled before the ecosystem has seen them.
+- Dependabot opens PRs for npm and GitHub Actions; `cooldown: default-days: 7` (F5, shipped in PR #25, Spencer to verify on merge) keeps freshly published versions from being pulled before the ecosystem has seen them.
 - Every dependency PR is reviewed like any other: changelog read, lockfile diff inspected for unexpected new packages or registries (only `registry.npmjs.org`), CI green.
 - `npm ci` only; no `npm install` in CI or builds; lockfile committed.
 - New runtime dependencies need a justification in the PR and a check of maintainer activity and download volume.
@@ -69,7 +69,7 @@ Findings from the 2026-10 review (P-, F-, S-, D-, AU-, A-) are tracked in the ri
 ## Secrets rules (A.5.17, 8.4)
 
 - No secret in the repository, PR descriptions, issues, commit messages, CI logs, chat or AI prompts. gitleaks runs on every push; a hit means rotate first, then remove (`docs/SECURITY.md`).
-- `.env`, `.env.*` must be gitignored (F1); `.env.example` may exist with placeholder values only.
+- `.env`, `.env.*` are gitignored (F1, shipped in PR #25, Spencer to verify on merge); `.env.example` may exist with placeholder values only.
 - Client code reads only `VITE_*` (enforced by `src/test/envNames.test.ts`). Server secrets only under `netlify/functions/` via `process.env`.
 - `supabase/config.toml` references secrets as `env(NAME)` only (test-guarded).
 - Production env vars: `TMDB_API_KEY` Functions scope, Production context, secret flag (F3); Supabase public vars Builds scope, Production context.

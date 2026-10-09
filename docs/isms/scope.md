@@ -32,7 +32,7 @@ The scope boundary is the set of accounts and configurations the owner controls 
 
 - Source code and configuration: repository `github.com/ofakyle11/Streaming-cinamate`, production branch `claude/modest-johnson-ugzfhg`, `netlify.toml`, `supabase/config.toml`, `supabase/migrations/*`, CI workflows.
 - Production site: `https://lastframe.tv` and `www.lastframe.tv` on Netlify (site `lastframe-tv`), including Netlify Functions `tmdb` and `health`, deploy previews and branch deploys.
-- Supabase project `lastframe-tv` (US East): Postgres database (tables `profiles`, `watchlist`, `history`, `ratings`, `devices`, `account_deletion_requests`; `admin_users` when PR #16 merges), auth (`auth.users`), auth configuration, pg_cron jobs.
+- Supabase project `lastframe-tv` (US East): Postgres database (tables `profiles`, `watchlist`, `history`, `ratings`, `devices`, `account_deletion_requests`, `admin_users` from `supabase/migrations/20261007000000_admin_users.sql`), auth (`auth.users`), auth configuration, pg_cron jobs.
 - Email sending: Resend domain `mail.lastframe.tv`, SMTP credentials, magic-link templates.
 - DNS zone `lastframe.tv` at Spaceship.
 - Cloudflare Turnstile widget (configured, currently off).

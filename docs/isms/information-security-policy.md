@@ -63,7 +63,7 @@ A contractor or agent session that breaches this policy loses access immediately
 
 ## Communication
 
-This policy is stored in the repository, referenced in `README.md`, and given to every contractor before access. The public summary is `/security`.
+This policy is stored in the repository, referenced from `docs/SECURITY.md`, and given to every contractor before access. The public summary is `/security`.
 
 ## Continual improvement (clause 10.1)
 

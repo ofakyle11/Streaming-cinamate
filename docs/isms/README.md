@@ -37,22 +37,24 @@ This folder is the Information Security Management System (ISMS) for Lastframe.t
 
 ## Where evidence lives
 
-| Evidence                                                                                   | Location                                                                                      |
-| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Policies, procedures, registers (this folder)                                              | Repository, folder `isms/` once adopted; git history is the version record                    |
-| Technical standards                                                                        | `docs/SECURITY.md`, `docs/KEYS.md`, `docs/SUPABASE.md`, `docs/AGENTS.md`                      |
-| CI results (lint, typecheck, tests, e2e, RLS check, npm audit, gitleaks)                   | GitHub Actions run history for `.github/workflows/ci.yml`                                     |
-| Code review decisions                                                                      | GitHub pull requests (Council review per `docs/AGENTS.md`)                                    |
-| Branch protection, collaborators, 2FA, Dependabot and secret-scanning alerts, audit log    | GitHub repository and account settings                                                        |
-| Deploys, rollbacks, environment variable scopes, function logs, team members               | Netlify site `lastframe-tv` (site id `bd791a0a-dcc5-46d3-8e59-8b91a115d929`)                  |
-| Database schema, RLS, auth settings, auth logs, pg_cron runs, backups, region, org members | Supabase project `lastframe-tv` dashboard                                                     |
-| Email sending logs, API keys, domain verification                                          | Resend dashboard                                                                              |
-| DNS records, registrar lock, account MFA                                                   | Spaceship                                                                                     |
-| Turnstile widget (currently off)                                                           | Cloudflare dashboard                                                                          |
-| Analytics configuration                                                                    | Plausible dashboard                                                                           |
-| Mailboxes `security@`, `privacy@`, `legal@`                                                | Google Workspace admin                                                                        |
-| Provider certifications (SOC 2 / ISO 27001 reports), signed DPAs                           | `isms/evidence/suppliers/` (to create; store downloaded PDFs there, never in the public site) |
-| Completed review logs (access, log review, restore tests, incidents)                       | Tables at the end of each policy in this folder, filled in and committed                      |
+| Evidence                                                                                   | Location                                                                                           |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Policies, procedures, registers (this folder)                                              | Repository, folder `docs/isms/`; git history is the version record                                 |
+| Technical standards                                                                        | `docs/SECURITY.md`, `docs/KEYS.md`, `docs/SUPABASE.md`, `docs/AGENTS.md`                           |
+| CI results (lint, typecheck, tests, e2e, RLS check, npm audit, gitleaks)                   | GitHub Actions run history for `.github/workflows/ci.yml`                                          |
+| Code review decisions                                                                      | GitHub pull requests (Council review per `docs/AGENTS.md`)                                         |
+| Branch protection, collaborators, 2FA, Dependabot and secret-scanning alerts, audit log    | GitHub repository and account settings                                                             |
+| Deploys, rollbacks, environment variable scopes, function logs, team members               | Netlify site `lastframe-tv` (site id `bd791a0a-dcc5-46d3-8e59-8b91a115d929`)                       |
+| Database schema, RLS, auth settings, auth logs, pg_cron runs, backups, region, org members | Supabase project `lastframe-tv` dashboard                                                          |
+| Email sending logs, API keys, domain verification                                          | Resend dashboard                                                                                   |
+| DNS records, registrar lock, account MFA                                                   | Spaceship                                                                                          |
+| Turnstile widget (currently off)                                                           | Cloudflare dashboard                                                                               |
+| Analytics configuration                                                                    | Plausible dashboard                                                                                |
+| Mailboxes `security@`, `privacy@`, `legal@`                                                | Google Workspace admin                                                                             |
+| Provider certifications (SOC 2 / ISO 27001 reports), signed DPAs                           | `docs/isms/evidence/suppliers/` (to create; store downloaded PDFs there, never in the public site) |
+| Completed review logs (access, log review, restore tests, incidents)                       | Tables at the end of each policy in this folder, filled in and committed                           |
+
+Evidence lives under `docs/isms/evidence/`. Evidence files that contain provider screenshots (console settings, member lists, log excerpts) must not be committed if the repository ever goes public; keep them in a private location and reference them from here.
 
 ## Review calendar
 
@@ -73,7 +75,6 @@ This folder is the Information Security Management System (ISMS) for Lastframe.t
 ## Adoption steps
 
 1. Owner reads every file, corrects anything wrong, and changes Status to "Approved" with a date.
-2. Copy the folder to `isms/` in the repository (or a private repository if the main one is ever made public) and commit.
-3. Work through the "planned" and "not started" items in `statement-of-applicability.md`, highest risk first (see register scores).
-4. Collect provider evidence into `isms/evidence/suppliers/`.
-5. Book the calendar entries above.
+2. Work through the "planned" and "not started" items in `statement-of-applicability.md`, highest risk first (see register scores).
+3. Collect provider evidence into `docs/isms/evidence/suppliers/`.
+4. Book the calendar entries above.

@@ -109,6 +109,7 @@ docs/           ARCHITECTURE.md, KEYS.md, A11Y.md, AGENTS.md
 
 For how it fits together, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). For team rules
 and the task log, see [docs/AGENTS.md](docs/AGENTS.md).
+Security controls: [docs/SECURITY.md](docs/SECURITY.md); governance (ISMS): [docs/isms/](docs/isms/).
 
 ## Security rules
 

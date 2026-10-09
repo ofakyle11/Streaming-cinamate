@@ -9,7 +9,7 @@
 1. **Least privilege.** Every account, token and key carries the minimum scope and the shortest lifetime that does the job.
 2. **MFA on every provider account** (GitHub, Netlify, Supabase, Resend, Spaceship, Cloudflare, Plausible, TMDB, Google Workspace). Hardware key preferred where supported; authenticator app otherwise; SMS never.
 3. **No shared passwords.** One person, one account. Credentials live only in the owner's password manager.
-4. **Admin allow-list by email.** Application admin rights come only from `public.admin_users` (PR #16), read through `lf_is_admin()`; the list is changed by migration, reviewed quarterly.
+4. **Admin allow-list by email.** Application admin rights come only from `public.admin_users` (`supabase/migrations/20261007000000_admin_users.sql`), read through `lf_is_admin()`; the list is changed by migration, reviewed quarterly.
 5. **No `service_role` in the client or in Netlify.** The app uses the anon key with RLS only (`docs/KEYS.md`, `docs/SUPABASE.md`).
 6. **Users access only their own rows.** RLS own-row policies on every table; `anon` has no grants; CI proves it on every push.
 7. **No standing automation tokens.** CLI and agent tokens are created for a task and revoked when it ends.
