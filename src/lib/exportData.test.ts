@@ -24,6 +24,7 @@ describe('buildDataExport', () => {
     expect(data.format).toBe('lastframe.tv/export');
     expect(data.source).toBe('device');
     expect(data.account).toBeNull();
+    expect(data.devices).toEqual([]);
     expect(data.exportedAt).toBe('2026-10-06T12:00:00.000Z');
     expect(data.watchlist).toEqual([
       expect.objectContaining({ titleId: 42, profileId: expect.any(String) }),
@@ -61,8 +62,10 @@ describe('buildDataExport', () => {
       ],
       ratings: [],
     };
-    const data = buildDataExport(useLastFrameStore.getState(), user, snapshot);
+    const devices = [{ id: 'd1', label: 'Chrome on macOS', current: true }];
+    const data = buildDataExport(useLastFrameStore.getState(), user, snapshot, new Date(), devices);
     expect(data.source).toBe('cloud');
+    expect(data.devices).toEqual(devices);
     expect(data.account).toEqual({
       id: 'u1',
       email: 'ada@example.com',

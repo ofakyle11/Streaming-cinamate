@@ -61,6 +61,25 @@ function str(v: unknown): string | undefined {
   return typeof v === 'string' && v.trim() ? v.trim() : undefined;
 }
 
+/** Hosts an avatar URL from `user_metadata` may point at (Google profile images). */
+export const AVATAR_HOSTS: ReadonlySet<string> = new Set(['lh3.googleusercontent.com']);
+
+/**
+ * `user_metadata` is writable by the account holder (and, for an address that
+ * was pre-registered through the public sign-up endpoint, by whoever did that),
+ * so an avatar URL from it is rendered only when it is https on a known host.
+ */
+export function safeAvatarUrl(value: unknown): string | undefined {
+  const raw = str(value);
+  if (!raw) return undefined;
+  try {
+    const u = new URL(raw);
+    return u.protocol === 'https:' && AVATAR_HOSTS.has(u.hostname) ? raw : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Map a Supabase user to our domain User. */
 export function toUser(u: SupabaseUser): User {
   const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
@@ -73,7 +92,7 @@ export function toUser(u: SupabaseUser): User {
       str(meta.full_name) ??
       str(meta.name) ??
       (email.split('@')[0] || 'Viewer'),
-    avatarUrl: str(meta.avatar_url) ?? str(meta.picture),
+    avatarUrl: safeAvatarUrl(meta.avatar_url) ?? safeAvatarUrl(meta.picture),
     createdAt: u.created_at,
   };
 }
@@ -394,9 +413,12 @@ export function createLiveAuth(
       // client. Queue a request (RLS: users can only insert their own row);
       // lf_process_account_deletions() (service role / pg_cron) removes it.
       const { error } = await sb.from(DELETION_REQUESTS_TABLE).insert({ user_id: userId });
-      if (error) throw asError(error, 'Could not request data deletion.');
-      const { error: signOutError } = await sb.auth.signOut();
-      if (signOutError) throw asError(signOutError, 'Sign-out failed.');
+      // 23505: a pending request already exists (a retry after the sign-out
+      // below failed). The deletion is queued either way, so carry on.
+      if (error && error.code !== '23505') throw asError(error, 'Could not request data deletion.');
+      // Everywhere, not just here: another signed-in browser would otherwise keep
+      // its session until the processor runs and could push its local copy back.
+      await service.signOut({ scope: 'global' });
     },
 
     onAuthStateChange(cb) {

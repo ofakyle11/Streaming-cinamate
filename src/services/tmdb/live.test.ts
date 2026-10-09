@@ -9,6 +9,7 @@ import {
   normalizePage,
   TMDB_MAX_PAGE,
   TmdbHttpError,
+  safeProviderLink,
   tmdbImageUrl,
   tmdbSrcSet,
 } from './live';
@@ -88,7 +89,22 @@ describe('image helpers', () => {
     expect(tmdbImageUrl('a.jpg', 'original')).toBe('https://image.tmdb.org/t/p/original/a.jpg');
     expect(tmdbImageUrl('')).toBe('');
     expect(tmdbImageUrl(null)).toBe('');
-    expect(tmdbImageUrl('https://cdn.example/x.jpg')).toBe('https://cdn.example/x.jpg');
+    // Absolute URLs from upstream pass through only on TMDB's own image host.
+    expect(tmdbImageUrl('https://image.tmdb.org/t/p/w500/x.jpg')).toBe(
+      'https://image.tmdb.org/t/p/w500/x.jpg',
+    );
+    expect(tmdbImageUrl('https://cdn.example/x.jpg')).toBe('');
+    expect(tmdbImageUrl('http://image.tmdb.org/t/p/w500/x.jpg')).toBe('');
+  });
+
+  it('keeps a watch-providers link only when it points at themoviedb.org over https', () => {
+    expect(safeProviderLink('https://www.themoviedb.org/movie/603/watch?locale=CA')).toBe(
+      'https://www.themoviedb.org/movie/603/watch?locale=CA',
+    );
+    expect(safeProviderLink('http://www.themoviedb.org/movie/603/watch')).toBe('');
+    expect(safeProviderLink('https://evil.example/?themoviedb.org')).toBe('');
+    expect(safeProviderLink('javascript:alert(1)')).toBe('');
+    expect(safeProviderLink(undefined)).toBe('');
   });
 
   it('builds a width-based srcset', () => {
@@ -116,7 +132,9 @@ describe('TMDB page limit', () => {
   });
 
   it('normalizes a raw total_pages of 40000 to 500 and keeps it at least 1', () => {
-    expect(normalizePage({ page: 1, results: [], total_pages: 40000 }, 'movie').total_pages).toBe(500);
+    expect(normalizePage({ page: 1, results: [], total_pages: 40000 }, 'movie').total_pages).toBe(
+      500,
+    );
     expect(normalizePage({ page: 1, results: [], total_pages: 0 }, 'movie').total_pages).toBe(1);
     expect(normalizePage({ page: 1, results: [], total_pages: 12 }, 'movie').total_pages).toBe(12);
     // total_results is left as reported (display-only count).
@@ -392,7 +410,7 @@ describe('createLiveTmdb', () => {
       'watch/providers': {
         results: {
           CA: {
-            link: 'https://x',
+            link: 'https://www.themoviedb.org/tv/2/watch?locale=CA',
             flatrate: [
               { provider_id: 8, provider_name: 'P', logo_path: '/l.png', display_priority: 1 },
             ],

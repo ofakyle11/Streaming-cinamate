@@ -34,7 +34,7 @@ export interface LegalDocument {
 }
 
 /** Shown as "Effective <date>" on every document. */
-export const EFFECTIVE_DATE = '1 November 2026';
+export const EFFECTIVE_DATE = '9 October 2026';
 
 export const CONTACT = {
   privacy: 'privacy@lastframe.tv',
@@ -90,11 +90,13 @@ export const privacy: LegalDocument = {
       body: [
         'A small number of providers run parts of the service for us. Each receives only what its job needs.',
         [
-          '**Supabase** hosts the account database and sends sign-in links. It holds your email address and synced data.',
+          '**Supabase** hosts the account database and runs sign-in. It holds your email address, your synced data and a security log of sign-ins.',
+          '**Resend** delivers the sign-in and account emails. It sees your email address and keeps delivery records for a short time.',
           '**Google**, only if you choose to sign in with it. Google learns that you signed in to Lastframe.tv and gives us your email address, name and avatar.',
           '**Netlify** serves the website and its small server functions, and sees the usual web server logs (IP address, browser, pages requested).',
+          '**Cloudflare** runs the bot check on the sign-in form when it is switched on. It sees your IP address and browser signals for that check only.',
           '**TMDB** supplies title details, artwork and streaming availability (the availability data comes from **JustWatch**). TMDB receives the titles you look up, never your identity. The posters and backdrops you see load from TMDB directly.',
-          '**Plausible** counts page views without cookies, fingerprinting or personal identifiers. We see totals, not people.',
+          '**Plausible** counts page views without cookies, fingerprinting or personal identifiers. It receives the page address without any search text you typed. We see totals, not people.',
           '**YouTube** shows trailers, through its privacy-enhanced domain. The home page previews a trailer after a few seconds (never when your device asks for reduced motion), and title pages load one when you open it.',
         ],
         'We share data with anyone else only when the law requires it or to protect the service and its users from abuse.',
@@ -112,8 +114,8 @@ export const privacy: LegalDocument = {
       id: 'how-long-we-keep-it',
       heading: 'How long we keep it',
       body: [
-        'We keep your account data for as long as your account exists. Viewing history and ratings stay until you remove them or delete the account.',
-        'When you delete your account, your data is removed from our systems within 24 hours. Backups age out within 30 days. Server logs are kept for up to 30 days for security and troubleshooting.',
+        'We keep your account data for as long as your account exists. Viewing history and ratings stay until you remove them or delete the account; an item you remove is kept as a deletion marker so the removal reaches your other devices, and the marker goes when the account does. A signed-in browser you have forgotten is removed after 30 days, and one not seen for six months is removed too.',
+        'When you delete your account, it and your profiles, list, history, ratings and devices are removed from the database within 24 hours. Copies in database backups are kept for a limited time, and the short-lived security logs our providers keep (sign-in records, email delivery records, web server logs) expire on those providers’ own schedules; the providers are listed on our [security page](/security).',
       ],
     },
     {
@@ -123,7 +125,7 @@ export const privacy: LegalDocument = {
         [
           '**Stay a guest.** Everything works without an account; your data just stays on this device.',
           '**Delete everything.** Open your [Account page](/account) and choose Delete my data. Deletion completes within 24 hours and cannot be undone.',
-          '**Take a copy.** Download your profiles, list, history and ratings as a file from the [Account page](/account?tab=data), or ask us at the address below.',
+          '**Take a copy.** Download your account details, profiles, list, history, ratings and signed-in devices as a file from the [Account page](/account?tab=data), or ask us at the address below.',
           '**Sign out.** Sign out of one device, or every device at once, from your [Account page](/account). A device you sign out on its own leaves the next time it opens Lastframe.tv; use Sign out everywhere for a lost or stolen device.',
           '**Clear this device.** Signing out of an account removes its local copy from this browser. Deleting your data also clears cached artwork.',
         ],
@@ -142,6 +144,7 @@ export const privacy: LegalDocument = {
       heading: 'Children',
       body: [
         'Lastframe.tv is not directed at children under 13, and we do not knowingly keep accounts for them. If you believe a child has created an account, write to us and we will remove it.',
+        'A Kids profile belongs to the adult account that created it. It holds only the profile name and avatar you choose, never a child’s own details.',
       ],
     },
     {
@@ -301,8 +304,10 @@ export const security: LegalDocument = {
       heading: 'The providers we rely on',
       body: [
         [
-          '**Supabase** for the database and sign-in emails.',
-          '**Netlify** for hosting and serverless functions.',
+          '**Supabase** for the database and sign-in, including a log of sign-in events.',
+          '**Resend** for delivering sign-in emails, which keeps short-lived delivery records.',
+          '**Netlify** for hosting and serverless functions, which keeps short-lived web server logs.',
+          '**Cloudflare** for the bot check on the sign-in form, when it is on.',
           '**TMDB** for catalogue data and, through it, **JustWatch** for streaming availability.',
           '**Google**, only when you choose to sign in with it.',
           '**Plausible** for privacy-friendly analytics.',

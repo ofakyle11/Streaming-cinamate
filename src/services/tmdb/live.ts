@@ -48,8 +48,15 @@ export function buildDiscoverPath(opts: {
  * and returns TMDB's JSON body and status unchanged.
  */
 
-export const DEFAULT_TMDB_PROXY = '/.netlify/functions/tmdb';
+/**
+ * The `/api/*` rewrite in netlify.toml, not the bare function path: the rewrite
+ * carries Netlify's edge rate limit (the function keeps a backstop of its own).
+ */
+export const DEFAULT_TMDB_PROXY = '/api/tmdb';
 export const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/';
+const TMDB_IMAGE_ORIGIN = 'https://image.tmdb.org';
+/** The only host a watch-providers deep link may point at (the TMDB title page). */
+const TMDB_SITE_HOSTS = new Set(['www.themoviedb.org', 'themoviedb.org']);
 
 /** TMDB-supported sizes per image kind (from /configuration). */
 export const TMDB_IMAGE_SIZES = {
@@ -63,15 +70,36 @@ export const DETAILS_APPEND = 'credits,videos,similar,recommendations,watch/prov
 
 /**
  * Resolve a TMDB `*_path` to a full image URL. Returns '' for a missing path so
- * callers can render a placeholder. Absolute URLs pass through untouched.
+ * callers can render a placeholder. An absolute URL passes through only when it
+ * is already on TMDB's image host; anything else from upstream is dropped
+ * rather than rendered as an `<img src>`.
  */
 export function tmdbImageUrl(
   path: string | null | undefined,
   size: TmdbImageSize = 'w500',
 ): string {
   if (!path) return '';
-  if (/^https?:\/\//i.test(path)) return path;
+  if (/^https?:\/\//i.test(path)) return sameOrigin(path, TMDB_IMAGE_ORIGIN) ? path : '';
   return `${TMDB_IMAGE_BASE}${size}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+function sameOrigin(url: string, origin: string): boolean {
+  try {
+    return new URL(url).origin === origin;
+  } catch {
+    return false;
+  }
+}
+
+/** Keep a provider deep link only when it is an https link to themoviedb.org. */
+export function safeProviderLink(link: unknown): string {
+  if (typeof link !== 'string' || !link) return '';
+  try {
+    const u = new URL(link);
+    return u.protocol === 'https:' && TMDB_SITE_HOSTS.has(u.hostname) ? link : '';
+  } catch {
+    return '';
+  }
 }
 
 /** Build a `srcset` string for width-based sizes (height-based / original are skipped). */
@@ -397,7 +425,9 @@ export function createLiveTmdb(
     },
     async videos(mediaType, id) {
       // Proxy mirrors TMDB: GET {proxy}/{movie|tv}/{id}/videos -> { results: TmdbVideo[] }
-      const body = await get<{ results?: TmdbVideo[] }>(`/${mediaType}/${encodeURIComponent(String(id))}/videos`);
+      const body = await get<{ results?: TmdbVideo[] }>(
+        `/${mediaType}/${encodeURIComponent(String(id))}/videos`,
+      );
       return Array.isArray(body.results) ? body.results : [];
     },
     imageUrl(path: string, size: TmdbImageSize = 'w500') {
@@ -421,7 +451,9 @@ export function createLiveTmdb(
       return { ...res, results: res.results.filter((t) => t.id !== id) };
     },
     async watchProviders(mediaType, id, region) {
-      const res = await get<{ results?: Record<string, RawProviders | undefined> }>(`/${mediaType}/${id}/watch/providers`);
+      const res = await get<{ results?: Record<string, RawProviders | undefined> }>(
+        `/${mediaType}/${id}/watch/providers`,
+      );
       const r = res.results?.[region];
       return r ? normaliseProviders(r, region) : null;
     },
@@ -444,7 +476,7 @@ function normaliseProviders(r: RawProviders, region: WatchRegion): TmdbWatchProv
     list ? [...list].sort((a, b) => a.display_priority - b.display_priority) : undefined;
   return {
     region,
-    link: r.link ?? '',
+    link: safeProviderLink(r.link),
     flatrate: byPriority(r.flatrate),
     free: byPriority(r.free),
     ads: byPriority(r.ads),

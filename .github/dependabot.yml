@@ -10,6 +10,10 @@ updates:
       time: '09:00'
       timezone: America/Toronto
     open-pull-requests-limit: 5
+    # Wait a week after a release before proposing it: most hijacked npm
+    # versions are pulled within days.
+    cooldown:
+      default-days: 7
     groups:
       # One PR for the toolchain (Vite, Vitest, ESLint, Prettier, TypeScript, Playwright).
       dev-tooling:

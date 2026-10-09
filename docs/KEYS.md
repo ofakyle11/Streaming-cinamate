@@ -38,7 +38,7 @@ Build-time and script-only variables that do not configure the app are listed at
 ### `VITE_TMDB_PROXY` (client)
 
 - **What**: base URL of **our** TMDB proxy, for example `/api/tmdb` (same origin, through the
-  `/api/*` rewrite in `netlify.toml`) or `https://<site>.netlify.app/api/tmdb`.
+  `/api/*` rewrite in `netlify.toml`) or `https://lastframe.tv/api/tmdb`.
 - **Why it's safe**: it's just a URL. The browser never talks to TMDB with a key. Requests go
   to the proxy, and the proxy adds the key server-side.
 - **Where to get it**: it's your own deployment's URL, so there's nothing to sign up for.
@@ -55,7 +55,7 @@ Build-time and script-only variables that do not configure the app are listed at
 - **Never** prefix it with `VITE_` and never reference it under `src/`. It belongs only in
   `netlify/functions/`.
 - **Status**: live. The proxy is `netlify/functions/tmdb.ts` (contract below, under
-  **TMDB proxy**) and `tmdb/live.ts` calls it. Scope the key to **Functions** only.
+  **TMDB proxy**) and `tmdb/live.ts` calls it. Scope the key to **Functions** only, in the **Production** deploy context only.
 
 ### `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (client)
 
@@ -139,8 +139,11 @@ are simulated locally.
      `npm run build`.
    - `TMDB_API_KEY` needs only the **Functions** scope. Mark it **Contains secret values** so
      Netlify hides it in the UI and logs.
-4. Optionally set different values per **deploy context** (Production, Deploy Previews,
-   Branch deploys). Leaving previews unset keeps them in mock mode.
+4. Set `TMDB_API_KEY` for the **Production** deploy context only. A deploy preview builds the
+   PR's own code, so a preview that could read the key would hand it to anyone who can open a
+   PR; previews run in mock mode without it. Under **Site configuration → Build & deploy →
+   Continuous deployment**, keep deploy previews from forks on "Require approval" or off.
+   Leaving the `VITE_*` values unset for previews keeps those in mock mode too.
 5. Trigger a new deploy (**Deploys → Trigger deploy → Deploy site**). Client values are
    frozen into the bundle, so changes take effect only after a rebuild.
 
@@ -166,7 +169,9 @@ environment variables or a local `.env`.
 
 ## TMDB proxy (`netlify/functions/tmdb.ts`)
 
-Reachable at `/.netlify/functions/tmdb` or `/api/tmdb` (see `netlify.toml` redirect).
+The app calls `/api/tmdb` (the `netlify.toml` rewrite, which carries Netlify's edge rate limit).
+The bare function path `/.netlify/functions/tmdb` also answers, so the function keeps its own
+per-IP counter (60 a minute, per warm instance) as a backstop for callers that skip the rewrite.
 
 ```
 GET /api/tmdb?path=movie/popular&page=2&language=en-US
@@ -174,8 +179,8 @@ GET /api/tmdb?path=movie/popular&page=2&language=en-US
 
 - `path` is a relative TMDB v3 path. It must match the allowlist (`ALLOWED_PATHS`): trending, movie/tv lists, discover, search, genre lists, movie/tv/person details and their sub-resources, configuration. Others return `403`.
 - Absolute URLs, `//`, `..`, `:`, `\`, `%`, `?`, `#`, `@` in `path` are rejected with `400`.
-- All other query params are forwarded, except client-supplied `api_key` / `access_token` (any case), which are stripped.
-- The key is attached server-side: v4 tokens (`eyJ...`) as `Authorization: Bearer`, v3 keys as the `api_key` param.
+- Only allow-listed TMDB query params are forwarded (`ALLOWED_PARAMS`: `page`, `language`, `query`, `with_genres`, `sort_by`, the discover date and vote filters, `append_to_response`, ...). Anything else, including a client-supplied `api_key` / `access_token`, is dropped, so a stray parameter cannot bust the cache. `include_adult` is always sent as `false`, whatever the caller asks for. `page` must be 1 to 500 and `append_to_response` may only name the sub-resources the path allow-list permits; otherwise `400 invalid_query`.
+- The key is attached server-side: v4 tokens (`eyJ...`) as `Authorization: Bearer`, v3 keys as the `api_key` param. Upstream redirects are never followed (the v3 key would travel with them).
 - Successful responses are cached in memory for 10 minutes per warm instance (key = path + sorted query) and sent with `Cache-Control: public, max-age=600, s-maxage=600` plus `X-Cache: HIT|MISS`. Errors are `no-store` and never cached.
 - Upstream error bodies are never forwarded (they could reference the key).
 
@@ -196,16 +201,17 @@ Error shape (always JSON):
 | 403    | `path_not_allowed`                                                |
 | 404    | `not_found` (TMDB 404)                                            |
 | 405    | `method_not_allowed`                                              |
-| 429    | `rate_limited` (TMDB 429)                                         |
+| 429    | `rate_limited` (this IP over 60 a minute, or TMDB 429)            |
 | 502    | `upstream_error`, `upstream_unreachable`, `upstream_bad_response` |
 | 503    | `not_configured` (`TMDB_API_KEY` unset)                           |
 | 504    | `upstream_timeout`                                                |
 
 ## Setting keys (quick reference)
 
-- Local: `netlify env:set TMDB_API_KEY <key>` or a git-ignored `.env` used by `netlify dev`.
-- Production: Netlify UI, Site configuration, Environment variables. Scope `TMDB_API_KEY` to Functions only.
+- Local: `netlify env:set TMDB_API_KEY <key>` or a `.env` file used by `netlify dev` (`.env*` is git-ignored).
+- Production: Netlify UI, Site configuration, Environment variables. Scope `TMDB_API_KEY` to Functions only and to the Production context only.
 - Rotate by replacing the value and redeploying; the cache is per-instance and expires within 10 minutes.
+- Rotation list (yearly, and at once after any suspected exposure): `TMDB_API_KEY`, `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY`, any Netlify personal access token, the Supabase access token used by the CLI. Record each rotation in `docs/isms/asset-inventory-and-classification.md`.
 
 ## Other variables (tooling only)
 

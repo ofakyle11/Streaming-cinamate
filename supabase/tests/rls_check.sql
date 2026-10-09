@@ -14,10 +14,61 @@
 
 begin;
 
-insert into auth.users (id, email, encrypted_password) values
-  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a@lastframe.test', '$2a$10$attacker-chosen-password-hash'),
-  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'b@lastframe.test', null)
+insert into auth.users (id, email, encrypted_password, raw_app_meta_data, raw_user_meta_data) values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'a@lastframe.test', '$2a$10$attacker-chosen-password-hash',
+   '{"provider":"email"}', '{"display_name":"Planted by attacker","avatar_url":"https://evil.test/a.png","theme":"dark"}'),
+  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'b@lastframe.test', null,
+   '{"provider":"google"}', '{"full_name":"Bea","avatar_url":"https://lh3.googleusercontent.com/b"}')
 on conflict (id) do nothing;
+
+-- ------------------------------------------------------------ sign-up metadata is scrubbed for email accounts
+do $$
+declare m jsonb;
+begin
+  select raw_user_meta_data into m from auth.users where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  if m ? 'display_name' or m ? 'avatar_url' then
+    raise exception 'planted name/avatar survived on an email account: %', m;
+  end if;
+  if not (m ? 'theme') then raise exception 'unrelated metadata was dropped'; end if;
+  select raw_user_meta_data into m from auth.users where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  if not (m ? 'full_name' and m ? 'avatar_url') then
+    raise exception 'OAuth name/avatar were dropped';
+  end if;
+end;
+$$;
+
+-- ------------------------------------------------------------ every table in public has RLS
+do $$
+declare t text;
+begin
+  for t in
+    select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity
+  loop
+    raise exception 'table public.% has no row level security', t;
+  end loop;
+end;
+$$;
+
+-- ------------------------------------------------------------ privileges: no TRUNCATE for clients, no processor for clients
+do $$
+declare t text;
+begin
+  foreach t in array array['profiles', 'watchlist', 'history', 'ratings', 'devices', 'account_deletion_requests', 'admin_users'] loop
+    if has_table_privilege('authenticated', format('public.%I', t), 'truncate')
+       or has_table_privilege('authenticated', format('public.%I', t), 'trigger')
+       or has_table_privilege('anon', format('public.%I', t), 'select') then
+      raise exception 'public.% grants more than PostgREST needs', t;
+    end if;
+  end loop;
+  foreach t in array array['lf_process_account_deletions()', 'lf_expire_devices()', 'lf_row_quota()', 'lf_strip_password()', 'lf_scrub_signup_metadata()'] loop
+    if has_function_privilege('authenticated', format('public.%s', t), 'execute')
+       or has_function_privilege('anon', format('public.%s', t), 'execute') then
+      raise exception 'clients can execute public.%', t;
+    end if;
+  end loop;
+end;
+$$;
 
 -- Only the owner (here: the superuser running the check) adds admins.
 insert into public.admin_users (email, note) values ('a@lastframe.test', 'test admin')
@@ -97,6 +148,24 @@ begin
   exception when insufficient_privilege then null; -- expected: RLS with check
   end;
   begin
+    insert into public.watchlist (user_id, profile_id, title_id, added_at, updated_at)
+      values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'p1', 1, now(), now());
+    raise exception 'A inserted a watchlist row for B';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into public.history (user_id, profile_id, title_id, position, duration, last_watched_at, completed, updated_at)
+      values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'p1', 1, 0, 1, now(), false, now());
+    raise exception 'A inserted a history row for B';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into public.ratings (user_id, profile_id, title_id, rating, rated_at, updated_at)
+      values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'p1', 1, 3, now(), now());
+    raise exception 'A inserted a rating for B';
+  exception when insufficient_privilege then null;
+  end;
+  begin
     insert into public.devices (user_id, id) values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'forged-device');
     raise exception 'A inserted a device for B';
   exception when insufficient_privilege then null;
@@ -109,14 +178,73 @@ begin
 end;
 $$;
 
--- A cannot hand a row over to B.
+-- A cannot hand any row over to B.
+do $$
+declare t text; k text;
+begin
+  for t, k in select * from (values
+      ('profiles', 'id = ''p1'''),
+      ('watchlist', 'title_id = 603'),
+      ('history', 'title_id = 603'),
+      ('ratings', 'title_id = 603'),
+      ('devices', 'id = ''device-aaaaaaaa''')) as v(t, k)
+  loop
+    begin
+      execute format('update public.%I set user_id = ''bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'' where %s', t, k);
+      raise exception 'A moved a % row to B', t;
+    exception when insufficient_privilege or raise_exception then null; -- RLS or the trigger
+    end;
+  end loop;
+end;
+$$;
+
+-- A cannot queue a second deletion while one is pending, and cannot TRUNCATE.
 do $$
 begin
   begin
-    update public.profiles set user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' where id = 'p1';
-    raise exception 'A moved a profile to B';
-  exception when insufficient_privilege or raise_exception then null; -- RLS or the trigger
+    insert into public.account_deletion_requests default values;
+    raise exception 'A queued a second deletion request';
+  exception when unique_violation then null;
   end;
+  begin
+    truncate public.watchlist;
+    raise exception 'A truncated a table';
+  exception when insufficient_privilege then null;
+  end;
+end;
+$$;
+
+-- Row quotas: the 200th profile row is the last one.
+do $$
+declare i integer;
+begin
+  for i in 2..200 loop
+    insert into public.profiles (id, name, created_at, updated_at) values ('p' || i, 'P' || i, now(), now());
+  end loop;
+  begin
+    insert into public.profiles (id, name, created_at, updated_at) values ('p201', 'P201', now(), now());
+    raise exception 'A created a 201st profile';
+  exception when check_violation then null; -- expected: quota
+  end;
+  -- At the cap the client's real write path (upsert of an existing key) must
+  -- still work, otherwise a full account can neither sync nor remove rows.
+  insert into public.profiles (id, name, created_at, updated_at) values ('p1', 'renamed', now(), now())
+    on conflict (user_id, id) do update set name = excluded.name, updated_at = excluded.updated_at;
+  if (select name from public.profiles where id = 'p1') <> 'renamed' then
+    raise exception 'upsert at quota did not update the existing row';
+  end if;
+  update public.profiles set name = 'Ada' where id = 'p1';
+  -- A bulk insert cannot jump the cap either.
+  begin
+    insert into public.profiles (id, name, created_at, updated_at)
+      select 'q' || g, 'Q' || g, now(), now() from generate_series(1, 5) g;
+    raise exception 'A bulk-inserted past the profiles quota';
+  exception when check_violation then null; -- expected: quota
+  end;
+  if (select count(*) from public.profiles) <> 200 then
+    raise exception 'bulk insert past quota left rows behind';
+  end if;
+  delete from public.profiles where id <> 'p1';
 end;
 $$;
 
@@ -137,8 +265,11 @@ begin
   if d.revoked_at is null then raise exception 'a revoked device cleared its own revoked_at'; end if;
   if d.created_at < now() - interval '1 minute' then raise exception 'client changed created_at'; end if;
   if d.last_seen_at < now() - interval '1 minute' then raise exception 'client set last_seen_at'; end if;
-  -- A user cannot mark their own deletion request processed.
-  update public.account_deletion_requests set processed_at = now();
+  -- A user cannot mark their own deletion request processed (no UPDATE grant at all).
+  begin
+    update public.account_deletion_requests set processed_at = now();
+  exception when insufficient_privilege then null; -- expected: no grant
+  end;
   if exists (select 1 from public.account_deletion_requests where processed_at is not null) then
     raise exception 'A marked a deletion request processed';
   end if;
@@ -215,10 +346,30 @@ begin
 end;
 $$;
 
--- ------------------------------------------------------------ deletion processor (service role)
--- A still owns a profile, a watchlist row, history, a rating, a device and the
--- request: all of it must go with the auth user.
+-- ------------------------------------------------------------ device retention (service role)
+set local role service_role;
+do $$
+declare n integer;
+begin
+  n := public.lf_expire_devices();
+  if n <> 0 then raise exception 'expire_devices removed % fresh row(s)', n; end if;
+end;
+$$;
 reset role;
+-- (last_seen_at is server-set on every write, so age the row through revoked_at.)
+update public.devices set revoked_at = now() - interval '40 days' where id = 'device-aaaaaaa2';
+set local role service_role;
+do $$
+declare n integer;
+begin
+  n := public.lf_expire_devices();
+  if n <> 1 then raise exception 'expire_devices should remove 1 stale row, removed %', n; end if;
+end;
+$$;
+
+-- ------------------------------------------------------------ deletion processor (service role)
+-- A still owns a profile, a watchlist row, history, a rating and the request:
+-- all of it must go with the auth user.
 do $$
 declare n integer;
 begin
@@ -235,5 +386,6 @@ begin
 end;
 $$;
 
+reset role;
 select 'RLS check passed' as result;
 rollback;

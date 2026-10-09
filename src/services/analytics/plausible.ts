@@ -19,13 +19,20 @@ export const DEFAULT_PLAUSIBLE_HOST = 'https://plausible.io';
 export const PLAUSIBLE_SCRIPT_ID = 'plausible-analytics';
 
 /** Plausible only accepts string/number/boolean props; drop null/undefined. */
-export function toPlausibleProps(props?: AnalyticsProps): Record<string, string | number | boolean> | undefined {
+export function toPlausibleProps(
+  props?: AnalyticsProps,
+): Record<string, string | number | boolean> | undefined {
   if (!props) return undefined;
   const out: Record<string, string | number | boolean> = {};
   for (const [k, v] of Object.entries(props)) {
     if (v !== null && v !== undefined) out[k] = v;
   }
   return Object.keys(out).length ? out : undefined;
+}
+
+/** `/search?q=x#y` -> `/search`. */
+export function stripQuery(path: string): string {
+  return path.split(/[?#]/, 1)[0];
 }
 
 function resolveWindow(win?: PlausibleWindow): PlausibleWindow | undefined {
@@ -91,8 +98,9 @@ export function createPlausibleAnalytics(config: PlausibleConfig): AnalyticsServ
     page(name, props) {
       const win = resolveWindow(config.win);
       if (!win?.location) return;
-      const path =
-        typeof props?.path === 'string' ? props.path : `${win.location.pathname}${win.location.search}`;
+      // Pathname only: the query string can carry a search term (`/search?q=`),
+      // which is the visitor's own text and stays out of analytics.
+      const path = typeof props?.path === 'string' ? stripQuery(props.path) : win.location.pathname;
       const url = `${win.location.origin}${path}`;
       // Components may also report named pages; count each URL once per visit to it.
       if (url === lastPageUrl) return;

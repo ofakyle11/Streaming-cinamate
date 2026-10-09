@@ -46,6 +46,17 @@ Supabase's built-in mailer sends at most 2 emails an hour, enough to test, not t
    | TXT  | `resend._domainkey.mail` | `p=MIGf...` (the long key Resend shows)              | DKIM             |
    | TXT  | `_dmarc.mail`            | `v=DMARC1; p=none;`                                  | DMARC (optional) |
 
+   The apex domain needs its own records so that `security@`, `privacy@` and `legal@` are
+   deliverable and nobody can spoof `@lastframe.tv` (findings P-3, P-4). Add these too, with the
+   MX and the SPF `include:` taken from the mailbox provider (Google Workspace shown):
+
+   | Type | Host (at Spaceship) | Value                                                                        | Purpose                     |
+   | ---- | ------------------- | ---------------------------------------------------------------------------- | --------------------------- |
+   | MX   | `@`                 | `smtp.google.com`, priority 1 (or the provider's MX)                         | mailboxes                   |
+   | TXT  | `@`                 | `v=spf1 include:_spf.google.com ~all`                                        | SPF for the apex            |
+   | TXT  | `_dmarc`            | `v=DMARC1; p=quarantine; rua=mailto:security@lastframe.tv; adkim=s; aspf=s;` | DMARC (move to `p=reject`)  |
+   | CAA  | `@`                 | `0 issue "letsencrypt.org"`                                                  | only Netlify's CA may issue |
+
    Spaceship wants the host relative to `lastframe.tv`; if the editor expects the full name use
    `send.mail.lastframe.tv` and `resend._domainkey.mail.lastframe.tv`. Copy the exact values
    from Resend's page, the DKIM key is unique to the domain. Click **Verify** in Resend; it
@@ -84,14 +95,32 @@ One setting is dashboard-only; set it once under **Authentication → Attack Pro
 
 - **Prevent email enumeration** (email enumeration protection): **on**.
 
-Then schedule the deletion processor, which erases accounts queued from the account page
-(**SQL Editor**, run once):
+Enable **pg_cron** before pushing the migrations (**Integrations → Cron → Enable**, or
+`create extension if not exists pg_cron;` in the SQL Editor). Migration
+`20261009000000_hardening.sql` then schedules both housekeeping jobs itself: the deletion
+processor every 15 minutes (the 24-hour promise on the privacy page rests on it) and the
+device-row expiry nightly. If pg_cron was not there when the migration ran, paste the
+`do $$ ... $$` block at the end of that migration into the SQL Editor (`db push` will not
+re-apply it), or schedule by hand:
 
 ```sql
-create extension if not exists pg_cron;
 select cron.schedule('lf-process-account-deletions', '*/15 * * * *',
                      $$select public.lf_process_account_deletions()$$);
+select cron.schedule('lf-expire-devices', '17 3 * * *', $$select public.lf_expire_devices()$$);
 ```
+
+Check monthly that both still run (also the evidence an auditor asks for):
+
+```sql
+select jobname, schedule, active from cron.job;
+select jobname, status, start_time from cron.job_run_details d join cron.job j on j.jobid = d.jobid
+ order by start_time desc limit 10;
+select count(*) as overdue from public.account_deletion_requests
+ where processed_at is null and requested_at < now() - interval '24 hours';
+```
+
+`overdue` must be 0. Each run also writes one line to the Postgres logs
+(`lf_process_account_deletions: N account(s) deleted`).
 
 Without the CLI, the same can be done by hand: paste each file in `supabase/migrations/` into
 the **SQL Editor** in file-name order, then set the values above in **Authentication → URL
@@ -129,7 +158,7 @@ public; do not mark them as secret (Netlify would then refuse to inline them int
 
 The next production build picks them up: `src/services/index.ts` switches auth and the
 database to the live adapters, and `scripts/security-headers.mjs` pins the Content Security
-Policy's `connect-src` to `https://<ref>.supabase.co` instead of the `*.supabase.co` wildcard. Nothing else changes.
+Policy's `connect-src` to `https://<ref>.supabase.co` (a build without the variable allows no Supabase host at all). Nothing else changes.
 
 ### Deploying so the variables are inlined
 
@@ -171,8 +200,12 @@ true`, push, then `VITE_AUTH_GOOGLE=1` in Netlify.
 - **Passwords**: the `lf_strip_password` trigger on `auth.users` makes password sign-in
   impossible by design. Drop it (and update this runbook) before ever adding a password-based
   sign-in, and check after Supabase platform upgrades that the trigger still exists.
-- **Paid tier** (25 USD a month) only for daily backups or to stop the free project pausing
-  after a week without traffic.
+- **Paid tier** (25 USD a month) for daily backups and to stop the free project pausing after
+  a week without traffic. A paused project also stops pg_cron, so the deletion processor stops
+  with it; once real accounts exist the project must not be allowed to pause (paid tier, or
+  the uptime monitor hitting the site keeps it awake). Backups are the only copy of user data
+  outside the live database; `docs/isms/backup-and-continuity.md` records the decision and the
+  quarterly restore test.
 
 ## How the devices list works
 

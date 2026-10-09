@@ -5,3 +5,9 @@ coverage
 tsconfig.tsbuildinfo
 test-results/
 playwright-report/
+
+# Local environment files (keys, project URLs). Never commit; see docs/KEYS.md.
+.env
+.env.*
+!.env.example
+.netlify/

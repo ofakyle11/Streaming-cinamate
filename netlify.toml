@@ -10,8 +10,18 @@
 [functions]
   node_bundler = "esbuild"
 
+# One origin only: the *.netlify.app alias sends everything to lastframe.tv, so
+# there is no second copy of the site (or of the proxy) to phish or abuse.
+[[redirects]]
+  from = "https://lastframe-tv.netlify.app/*"
+  to = "https://lastframe.tv/:splat"
+  status = 301
+  force = true
+
 # Functions sit behind /api/*. The rate limit stops the TMDB proxy from being
 # used as a free key: more than 60 requests a minute from one IP get a 429.
+# The function also keeps its own per-IP counter for calls that bypass this
+# rewrite (netlify/functions/tmdb.ts).
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
@@ -43,6 +53,13 @@
     # Content-Security-Policy is generated into dist/_headers by
     # scripts/security-headers.mjs at build time (it depends on whether a
     # Turnstile site key is set). Edit the CSP there, never here.
+
+# Netlify serves .webmanifest as application/octet-stream by default; with
+# nosniff set, give it the right type.
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"
 
 [[headers]]
   for = "/assets/*"

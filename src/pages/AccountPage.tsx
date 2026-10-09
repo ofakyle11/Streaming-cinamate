@@ -107,7 +107,16 @@ export default function AccountPage({ db = services.db }: AccountPageProps) {
               );
             })
           : null;
-      const data = buildDataExport(useLastFrameStore.getState(), user, snapshot);
+      // The devices list is part of what we hold; a failed read must not block the export.
+      const devices =
+        synced && user && ext.listDevices ? await ext.listDevices().catch(() => []) : [];
+      const data = buildDataExport(
+        useLastFrameStore.getState(),
+        user,
+        snapshot,
+        new Date(),
+        devices,
+      );
       if (!downloadJson(data, exportFileName()))
         throw new Error('Your browser blocked the download.');
       const n = countExportItems(data);
