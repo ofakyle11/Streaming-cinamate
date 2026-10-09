@@ -61,8 +61,9 @@ export default function DataSection({
           <div className="acct-row-text">
             <b>Download my data</b>
             <span>
-              Profiles, My List, history and ratings as a JSON file
-              {signedIn ? '' : ' from this device'}.
+              {signedIn
+                ? 'Account details, profiles, My List, history, ratings and signed-in devices as a JSON file.'
+                : 'Profiles, My List, history and ratings as a JSON file from this device.'}
             </span>
           </div>
           <Button

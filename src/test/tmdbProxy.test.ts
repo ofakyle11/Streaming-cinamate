@@ -186,6 +186,12 @@ describe('handleTmdbRequest', () => {
     expect(JSON.stringify(res)).not.toContain(KEY);
   });
 
+  it('always asks TMDB for the non-adult catalogue, whatever the caller sends', async () => {
+    await get({ path: 'search/movie', query: 'x', include_adult: 'true' });
+    expect(calledUrl().searchParams.getAll('include_adult')).toEqual(['false']);
+    expect(ALLOWED_PARAMS.has('include_adult')).toBe(false);
+  });
+
   it('strips a client-supplied api_key param', async () => {
     await get({ path: 'movie/popular', api_key: 'attacker' });
     expect(calledUrl().searchParams.getAll('api_key')).toEqual([KEY]);

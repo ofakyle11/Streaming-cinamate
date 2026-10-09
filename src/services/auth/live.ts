@@ -413,7 +413,9 @@ export function createLiveAuth(
       // client. Queue a request (RLS: users can only insert their own row);
       // lf_process_account_deletions() (service role / pg_cron) removes it.
       const { error } = await sb.from(DELETION_REQUESTS_TABLE).insert({ user_id: userId });
-      if (error) throw asError(error, 'Could not request data deletion.');
+      // 23505: a pending request already exists (a retry after the sign-out
+      // below failed). The deletion is queued either way, so carry on.
+      if (error && error.code !== '23505') throw asError(error, 'Could not request data deletion.');
       // Everywhere, not just here: another signed-in browser would otherwise keep
       // its session until the processor runs and could push its local copy back.
       await service.signOut({ scope: 'global' });

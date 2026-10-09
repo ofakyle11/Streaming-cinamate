@@ -88,8 +88,9 @@ Enable **pg_cron** before pushing the migrations (**Integrations → Cron → En
 `create extension if not exists pg_cron;` in the SQL Editor). Migration
 `20261009000000_hardening.sql` then schedules both housekeeping jobs itself: the deletion
 processor every 15 minutes (the 24-hour promise on the privacy page rests on it) and the
-device-row expiry nightly. If pg_cron was not there when the migration ran, re-run that
-migration or schedule by hand:
+device-row expiry nightly. If pg_cron was not there when the migration ran, paste the
+`do $$ ... $$` block at the end of that migration into the SQL Editor (`db push` will not
+re-apply it), or schedule by hand:
 
 ```sql
 select cron.schedule('lf-process-account-deletions', '*/15 * * * *',
@@ -193,7 +194,7 @@ true`, push, then `VITE_AUTH_GOOGLE=1` in Netlify.
   with it; once real accounts exist the project must not be allowed to pause (paid tier, or
   the uptime monitor hitting the site keeps it awake). Backups are the only copy of user data
   outside the live database; `docs/isms/backup-and-continuity.md` records the decision and the
-  yearly restore test.
+  quarterly restore test.
 
 ## How the devices list works
 

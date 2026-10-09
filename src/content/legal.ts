@@ -115,7 +115,7 @@ export const privacy: LegalDocument = {
       heading: 'How long we keep it',
       body: [
         'We keep your account data for as long as your account exists. Viewing history and ratings stay until you remove them or delete the account; an item you remove is kept as a deletion marker so the removal reaches your other devices, and the marker goes when the account does. A signed-in browser you have forgotten is removed after 30 days, and one not seen for six months is removed too.',
-        'When you delete your account, your account, profiles, list, history, ratings and devices are removed from the database within 24 hours. Copies in database backups and the short-lived security logs our providers keep (sign-in records, email delivery records, web server logs) expire on those providers’ own schedules; the providers are listed on our [security page](/security).',
+        'When you delete your account, it and your profiles, list, history, ratings and devices are removed from the database within 24 hours. Copies in database backups are kept for a limited time, and the short-lived security logs our providers keep (sign-in records, email delivery records, web server logs) expire on those providers’ own schedules; the providers are listed on our [security page](/security).',
       ],
     },
     {

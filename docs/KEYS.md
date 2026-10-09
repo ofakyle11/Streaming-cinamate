@@ -38,7 +38,7 @@ Build-time and script-only variables that do not configure the app are listed at
 ### `VITE_TMDB_PROXY` (client)
 
 - **What**: base URL of **our** TMDB proxy, for example `/api/tmdb` (same origin, through the
-  `/api/*` rewrite in `netlify.toml`) or `https://<site>.netlify.app/api/tmdb`.
+  `/api/*` rewrite in `netlify.toml`) or `https://lastframe.tv/api/tmdb`.
 - **Why it's safe**: it's just a URL. The browser never talks to TMDB with a key. Requests go
   to the proxy, and the proxy adds the key server-side.
 - **Where to get it**: it's your own deployment's URL, so there's nothing to sign up for.
@@ -55,7 +55,7 @@ Build-time and script-only variables that do not configure the app are listed at
 - **Never** prefix it with `VITE_` and never reference it under `src/`. It belongs only in
   `netlify/functions/`.
 - **Status**: live. The proxy is `netlify/functions/tmdb.ts` (contract below, under
-  **TMDB proxy**) and `tmdb/live.ts` calls it. Scope the key to **Functions** only.
+  **TMDB proxy**) and `tmdb/live.ts` calls it. Scope the key to **Functions** only, in the **Production** deploy context only.
 
 ### `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (client)
 

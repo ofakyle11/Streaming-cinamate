@@ -37,7 +37,6 @@ export const ALLOWED_PARAMS: ReadonlySet<string> = new Set([
   'language',
   'region',
   'query',
-  'include_adult',
   'year',
   'primary_release_year',
   'first_air_date_year',
@@ -292,6 +291,8 @@ export async function handleTmdbRequest(
 
   // v4 read access tokens are JWTs -> Bearer header; v3 keys -> api_key param.
   const upstreamQuery = new URLSearchParams(query);
+  // The site never shows adult titles; direct callers cannot opt in with our key.
+  upstreamQuery.set('include_adult', 'false');
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (apiKey.startsWith('eyJ')) headers.Authorization = `Bearer ${apiKey}`;
   else upstreamQuery.set('api_key', apiKey);

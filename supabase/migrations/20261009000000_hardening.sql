@@ -1,6 +1,7 @@
 -- Hardening pass (security evaluation of 2026-10-09). Idempotent.
 --
--- 1. Per-user row quotas so one confirmed email cannot fill the database.
+-- 1. Per-user row quotas (profiles 200, watchlist 5000, history 10000,
+--    ratings 10000, devices 50) so one confirmed email cannot fill the database.
 -- 2. One pending deletion request per user.
 -- 3. Table privileges narrowed to what PostgREST needs: `authenticated` loses
 --    TRUNCATE, TRIGGER and REFERENCES (TRUNCATE ignores RLS).
@@ -20,36 +21,52 @@ language plpgsql
 set search_path = ''
 as $$
 declare
-  n bigint;
   max_rows integer := tg_argv[0]::integer;
+  uid uuid;
+  n bigint;
 begin
-  execute format('select count(*) from %I.%I where user_id = $1', tg_table_schema, tg_table_name)
-    into n using new.user_id;
-  if n >= max_rows then
-    raise exception '% quota of % rows exceeded', tg_table_name, max_rows
-      using errcode = 'check_violation';
-  end if;
-  return new;
+  -- Statement-level AFTER INSERT with a transition table: only rows that were
+  -- really inserted appear in it (an upsert that ended as an update does not),
+  -- so a user at the cap can still sync and remove existing rows, and the
+  -- count already includes every row of this statement, so a bulk insert
+  -- cannot jump the cap. Runs as the invoker, so under RLS it only ever sees
+  -- the caller's own rows.
+  for uid in select distinct user_id from inserted loop
+    execute format('select count(*) from %I.%I where user_id = $1', tg_table_schema, tg_table_name)
+      into n using uid;
+    if n > max_rows then
+      raise exception '% quota of % rows exceeded', tg_table_name, max_rows
+        using errcode = 'check_violation';
+    end if;
+  end loop;
+  return null;
 end;
 $$;
 
 revoke all on function public.lf_row_quota() from public, anon, authenticated;
 
+-- Quotas count tombstones too (deletion markers stay until the account goes),
+-- so each cap leaves room for churn: 200 profile rows for a 5-profile UI.
 drop trigger if exists profiles_quota on public.profiles;
-create trigger profiles_quota before insert on public.profiles
-  for each row execute function public.lf_row_quota('20');
+create trigger profiles_quota after insert on public.profiles
+  referencing new table as inserted for each statement
+  execute function public.lf_row_quota('200');
 drop trigger if exists watchlist_quota on public.watchlist;
-create trigger watchlist_quota before insert on public.watchlist
-  for each row execute function public.lf_row_quota('5000');
+create trigger watchlist_quota after insert on public.watchlist
+  referencing new table as inserted for each statement
+  execute function public.lf_row_quota('5000');
 drop trigger if exists history_quota on public.history;
-create trigger history_quota before insert on public.history
-  for each row execute function public.lf_row_quota('10000');
+create trigger history_quota after insert on public.history
+  referencing new table as inserted for each statement
+  execute function public.lf_row_quota('10000');
 drop trigger if exists ratings_quota on public.ratings;
-create trigger ratings_quota before insert on public.ratings
-  for each row execute function public.lf_row_quota('10000');
+create trigger ratings_quota after insert on public.ratings
+  referencing new table as inserted for each statement
+  execute function public.lf_row_quota('10000');
 drop trigger if exists devices_quota on public.devices;
-create trigger devices_quota before insert on public.devices
-  for each row execute function public.lf_row_quota('50');
+create trigger devices_quota after insert on public.devices
+  referencing new table as inserted for each statement
+  execute function public.lf_row_quota('50');
 
 -- --------------------------------------------------------------- 2. one pending request
 

@@ -210,6 +210,16 @@ describe('live auth adapter (Supabase)', () => {
     );
   });
 
+  it('treats an already-pending request as queued so a retry still signs out everywhere', async () => {
+    const fake = fakeClient({ user: sbUser() });
+    // The partial unique index on pending requests rejects a second insert.
+    fake.insert.mockResolvedValueOnce({
+      error: { code: '23505', message: 'duplicate key' },
+    } as unknown as { error: null });
+    await make(fake).requestDataDeletion();
+    expect(fake.auth.signOut).toHaveBeenLastCalledWith({ scope: 'global' });
+  });
+
   it('hard-deletes every cloud sync table for the user before queuing the request', async () => {
     const fake = fakeClient({ user: sbUser() });
     await make(fake).requestDataDeletion();

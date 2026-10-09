@@ -214,18 +214,36 @@ begin
 end;
 $$;
 
--- Row quotas: the 20th profile is the last one.
+-- Row quotas: the 200th profile row is the last one.
 do $$
 declare i integer;
 begin
-  for i in 2..20 loop
+  for i in 2..200 loop
     insert into public.profiles (id, name, created_at, updated_at) values ('p' || i, 'P' || i, now(), now());
   end loop;
   begin
-    insert into public.profiles (id, name, created_at, updated_at) values ('p21', 'P21', now(), now());
-    raise exception 'A created a 21st profile';
+    insert into public.profiles (id, name, created_at, updated_at) values ('p201', 'P201', now(), now());
+    raise exception 'A created a 201st profile';
   exception when check_violation then null; -- expected: quota
   end;
+  -- At the cap the client's real write path (upsert of an existing key) must
+  -- still work, otherwise a full account can neither sync nor remove rows.
+  insert into public.profiles (id, name, created_at, updated_at) values ('p1', 'renamed', now(), now())
+    on conflict (user_id, id) do update set name = excluded.name, updated_at = excluded.updated_at;
+  if (select name from public.profiles where id = 'p1') <> 'renamed' then
+    raise exception 'upsert at quota did not update the existing row';
+  end if;
+  update public.profiles set name = 'Ada' where id = 'p1';
+  -- A bulk insert cannot jump the cap either.
+  begin
+    insert into public.profiles (id, name, created_at, updated_at)
+      select 'q' || g, 'Q' || g, now(), now() from generate_series(1, 5) g;
+    raise exception 'A bulk-inserted past the profiles quota';
+  exception when check_violation then null; -- expected: quota
+  end;
+  if (select count(*) from public.profiles) <> 200 then
+    raise exception 'bulk insert past quota left rows behind';
+  end if;
   delete from public.profiles where id <> 'p1';
 end;
 $$;
