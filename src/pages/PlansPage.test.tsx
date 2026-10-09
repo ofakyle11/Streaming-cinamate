@@ -8,8 +8,6 @@ import type { AuthService, BillingAdapter, User } from '../services';
 function fakeAuth(user: User | null): AuthService {
   return {
     currentUser: async () => user,
-    signInWithEmail: vi.fn(),
-    signUpWithEmail: vi.fn(),
     signInWithMagicLink: vi.fn(),
     signInWithOAuth: vi.fn(),
     completeSignIn: vi.fn(),

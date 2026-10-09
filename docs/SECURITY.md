@@ -5,17 +5,22 @@ Every control here works in mock mode with no environment variables.
 
 ## Summary
 
-| Control                                                              | Where                                                          | On by default                                                  |
-| -------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
-| Content-Security-Policy                                              | `scripts/security-headers.mjs` (Vite plugin) → `dist/_headers` | Yes                                                            |
-| Static security headers (HSTS, frame, referrer, permissions)         | `netlify.toml`                                                 | Yes                                                            |
-| Rate limit on `/api/*` (60 a minute per IP, then 429)                | `netlify.toml`                                                 | Yes                                                            |
-| Bot check on sign-in (Cloudflare Turnstile)                          | `src/components/auth/Turnstile.tsx`                            | On `/sign-in` and resend when `VITE_TURNSTILE_SITE_KEY` is set |
-| Callback hardening (tokens out of the URL, same-origin return paths) | `src/auth/callback.ts`, `src/auth/callbackBoot.ts`             | Yes                                                            |
-| Client may only read `VITE_*` variables                              | `src/test/envNames.test.ts`                                    | Yes (test)                                                     |
-| Dependency audit (production deps, high and above fail)              | `.github/workflows/ci.yml` job `audit`                         | Yes                                                            |
-| Secret scan of history and tree (gitleaks)                           | `.github/workflows/ci.yml` job `secrets`                       | Yes                                                            |
-| Disclosure contact                                                   | `public/.well-known/security.txt`                              | Yes                                                            |
+| Control                                                              | Where                                                           | On by default                                                  |
+| -------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------- |
+| Content-Security-Policy                                              | `scripts/security-headers.mjs` (Vite plugin) → `dist/_headers`  | Yes                                                            |
+| Static security headers (HSTS, frame, referrer, permissions, COOP)   | `netlify.toml`                                                  | Yes                                                            |
+| Rate limit on `/api/*` (60 a minute per IP, then 429)                | `netlify.toml`                                                  | Yes                                                            |
+| Bot check on sign-in (Cloudflare Turnstile)                          | `src/components/auth/Turnstile.tsx`                             | On `/sign-in` and resend when `VITE_TURNSTILE_SITE_KEY` is set |
+| Callback hardening (tokens out of the URL, same-origin return paths) | `src/auth/callback.ts`, `src/auth/callbackBoot.ts`              | Yes                                                            |
+| Client may only read `VITE_*` variables                              | `src/test/envNames.test.ts`                                     | Yes (test)                                                     |
+| Dependency audit (production deps, high and above fail)              | `.github/workflows/ci.yml` job `audit`                          | Yes                                                            |
+| Dependency and Actions updates (weekly PRs)                          | `.github/dependabot.yml`                                        | Yes                                                            |
+| GitHub Actions pinned to commit SHAs                                 | `.github/workflows/ci.yml`                                      | Yes                                                            |
+| Secret scan of history and tree (gitleaks)                           | `.github/workflows/ci.yml` job `secrets`                        | Yes                                                            |
+| Row Level Security on every table, checked in CI                     | `supabase/migrations/*.sql`, `supabase/tests/rls_check.sql`     | Yes                                                            |
+| No passwords: trigger strips them, adapters have no password path    | `supabase/migrations/20261006010000_*.sql`, `src/services/auth` | Yes                                                            |
+| Admin allow-list by email (`public.admin_users`, `lf_is_admin()`)    | `supabase/migrations/20261007000000_admin_users.sql`            | Yes (empty until the owner adds a row)                         |
+| Disclosure contact                                                   | `public/.well-known/security.txt`                               | Yes                                                            |
 
 ## Content-Security-Policy
 
@@ -28,6 +33,19 @@ only when the build has a Turnstile site key. `src/test/csp.test.ts` checks both
 
 Deploy `dist/` produced by a production build (`npm run build`). CI checks that the build output carries it. Do not add a fallback CSP to
 `netlify.toml`: both headers would apply and the stricter one would block Turnstile.
+
+## Static headers
+
+`netlify.toml` sends on every response: `Strict-Transport-Security` (one year, subdomains),
+`X-Frame-Options: DENY` (with `frame-ancestors 'none'` in the CSP), `X-Content-Type-Options:
+nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, a `Permissions-Policy` that denies
+every powerful feature the app never uses (camera, microphone, geolocation, payment, USB,
+Bluetooth, serial, MIDI, sensors, screen capture, Topics and FLoC), and
+`Cross-Origin-Opener-Policy: same-origin`, so a page that opens lastframe.tv in a new window
+cannot keep a handle on it. Sign-in is a redirect, never a popup, so COOP costs nothing.
+`Cross-Origin-Embedder-Policy` is deliberately not sent: it would break the YouTube trailer
+embeds. HSTS `preload` is not set either; it is a one-way door and can be added once the domain
+has run on HTTPS for a while.
 
 ## Rate limit
 
@@ -68,12 +86,36 @@ same-origin absolute path. `safeReturnPath()` applies the same rule to any `retu
 tokens.
 `completeSignIn()` maps provider errors to fixed copy and never echoes the provider's text.
 
+## Sign-in has no password
+
+Email link is the only way in. The `lf_strip_password` trigger on `auth.users` empties
+`encrypted_password` on every write, so the sign-in-with-password endpoints Supabase still
+exposes can never produce a usable account, and the client adapters (`src/services/auth/`)
+have no password method at all, so no UI change can reintroduce one by accident. New
+addresses must confirm by email and a change of address is confirmed from both mailboxes
+(`supabase/config.toml`).
+
+## Admin accounts
+
+There are no admin passwords. An admin is an ordinary email-link account whose address is in
+`public.admin_users`; `public.lf_is_admin()` (security definer, reads the JWT's `email` claim)
+is the one answer future admin features (RLS policies, RPCs, an admin page) must use. Only the
+owner adds rows, from the Supabase SQL editor; there is no client write path, and a signed-in
+user can read only their own row. The RLS check proves a listed user is an admin, an unlisted
+user is not, `anon` cannot even call the function, and no client can add, edit or remove an
+admin. The list trusts the email on the sign-in token, which is safe because every address is
+confirmed by email at sign-in and a change of address is confirmed from both mailboxes; a new
+sign-in provider must verify emails before it is switched on, or someone could claim an
+admin's address. Steps are in [SUPABASE.md](SUPABASE.md#admins).
+
 ## Dependency audit
 
 CI fails when a production dependency has a high or critical advisory
-(`npm audit --omit=dev --audit-level=high`). The full tree is audited too but only reported as
-a warning: dev tooling (Vite dev server, Vitest) never ships to the browser, and clearing it
-needs major upgrades that belong in their own change.
+(`npm audit --omit=dev --audit-level=high`). The full tree is audited too and reported as a
+warning. The whole tree is clean after the Vite 7 / Vitest 4 upgrade; Dependabot
+(`.github/dependabot.yml`) opens weekly grouped PRs for npm packages and for the GitHub
+Actions, which are pinned to commit SHAs in `ci.yml` so a moved tag cannot change what runs
+in CI.
 
 ## Secret scan
 

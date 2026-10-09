@@ -70,9 +70,9 @@ describe('BrandPage', () => {
       'aria-pressed',
       'true',
     );
-    const stops = Array.from(
-      document.querySelectorAll('.bk-forms .brand-mark linearGradient stop'),
-    ).map((s) => s.getAttribute('stop-color'));
+    const stops = Array.from(document.querySelectorAll('.bk-forms .brand-mark stop')).map((s) =>
+      s.getAttribute('stop-color'),
+    );
     expect(stops).toContain('#06b6d4');
     expect(stops).not.toContain('#7c3aed');
 

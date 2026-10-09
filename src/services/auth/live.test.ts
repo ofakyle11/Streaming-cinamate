@@ -38,8 +38,6 @@ function fakeClient(session: { user: SupabaseUser } | null = null) {
     getSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
     signInWithOtp: vi.fn().mockResolvedValue({ data: {}, error: null }),
     signInWithOAuth: vi.fn().mockResolvedValue({ data: {}, error: null }),
-    signInWithPassword: vi.fn().mockResolvedValue({ data: { user: sbUser() }, error: null }),
-    signUp: vi.fn().mockResolvedValue({ data: { user: sbUser() }, error: null }),
     signOut: vi.fn().mockResolvedValue({ error: null }),
     onAuthStateChange: vi.fn((cb: typeof listener) => {
       listener = cb;

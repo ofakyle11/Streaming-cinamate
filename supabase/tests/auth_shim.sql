@@ -25,6 +25,8 @@ alter default privileges in schema public grant all on sequences to anon, authen
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 
 create schema if not exists auth;
+-- On Supabase every API role may use the auth schema (auth.uid(), auth.jwt()).
+grant usage on schema auth to anon, authenticated, service_role;
 
 create table if not exists auth.users (
   id                 uuid primary key,
@@ -42,8 +44,16 @@ as $$
   select (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid
 $$;
 
--- The deletion processor runs as service_role; nothing else is needed from auth.
-grant usage on schema auth to service_role;
+-- Supabase's auth.jwt() returns the whole claims object (email, role, sub...).
+create or replace function auth.jwt()
+returns jsonb
+language sql
+stable
+as $$
+  select coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb)
+$$;
+
+-- The deletion processor runs as service_role; it also needs to read and delete users.
 grant select, delete on auth.users to service_role;
 -- Here the migration runner owns auth.users; on Supabase supabase_auth_admin
 -- owns it and postgres holds TRIGGER and UPDATE on it, which the strip-password

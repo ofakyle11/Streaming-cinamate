@@ -23,10 +23,9 @@ describe('mock auth adapter', () => {
     expect(await createMockAuth().currentUser()).toMatchObject({ email: 'ada@example.com' });
   });
 
-  it('rejects invalid emails and short passwords', async () => {
+  it('rejects invalid emails', async () => {
     const auth = createMockAuth();
     await expect(auth.signInWithMagicLink('nope')).rejects.toThrow(/valid email/);
-    await expect(auth.signInWithEmail('a@b.co', '123')).rejects.toThrow(/at least 6/);
     expect(await auth.currentUser()).toBeNull();
   });
 

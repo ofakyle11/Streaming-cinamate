@@ -1,0 +1,34 @@
+# Keeps dependencies and the pinned GitHub Actions current. Every update is a
+# normal PR through CI and the Council; nothing merges on its own.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: America/Toronto
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for the toolchain (Vite, Vitest, ESLint, Prettier, TypeScript, Playwright).
+      dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+      # One PR for the few runtime dependencies (React, Router, Supabase, Zustand).
+      runtime:
+        dependency-type: production
+        update-types: [minor, patch]
+    labels: [dependencies]
+    commit-message:
+      prefix: deps
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: America/Toronto
+    labels: [dependencies]
+    commit-message:
+      prefix: ci
